@@ -10,5 +10,8 @@
         "noExcessiveCognitiveComplexity": "off"
       }
     }
+  },
+  "javascript": {
+    "globals": ["Bun"]
   }
 }
