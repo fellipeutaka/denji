@@ -4,8 +4,8 @@ import { Command } from "commander";
 import {
   CONFIG_FILE,
   type Config,
-  type Framework,
   configSchema,
+  type Framework,
   frameworkSchema,
 } from "~/schemas/config";
 import { getIconsTemplate } from "~/templates/icons";
@@ -147,7 +147,9 @@ function validateExtension(config: Config) {
       );
     }
     if (!config.typescript && ext !== ".jsx") {
-      return new Err(`Invalid extension "${ext}" for React + JavaScript. Use ".jsx"`);
+      return new Err(
+        `Invalid extension "${ext}" for React + JavaScript. Use ".jsx"`
+      );
     }
   }
 

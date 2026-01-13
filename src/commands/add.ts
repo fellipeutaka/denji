@@ -72,7 +72,9 @@ async function runAdd(icons: string[], options: AddOptions) {
   // 5. Read icons file
   const iconsPath = path.resolve(options.cwd, config.output);
   if (!(await access(iconsPath))) {
-    return new Err(`Icons file not found: ${config.output}. Run "denji init" first.`);
+    return new Err(
+      `Icons file not found: ${config.output}. Run "denji init" first.`
+    );
   }
 
   const iconsFileResult = await readFile<string>(iconsPath, "utf-8");
@@ -116,7 +118,11 @@ async function runAdd(icons: string[], options: AddOptions) {
       iconsContent = replaceIcon(iconsContent, componentName, component);
       logger.success(`Replaced ${componentName}`);
     } else {
-      iconsContent = insertIconAlphabetically(iconsContent, componentName, component);
+      iconsContent = insertIconAlphabetically(
+        iconsContent,
+        componentName,
+        component
+      );
       existingIcons.push(componentName);
       logger.success(`Added ${componentName}`);
     }

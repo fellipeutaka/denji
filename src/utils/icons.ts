@@ -2,11 +2,11 @@ import { transform } from "@svgr/core";
 import { parseSync } from "oxc-parser";
 import { Err, Ok } from "~/utils/result";
 
-const ICON_NAME_REGEX = /^[a-z0-9]+(-[a-z0-9]+)*$/;
-
 // ============================================================================
 // Icon Name Validation
 // ============================================================================
+
+const ICON_NAME_REGEX = /^[a-z0-9]+(-[a-z0-9]+)*$/;
 
 export function validateIconName(icon: string) {
   const parts = icon.split(":");
@@ -17,15 +17,15 @@ export function validateIconName(icon: string) {
     );
   }
 
-  const [prefix, name] = parts;
+  const [prefix, name] = parts as [string, string];
 
-  if (!prefix || !ICON_NAME_REGEX.test(prefix)) {
+  if (!ICON_NAME_REGEX.test(prefix)) {
     return new Err(
       `Invalid prefix "${prefix}". Must match: lowercase letters, numbers, hyphens`
     );
   }
 
-  if (!name || !ICON_NAME_REGEX.test(name)) {
+  if (!ICON_NAME_REGEX.test(name)) {
     return new Err(
       `Invalid name "${name}". Must match: lowercase letters, numbers, hyphens`
     );
@@ -38,15 +38,17 @@ export function validateIconName(icon: string) {
 // Component Name Generation
 // ============================================================================
 
+const SPLIT_REGEX = /[-_]/;
+
 export function toComponentName(icon: string) {
   const name = icon.split(":")[1];
   if (!name) {
     throw new Error(`Invalid icon format: ${icon}`);
   }
   return name
-    .split(/[-_]/)
+    .split(SPLIT_REGEX)
     .filter(Boolean)
-    .map((s) => s[0]!.toUpperCase() + s.slice(1).toLowerCase())
+    .map((s) => s.at(0)?.toUpperCase() + s.slice(1).toLowerCase())
     .join("");
 }
 
@@ -84,6 +86,8 @@ export async function fetchIcon(iconName: string) {
 // SVG to Component (using @svgr/core)
 // ============================================================================
 
+const SVG_TAG_REGEX = /<svg[\s\S]*<\/svg>/;
+
 export async function svgToComponent(svg: string, name: string) {
   const jsCode = await transform(
     svg,
@@ -107,7 +111,7 @@ export async function svgToComponent(svg: string, name: string) {
   // Extract just the SVG JSX from the generated component
   // SVGR generates: const Icon = (props) => <svg ...>...</svg>;
   // We need: Name: (props) => (<svg ...>...</svg>)
-  const svgMatch = jsCode.match(/<svg[\s\S]*<\/svg>/);
+  const svgMatch = jsCode.match(SVG_TAG_REGEX);
   if (!svgMatch) {
     throw new Error("Failed to extract SVG from SVGR output");
   }
@@ -162,7 +166,10 @@ export function parseIconsFile(content: string): {
             objectEnd = obj.end - 1; // Before closing brace
 
             for (const prop of obj.properties) {
-              if (prop.type !== "SpreadElement" && prop.key?.type === "Identifier") {
+              if (
+                prop.type !== "SpreadElement" &&
+                prop.key?.type === "Identifier"
+              ) {
                 icons.push({
                   name: prop.key.name,
                   start: prop.start,
@@ -201,7 +208,7 @@ export function insertIconAlphabetically(
 
   if (insertIndex === -1) {
     // Insert at end (after last icon)
-    const lastIcon = icons[icons.length - 1];
+    const lastIcon = icons.at(-1);
     if (!lastIcon) {
       throw new Error("Failed to find last icon");
     }
@@ -234,7 +241,9 @@ export function replaceIcon(
   const { icons } = parseIconsFile(content);
   const existing = icons.find((i) => i.name === name);
 
-  if (!existing) return content;
+  if (!existing) {
+    return content;
+  }
 
   return `${content.slice(0, existing.start)}${component}${content.slice(existing.end)}`;
 }

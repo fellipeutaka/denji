@@ -1,6 +1,6 @@
 import path from "node:path";
 import { CONFIG_FILE, configSchema } from "~/schemas/config";
-import { readFile, access } from "~/utils/fs";
+import { access, readFile } from "~/utils/fs";
 import { Err, Ok } from "~/utils/result";
 
 export async function loadConfig(cwd: string) {

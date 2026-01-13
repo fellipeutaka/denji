@@ -1,11 +1,11 @@
 import {
   type ConfirmOptions,
-  type TextOptions,
   cancel,
   confirm,
   isCancel,
   multiselect,
   select,
+  type TextOptions,
   text,
 } from "@clack/prompts";
 
