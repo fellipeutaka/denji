@@ -1,0 +1,34 @@
+{
+  "name": "denji",
+  "description": "A CLI tool to manage your SVG icons",
+  "type": "module",
+  "private": false,
+  "version": "0.0.1",
+  "author": {
+    "name": "Fellipe Utaka",
+    "email": "fellipeutaka@gmail.com",
+    "url": "https://github.com/fellipeutaka"
+  },
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/fellipeutaka/denji.git"
+  },
+  "devDependencies": {
+    "@iconify/types": "^2.0.0",
+    "@types/bun": "^1.3.5",
+    "typescript": "^5.9.3"
+  },
+  "scripts": {
+    "dev": "bun run src/index.ts",
+    "build": "bun build src/index.ts --outdir=dist --target=node",
+    "start": "node .",
+    "type-check": "tsc --noEmit --incremental false"
+  },
+  "dependencies": {
+    "@clack/prompts": "^0.11.0",
+    "commander": "^14.0.2",
+    "picocolors": "^1.1.1",
+    "zod": "^4.3.5"
+  }
+}
