@@ -19,6 +19,27 @@
       "default": true,
       "description": "Whether to generate TypeScript code",
       "type": "boolean"
+    },
+    "hooks": {
+      "description": "Hooks to run at various stages",
+      "type": "object",
+      "properties": {
+        "preAdd": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Scripts to run before adding icons"
+        },
+        "postAdd": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Scripts to run after adding icons"
+        }
+      },
+      "additionalProperties": false
     }
   },
   "required": ["output", "framework", "typescript"],

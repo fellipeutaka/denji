@@ -23,6 +23,18 @@ export const configSchema = z
       .boolean()
       .default(true)
       .describe("Whether to generate TypeScript code"),
+    hooks: z
+      .object({
+        preAdd: z
+          .array(z.string())
+          .describe("Scripts to run before adding icons"),
+        postAdd: z
+          .array(z.string())
+          .describe("Scripts to run after adding icons"),
+      })
+      .partial()
+      .optional()
+      .describe("Hooks to run at various stages"),
   })
   .meta({
     title: "Denji Configuration Schema",

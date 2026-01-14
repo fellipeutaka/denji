@@ -4,6 +4,7 @@ import { Command } from "commander";
 import { loadConfig } from "~/utils/config";
 import { access, readFile, writeFile } from "~/utils/fs";
 import { handleError } from "~/utils/handle-error";
+import { runHooks } from "~/utils/hooks";
 import {
   fetchIcon,
   getExistingIconNames,
@@ -69,7 +70,13 @@ async function runAdd(icons: string[], options: AddOptions) {
   }
   const config = configResult.value;
 
-  // 5. Read icons file
+  // 5. Run preAdd hooks
+  const preAddResult = await runHooks(config.hooks?.preAdd, options.cwd);
+  if (preAddResult.isErr()) {
+    return preAddResult;
+  }
+
+  // 6. Read icons file
   const iconsPath = path.resolve(options.cwd, config.output);
   if (!(await access(iconsPath))) {
     return new Err(
@@ -86,7 +93,7 @@ async function runAdd(icons: string[], options: AddOptions) {
   const existingIcons = getExistingIconNames(iconsContent);
   let addedCount = 0;
 
-  // 6. Process each icon
+  // 7. Process each icon
   for (const icon of icons) {
     const componentName = options.name ?? toComponentName(icon);
 
@@ -130,11 +137,16 @@ async function runAdd(icons: string[], options: AddOptions) {
     addedCount++;
   }
 
-  // 7. Write updated file
+  // 8. Write updated file and run postAdd hooks
   if (addedCount > 0) {
     const writeResult = await writeFile(iconsPath, iconsContent);
     if (writeResult.isErr()) {
       return new Err(`Failed to write icons file: ${config.output}`);
+    }
+
+    const postAddResult = await runHooks(config.hooks?.postAdd, options.cwd);
+    if (postAddResult.isErr()) {
+      return postAddResult;
     }
   }
 
