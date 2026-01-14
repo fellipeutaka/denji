@@ -18,7 +18,8 @@
   "module": "./dist/index.mjs",
   "bin": "./dist/index.mjs",
   "files": [
-    "dist"
+    "dist",
+    "denji.schema.json"
   ],
   "sideEffects": false,
   "devDependencies": {
@@ -34,7 +35,8 @@
   "scripts": {
     "dev": "bun run src/index.ts",
     "start": "node .",
-    "build": "tsdown",
+    "build": "bun run generate-schema && tsdown",
+    "generate-schema": "bun run scripts/generate-schema.ts",
     "type-check": "tsc --noEmit --incremental false",
     "prepare": "lefthook install",
     "lint": "biome check",

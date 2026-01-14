@@ -1,0 +1,28 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "$schema": {
+      "description": "The URL of the JSON Schema for this configuration file (e.g., './node_modules/denji/configuration_schema.json')",
+      "type": "string"
+    },
+    "output": {
+      "type": "string",
+      "description": "The output file path for generated icon components (e.g., './src/icons.tsx')"
+    },
+    "framework": {
+      "type": "string",
+      "enum": ["react"],
+      "description": "The framework to generate icon components for"
+    },
+    "typescript": {
+      "default": true,
+      "description": "Whether to generate TypeScript code",
+      "type": "boolean"
+    }
+  },
+  "required": ["output", "framework", "typescript"],
+  "additionalProperties": false,
+  "title": "Denji Configuration Schema",
+  "description": "Schema for Denji configuration file"
+}
