@@ -9,9 +9,11 @@ import {
   text,
 } from "@clack/prompts";
 
+export const CANCEL_MESSAGE = "Operation cancelled.";
+
 export async function enhancedConfirm(
   opts: ConfirmOptions,
-  cancelMessage = "Operation cancelled."
+  cancelMessage = CANCEL_MESSAGE
 ) {
   const result = await confirm(opts);
   if (isCancel(result)) {
@@ -45,7 +47,7 @@ export async function enhancedSelect<
   const Value,
 >(
   opts: SelectOptions<Options, Value>,
-  cancelMessage = "Operation cancelled."
+  cancelMessage = CANCEL_MESSAGE
 ): Promise<Options[number]["value"]> {
   const result = await select(opts);
   if (isCancel(result)) {
@@ -65,7 +67,7 @@ interface MultiSelectOptions<Value> {
 
 export async function enhancedMultiselect<const Value>(
   opts: MultiSelectOptions<Value>,
-  cancelMessage = "Operation cancelled."
+  cancelMessage = CANCEL_MESSAGE
 ): Promise<Value[]> {
   const result = await multiselect(opts);
   if (isCancel(result)) {
@@ -77,7 +79,7 @@ export async function enhancedMultiselect<const Value>(
 
 export async function enhancedText(
   opts: TextOptions,
-  cancelMessage = "Operation cancelled."
+  cancelMessage = CANCEL_MESSAGE
 ) {
   const result = await text({
     ...opts,
