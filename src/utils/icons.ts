@@ -247,3 +247,47 @@ export function replaceIcon(
 
   return `${content.slice(0, existing.start)}${component}${content.slice(existing.end)}`;
 }
+
+export function removeIcon(content: string, name: string): string {
+  const { icons } = parseIconsFile(content);
+  const index = icons.findIndex((i) => i.name === name);
+
+  if (index === -1) {
+    return content;
+  }
+
+  const icon = icons[index];
+  if (!icon) {
+    return content;
+  }
+
+  const isLast = index === icons.length - 1;
+  const isOnly = icons.length === 1;
+
+  if (isOnly) {
+    // Remove icon and leave empty object
+    return `${content.slice(0, icon.start).trimEnd()}${content.slice(icon.end).trimStart()}`;
+  }
+
+  if (isLast) {
+    // Remove trailing comma from previous icon and this icon
+    const prevIcon = icons[index - 1];
+    if (!prevIcon) {
+      return content;
+    }
+    // Find comma after previous icon
+    const betweenContent = content.slice(prevIcon.end, icon.start);
+    const commaIndex = betweenContent.indexOf(",");
+    if (commaIndex !== -1) {
+      return `${content.slice(0, prevIcon.end)}${content.slice(icon.end)}`;
+    }
+    return `${content.slice(0, prevIcon.end)}\n${content.slice(icon.end).trimStart()}`;
+  }
+
+  // First or middle icon - remove icon and trailing comma/whitespace up to next icon
+  const nextIcon = icons[index + 1];
+  if (!nextIcon) {
+    return content;
+  }
+  return `${content.slice(0, icon.start)}${content.slice(nextIcon.start)}`;
+}
