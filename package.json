@@ -19,7 +19,8 @@
   "bin": "./dist/index.mjs",
   "files": [
     "dist",
-    "denji.schema.json"
+    "configuration_schema.json",
+    "README.md"
   ],
   "sideEffects": false,
   "devDependencies": {

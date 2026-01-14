@@ -10,6 +10,7 @@ import { Err, Ok } from "~/utils/result";
 
 interface ListOptions {
   cwd: string;
+  json?: boolean;
 }
 
 export const list = new Command()
@@ -20,15 +21,20 @@ export const list = new Command()
     "The working directory. Defaults to the current directory.",
     process.cwd()
   )
+  .option("--json", "Output icons as JSON")
   .action(async (options: ListOptions) => {
-    intro("denji list");
+    if (!options.json) {
+      intro("denji list");
+    }
 
     const result = await runList(options);
     if (result.isErr()) {
       handleError(result.error);
     }
 
-    outro("Done");
+    if (!options.json) {
+      outro("Done");
+    }
   });
 
 async function runList(options: ListOptions) {
@@ -63,6 +69,16 @@ async function runList(options: ListOptions) {
   const { icons } = parseIconsFile(iconsContent);
 
   // 6. Display results
+  if (options.json) {
+    const output = {
+      count: icons.length,
+      output: config.output,
+      icons: icons.map((icon) => icon.name),
+    };
+    console.info(JSON.stringify(output, null, 2));
+    return new Ok(null);
+  }
+
   if (icons.length === 0) {
     logger.info(`No icons found in ${config.output}`);
     return new Ok(null);
