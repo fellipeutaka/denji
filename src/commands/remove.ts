@@ -5,6 +5,7 @@ import { getIconsTemplate } from "~/templates/icons";
 import { loadConfig } from "~/utils/config";
 import { access, readFile, writeFile } from "~/utils/fs";
 import { handleError } from "~/utils/handle-error";
+import { runHooks } from "~/utils/hooks";
 import { getExistingIconNames, removeIcon } from "~/utils/icons";
 import { logger } from "~/utils/logger";
 import { Err, Ok } from "~/utils/result";
@@ -75,7 +76,13 @@ async function runRemove(icons: string[], options: RemoveOptions) {
     return new Err(`Icon(s) not found: ${notFound.join(", ")}`);
   }
 
-  // 5. Check if removing all icons - reset to template
+  // 5. Run preRemove hooks
+  const preRemoveResult = await runHooks(config.hooks?.preRemove, options.cwd);
+  if (preRemoveResult.isErr()) {
+    return preRemoveResult;
+  }
+
+  // 6. Check if removing all icons - reset to template
   const remainingCount = existingIcons.length - icons.length;
   if (remainingCount === 0) {
     const writeResult = await writeFile(iconsPath, getIconsTemplate(config));
@@ -85,19 +92,35 @@ async function runRemove(icons: string[], options: RemoveOptions) {
     for (const icon of icons) {
       logger.success(`Removed ${icon}`);
     }
+    const postRemoveResult = await runHooks(
+      config.hooks?.postRemove,
+      options.cwd
+    );
+    if (postRemoveResult.isErr()) {
+      return postRemoveResult;
+    }
     return new Ok(null);
   }
 
-  // 6. Remove icons one by one
+  // 7. Remove icons one by one
   for (const icon of icons) {
     iconsContent = removeIcon(iconsContent, icon);
     logger.success(`Removed ${icon}`);
   }
 
-  // 7. Write updated file
+  // 8. Write updated file
   const writeResult = await writeFile(iconsPath, iconsContent);
   if (writeResult.isErr()) {
     return new Err(`Failed to write icons file: ${config.output}`);
+  }
+
+  // 9. Run postRemove hooks
+  const postRemoveResult = await runHooks(
+    config.hooks?.postRemove,
+    options.cwd
+  );
+  if (postRemoveResult.isErr()) {
+    return postRemoveResult;
   }
 
   return new Ok(null);

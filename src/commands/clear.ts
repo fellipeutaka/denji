@@ -5,6 +5,7 @@ import { getIconsTemplate } from "~/templates/icons";
 import { loadConfig } from "~/utils/config";
 import { access, readFile, writeFile } from "~/utils/fs";
 import { handleError } from "~/utils/handle-error";
+import { runHooks } from "~/utils/hooks";
 import { getExistingIconNames } from "~/utils/icons";
 import { logger } from "~/utils/logger";
 import { CANCEL_MESSAGE, enhancedConfirm } from "~/utils/prompts";
@@ -83,10 +84,22 @@ async function runClear(options: ClearOptions) {
     }
   }
 
-  // 6. Reset to template
+  // 6. Run preClear hooks
+  const preClearResult = await runHooks(config.hooks?.preClear, options.cwd);
+  if (preClearResult.isErr()) {
+    return preClearResult;
+  }
+
+  // 7. Reset to template
   const writeResult = await writeFile(iconsPath, getIconsTemplate(config));
   if (writeResult.isErr()) {
     return new Err(`Failed to write icons file: ${config.output}`);
+  }
+
+  // 8. Run postClear hooks
+  const postClearResult = await runHooks(config.hooks?.postClear, options.cwd);
+  if (postClearResult.isErr()) {
+    return postClearResult;
   }
 
   return new Ok(null);

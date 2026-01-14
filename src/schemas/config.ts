@@ -41,6 +41,24 @@ export const configSchema = z
         postAdd: z
           .array(z.string())
           .describe("Scripts to run after adding icons"),
+        preRemove: z
+          .array(z.string())
+          .describe("Scripts to run before removing icons"),
+        postRemove: z
+          .array(z.string())
+          .describe("Scripts to run after removing icons"),
+        preClear: z
+          .array(z.string())
+          .describe("Scripts to run before clearing all icons"),
+        postClear: z
+          .array(z.string())
+          .describe("Scripts to run after clearing all icons"),
+        preList: z
+          .array(z.string())
+          .describe("Scripts to run before listing icons"),
+        postList: z
+          .array(z.string())
+          .describe("Scripts to run after listing icons"),
       })
       .partial()
       .optional()

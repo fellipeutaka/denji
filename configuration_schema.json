@@ -50,6 +50,48 @@
             "type": "string"
           },
           "description": "Scripts to run after adding icons"
+        },
+        "preRemove": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Scripts to run before removing icons"
+        },
+        "postRemove": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Scripts to run after removing icons"
+        },
+        "preClear": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Scripts to run before clearing all icons"
+        },
+        "postClear": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Scripts to run after clearing all icons"
+        },
+        "preList": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Scripts to run before listing icons"
+        },
+        "postList": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Scripts to run after listing icons"
         }
       },
       "additionalProperties": false

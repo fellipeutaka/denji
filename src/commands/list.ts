@@ -4,6 +4,7 @@ import { Command } from "commander";
 import { loadConfig } from "~/utils/config";
 import { access, readFile } from "~/utils/fs";
 import { handleError } from "~/utils/handle-error";
+import { runHooks } from "~/utils/hooks";
 import { parseIconsFile } from "~/utils/icons";
 import { logger } from "~/utils/logger";
 import { Err, Ok } from "~/utils/result";
@@ -64,11 +65,17 @@ async function runList(options: ListOptions) {
     return new Err(`Failed to read icons file: ${config.output}`);
   }
 
-  // 5. Parse icons
+  // 5. Run preList hooks
+  const preListResult = await runHooks(config.hooks?.preList, options.cwd);
+  if (preListResult.isErr()) {
+    return preListResult;
+  }
+
+  // 6. Parse icons
   const iconsContent = iconsFileResult.value;
   const { icons } = parseIconsFile(iconsContent);
 
-  // 6. Display results
+  // 7. Display results
   if (options.json) {
     const output = {
       count: icons.length,
@@ -76,11 +83,19 @@ async function runList(options: ListOptions) {
       icons: icons.map((icon) => icon.name),
     };
     console.info(JSON.stringify(output, null, 2));
+    const postListResult = await runHooks(config.hooks?.postList, options.cwd);
+    if (postListResult.isErr()) {
+      return postListResult;
+    }
     return new Ok(null);
   }
 
   if (icons.length === 0) {
     logger.info(`No icons found in ${config.output}`);
+    const postListResult = await runHooks(config.hooks?.postList, options.cwd);
+    if (postListResult.isErr()) {
+      return postListResult;
+    }
     return new Ok(null);
   }
 
@@ -89,6 +104,12 @@ async function runList(options: ListOptions) {
   logger.info("Icons:");
   for (const icon of icons) {
     logger.info(`  • ${icon.name}`);
+  }
+
+  // 8. Run postList hooks
+  const postListResult = await runHooks(config.hooks?.postList, options.cwd);
+  if (postListResult.isErr()) {
+    return postListResult;
   }
 
   return new Ok(null);
