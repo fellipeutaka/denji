@@ -77,7 +77,7 @@ async function runAdd(icons: string[], options: AddOptions) {
     );
   }
 
-  const iconsFileResult = await readFile<string>(iconsPath, "utf-8");
+  const iconsFileResult = await readFile(iconsPath, "utf-8");
   if (iconsFileResult.isErr()) {
     return new Err(`Failed to read icons file: ${config.output}`);
   }

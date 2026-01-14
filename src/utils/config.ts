@@ -10,7 +10,7 @@ export async function loadConfig(cwd: string) {
     return new Err(`${CONFIG_FILE} not found. Run "denji init" first.`);
   }
 
-  const content = await readFile<string>(configPath, "utf-8");
+  const content = await readFile(configPath, "utf-8");
   if (content.isErr()) {
     return new Err(`Failed to read ${CONFIG_FILE}`);
   }

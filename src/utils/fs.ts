@@ -15,14 +15,14 @@ export async function writeFile(
   }
 }
 
-export async function readFile<File extends string | Buffer>(
+export async function readFile<T extends string | Buffer = string>(
   path: Parameters<typeof fs.readFile>[0],
   options?: Parameters<typeof fs.readFile>[1]
 ) {
   try {
-    const file = await fs.readFile(path, options);
+    const file = (await fs.readFile(path, options)) as T;
 
-    return new Ok(file as File);
+    return new Ok(file);
   } catch {
     return new Err("Failed to read file.");
   }
