@@ -3,6 +3,11 @@ import { z } from "zod";
 export const frameworkSchema = z.enum(["react"]);
 export type Framework = z.infer<typeof frameworkSchema>;
 
+export const a11ySchema = z
+  .enum(["hidden", "img", "title", "presentation"])
+  .or(z.literal(false));
+export type A11y = z.infer<typeof a11ySchema>;
+
 export const configSchema = z
   .object({
     $schema: z
@@ -23,6 +28,11 @@ export const configSchema = z
       .boolean()
       .default(true)
       .describe("Whether to generate TypeScript code"),
+    a11y: a11ySchema
+      .optional()
+      .describe(
+        "Accessibility strategy for SVG icons (hidden: aria-hidden, img: role=img with aria-label, title: <title> element, presentation: role=presentation, false: no a11y attrs)"
+      ),
     hooks: z
       .object({
         preAdd: z

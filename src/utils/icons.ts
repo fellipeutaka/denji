@@ -1,5 +1,6 @@
 import { transform } from "@svgr/core";
 import { parseSync } from "oxc-parser";
+import type { A11y } from "~/schemas/config";
 import { Err, Ok } from "~/utils/result";
 
 // ============================================================================
@@ -87,8 +88,40 @@ export async function fetchIcon(iconName: string) {
 // ============================================================================
 
 const SVG_TAG_REGEX = /<svg[\s\S]*<\/svg>/;
+const SVG_OPENING_TAG_REGEX = /<svg([^>]*)>/;
 
-export async function svgToComponent(svg: string, name: string) {
+function toReadableName(componentName: string): string {
+  return componentName.replace(/([a-z])([A-Z])/g, "$1 $2");
+}
+
+function getA11yProps(
+  a11y: A11y | undefined,
+  componentName: string
+): Record<string, string> {
+  switch (a11y) {
+    case "hidden":
+      return { "aria-hidden": "true" };
+    case "img":
+      return { role: "img", "aria-label": toReadableName(componentName) };
+    case "presentation":
+      return { role: "presentation" };
+    default:
+      return {};
+  }
+}
+
+interface SvgToComponentOptions {
+  a11y?: A11y;
+}
+
+export async function svgToComponent(
+  svg: string,
+  name: string,
+  options: SvgToComponentOptions = {}
+) {
+  const { a11y } = options;
+  const svgProps = getA11yProps(a11y, name);
+
   const jsCode = await transform(
     svg,
     {
@@ -104,6 +137,8 @@ export async function svgToComponent(svg: string, name: string) {
       jsxRuntime: "automatic",
       typescript: false,
       expandProps: "end",
+      svgProps,
+      titleProp: a11y === "title",
     },
     { componentName: "Icon" }
   );
@@ -116,7 +151,18 @@ export async function svgToComponent(svg: string, name: string) {
     throw new Error("Failed to extract SVG from SVGR output");
   }
 
-  return `${name}: (props) => (${svgMatch[0]})`;
+  let result = svgMatch[0];
+
+  // For title mode, inject the title element with the readable name
+  if (a11y === "title") {
+    const readableName = toReadableName(name);
+    result = result.replace(
+      SVG_OPENING_TAG_REGEX,
+      `<svg$1><title>${readableName}</title>`
+    );
+  }
+
+  return `${name}: (props) => (${result})`;
 }
 
 // ============================================================================

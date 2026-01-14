@@ -2,6 +2,8 @@ import path from "node:path";
 import { intro, outro } from "@clack/prompts";
 import { Command } from "commander";
 import {
+  type A11y,
+  a11ySchema,
   CONFIG_FILE,
   type Config,
   configSchema,
@@ -20,6 +22,7 @@ interface InitOptions {
   output?: string;
   framework?: string;
   typescript?: boolean;
+  a11y?: string;
 }
 
 export const init = new Command()
@@ -34,6 +37,7 @@ export const init = new Command()
   .option("--framework <framework>", "Framework to use")
   .option("--typescript", "Use TypeScript", true)
   .option("--no-typescript", "Use JavaScript")
+  .option("--a11y <strategy>", "Accessibility strategy for SVG icons")
   .action(async (options: InitOptions) => {
     intro("denji init");
 
@@ -133,7 +137,45 @@ async function resolveConfig(options: InitOptions) {
       initialValue: true,
     }));
 
-  const config = configSchema.parse({ output, framework, typescript });
+  const a11yInput =
+    options.a11y ??
+    (await enhancedSelect({
+      message: "Which accessibility strategy should be used?",
+      options: [
+        {
+          value: "hidden",
+          label: "aria-hidden",
+          hint: "Hide from screen readers (decorative icons)",
+        },
+        {
+          value: "img",
+          label: 'role="img"',
+          hint: "Meaningful icon with aria-label",
+        },
+        {
+          value: "title",
+          label: "title",
+          hint: "Add <title> element inside SVG",
+        },
+        {
+          value: "presentation",
+          label: "presentation",
+          hint: "role=presentation (older pattern)",
+        },
+        { value: false, label: "false", hint: "No accessibility attributes" },
+      ],
+      initialValue: "hidden",
+    }));
+
+  const a11yResult = a11ySchema.safeParse(a11yInput);
+  if (!a11yResult.success) {
+    return new Err(
+      `Invalid a11y strategy: ${a11yInput}. Use: hidden, img, title, presentation, false`
+    );
+  }
+  const a11y: A11y = a11yResult.data;
+
+  const config = configSchema.parse({ output, framework, typescript, a11y });
   return new Ok(config);
 }
 

@@ -1,6 +1,7 @@
 import path from "node:path";
 import { intro, outro } from "@clack/prompts";
 import { Command } from "commander";
+import { type A11y, a11ySchema } from "~/schemas/config";
 import { loadConfig } from "~/utils/config";
 import { access, readFile, writeFile } from "~/utils/fs";
 import { handleError } from "~/utils/handle-error";
@@ -21,6 +22,7 @@ import { Err, Ok } from "~/utils/result";
 interface AddOptions {
   cwd: string;
   name?: string;
+  a11y?: string | boolean;
 }
 
 export const add = new Command()
@@ -28,6 +30,7 @@ export const add = new Command()
   .description("Add icons to your project")
   .argument("<icons...>", "Icon names (e.g., mdi:home lucide:check)")
   .option("--name <name>", "Custom component name (single icon only)")
+  .option("--a11y <strategy>", "Accessibility strategy (overrides config)")
   .option(
     "-c, --cwd <cwd>",
     "The working directory. Defaults to the current directory.",
@@ -63,20 +66,33 @@ async function runAdd(icons: string[], options: AddOptions) {
     }
   }
 
-  // 4. Load config
+  // 4. Validate --a11y if provided
+  let a11yOverride: A11y | undefined;
+  if (options.a11y !== undefined) {
+    const a11yInput = options.a11y === "false" ? false : options.a11y;
+    const a11yResult = a11ySchema.safeParse(a11yInput);
+    if (!a11yResult.success) {
+      return new Err(
+        `Invalid a11y strategy: ${options.a11y}. Use: hidden, img, title, presentation, false`
+      );
+    }
+    a11yOverride = a11yResult.data;
+  }
+
+  // 5. Load config
   const configResult = await loadConfig(options.cwd);
   if (configResult.isErr()) {
     return configResult;
   }
   const config = configResult.value;
 
-  // 5. Run preAdd hooks
+  // 6. Run preAdd hooks
   const preAddResult = await runHooks(config.hooks?.preAdd, options.cwd);
   if (preAddResult.isErr()) {
     return preAddResult;
   }
 
-  // 6. Read icons file
+  // 7. Read icons file
   const iconsPath = path.resolve(options.cwd, config.output);
   if (!(await access(iconsPath))) {
     return new Err(
@@ -93,7 +109,7 @@ async function runAdd(icons: string[], options: AddOptions) {
   const existingIcons = getExistingIconNames(iconsContent);
   let addedCount = 0;
 
-  // 7. Process each icon
+  // 8. Process each icon
   for (const icon of icons) {
     const componentName = options.name ?? toComponentName(icon);
 
@@ -118,7 +134,9 @@ async function runAdd(icons: string[], options: AddOptions) {
     }
 
     // Convert to component
-    const component = await svgToComponent(svgResult.value, componentName);
+    const component = await svgToComponent(svgResult.value, componentName, {
+      a11y: a11yOverride ?? config.a11y,
+    });
 
     // Insert or replace
     if (existingIcons.includes(componentName)) {
@@ -137,7 +155,7 @@ async function runAdd(icons: string[], options: AddOptions) {
     addedCount++;
   }
 
-  // 8. Write updated file and run postAdd hooks
+  // 9. Write updated file and run postAdd hooks
   if (addedCount > 0) {
     const writeResult = await writeFile(iconsPath, iconsContent);
     if (writeResult.isErr()) {

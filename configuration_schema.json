@@ -20,6 +20,19 @@
       "description": "Whether to generate TypeScript code",
       "type": "boolean"
     },
+    "a11y": {
+      "description": "Accessibility strategy for SVG icons (hidden: aria-hidden, img: role=img with aria-label, title: <title> element, presentation: role=presentation, false: no a11y attrs)",
+      "anyOf": [
+        {
+          "type": "string",
+          "enum": ["hidden", "img", "title", "presentation"]
+        },
+        {
+          "type": "boolean",
+          "const": false
+        }
+      ]
+    },
     "hooks": {
       "description": "Hooks to run at various stages",
       "type": "object",
