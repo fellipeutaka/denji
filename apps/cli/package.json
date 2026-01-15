@@ -23,6 +23,9 @@
     "README.md"
   ],
   "sideEffects": false,
+  "publishConfig": {
+    "access": "public"
+  },
   "scripts": {
     "dev": "bun run src/index.ts",
     "start": "node .",
