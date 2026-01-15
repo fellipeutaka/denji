@@ -1,0 +1,105 @@
+---
+title: denji add
+description: Add icons from Iconify
+---
+
+import { Callout } from "fumadocs-ui/components/callout";
+
+Add icons from Iconify's collection to your project.
+
+## Usage
+
+```bash
+denji add <icons...> [options]
+```
+
+## Arguments
+
+### icons
+
+Icon identifiers in `prefix:name` format.
+
+```bash
+denji add lucide:check mdi:home-outline
+```
+
+Browse icons at [Iconify](https://icon-sets.iconify.design/).
+
+## Options
+
+### --name
+
+**Type:** `string`
+
+Custom component name for the icon.
+
+```bash
+denji add lucide:star --name FavoriteStar
+```
+
+Generated component:
+```tsx
+export const Icons = {
+  FavoriteStar: (props) => <svg>...</svg>
+};
+```
+
+<Callout type="warn">
+Only works when adding a single icon.
+</Callout>
+
+### --a11y
+
+**Type:** `"hidden" | "img" | "title" | "presentation" | "false"`
+
+Override default accessibility strategy for this icon.
+
+```bash
+denji add lucide:check --a11y img
+```
+
+## Examples
+
+Add single icon:
+```bash
+denji add lucide:check
+```
+
+Add multiple icons:
+```bash
+denji add lucide:check lucide:x mdi:home
+```
+
+Custom name:
+```bash
+denji add lucide:star --name FavoriteStar
+```
+
+With accessibility:
+```bash
+denji add lucide:info --a11y img
+```
+
+## Icon Naming
+
+Icons are converted to PascalCase component names:
+
+| Iconify ID | Component Name |
+|------------|----------------|
+| `lucide:check` | `Check` |
+| `mdi:home-outline` | `HomeOutline` |
+| `lucide:arrow-right` | `ArrowRight` |
+
+Use `--name` to override default naming.
+
+## How It Works
+
+1. Fetches SVG from Iconify API
+2. Optimizes SVG (removes unnecessary attributes)
+3. Converts to React component
+4. Adds to icons file
+5. Runs `postAdd` hooks (if configured)
+
+<Callout type="info">
+Icons are deduplicated. Adding the same icon twice updates the existing one.
+</Callout>

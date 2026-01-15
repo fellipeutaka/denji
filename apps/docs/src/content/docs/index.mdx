@@ -1,0 +1,78 @@
+---
+title: Introduction
+description: CLI tool for managing SVG icons in React projects
+---
+
+import { Step, Steps } from "fumadocs-ui/components/steps";
+
+Denji is a CLI tool that simplifies icon management in React projects. It fetches icons from Iconify's vast library, converts them to optimized React components, and maintains a centralized icons file.
+
+## Features
+
+- **200,000+ icons** - Access icons from Iconify's collection (Lucide, Material Design, Heroicons, etc.)
+- **Type-safe** - Full TypeScript support with auto-completion
+- **Optimized** - Generates clean, tree-shakeable React components
+- **Accessible** - Built-in accessibility strategies (ARIA attributes, titles, roles)
+- **Customizable** - Lifecycle hooks for custom transformations
+- **Zero dependencies** - Lightweight CLI with no runtime overhead
+
+## Quick Start
+
+<Steps>
+<Step>
+
+### Install Denji
+
+```bash
+bun add -D denji
+```
+
+</Step>
+
+<Step>
+
+### Initialize project
+
+```bash
+denji init
+```
+
+Creates `denji.json` config and icons template file.
+
+</Step>
+
+<Step>
+
+### Add icons
+
+```bash
+denji add lucide:check mdi:home
+```
+
+Fetches icons from Iconify and adds to your project.
+
+</Step>
+
+<Step>
+
+### Use in React
+
+```tsx
+import { Icons } from "./icons";
+
+function App() {
+  return <Icons.Check className="size-4" />;
+}
+```
+
+</Step>
+</Steps>
+
+## Next Steps
+
+<Cards>
+  <Card title="Installation" href="/docs/installation" description="Install and set up Denji" />
+  <Card title="Configuration" href="/docs/configuration" description="Configure options and hooks" />
+  <Card title="Commands" href="/docs/commands" description="Learn all CLI commands" />
+  <Card title="Usage" href="/docs/usage" description="Usage examples and patterns" />
+</Cards>

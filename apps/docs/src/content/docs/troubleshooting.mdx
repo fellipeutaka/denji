@@ -1,0 +1,203 @@
+---
+title: Troubleshooting
+description: Common issues and solutions
+---
+
+import { Callout } from "fumadocs-ui/components/callout";
+
+Common issues and how to resolve them.
+
+## Installation Issues
+
+### Command not found
+
+**Problem**: `denji: command not found`
+
+**Solution**: Ensure Denji is installed and in your PATH:
+
+```bash
+bun add -D denji
+bunx denji --version
+```
+
+Or use via package.json scripts:
+
+```json
+{
+  "scripts": {
+    "icons:add": "denji add",
+    "icons:list": "denji list"
+  }
+}
+```
+
+## Configuration Issues
+
+### Config not found
+
+**Problem**: `Config file not found`
+
+**Solution**: Initialize config first:
+
+```bash
+denji init
+```
+
+Or create `denji.json` manually:
+
+```json
+{
+  "$schema": "./node_modules/denji/configuration_schema.json",
+  "output": "./src/icons.tsx",
+  "framework": "react",
+  "typescript": true
+}
+```
+
+### Invalid config
+
+**Problem**: `Invalid configuration`
+
+**Solution**: Validate config against schema. Check:
+- All required fields present (`output`, `framework`)
+- Correct types for each field
+- Valid enum values (e.g., `a11y` must be one of allowed values)
+
+## Icon Issues
+
+### Icon not found
+
+**Problem**: `Icon lucide:invalid-name not found`
+
+**Solution**: 
+1. Check icon exists on [Iconify](https://icon-sets.iconify.design/)
+2. Verify correct prefix and name format: `prefix:name`
+3. Check for typos in icon name
+
+### Duplicate icons
+
+**Problem**: Adding same icon multiple times
+
+**Solution**: Denji automatically deduplicates. Re-adding an icon updates it.
+
+### Icons not updating
+
+**Problem**: Changes not reflected in app
+
+**Solution**:
+1. Check output file was updated
+2. Restart dev server
+3. Clear build cache
+4. Verify import path is correct
+
+## TypeScript Issues
+
+### Type errors
+
+**Problem**: TypeScript errors when importing icons
+
+**Solution**:
+1. Ensure `typescript: true` in config
+2. Check output file has `.tsx` extension
+3. Verify TypeScript can resolve the file:
+
+```tsx
+import { Icons } from "./icons"; // Should have auto-completion
+```
+
+### Missing types
+
+**Problem**: No auto-completion for icon names
+
+**Solution**: The icons file exports typed components. Ensure:
+- Using `.tsx` extension
+- File is in TypeScript project
+- Editor has loaded the file
+
+## Accessibility Issues
+
+### Wrong aria attributes
+
+**Problem**: Icons have incorrect accessibility attributes
+
+**Solution**: Set a11y strategy:
+
+In config:
+```json
+{
+  "a11y": "hidden"
+}
+```
+
+Per icon:
+```bash
+denji add lucide:check --a11y img
+```
+
+Per usage:
+```tsx
+<Icons.Check aria-hidden="true" />
+```
+
+## Hook Issues
+
+### Hooks not running
+
+**Problem**: Lifecycle hooks don't execute
+
+**Solution**:
+1. Check hook commands are valid shell commands
+2. Ensure hooks array syntax is correct:
+
+```json
+{
+  "hooks": {
+    "postAdd": ["echo 'Done'"]
+  }
+}
+```
+
+3. Check command permissions
+4. Verify output file path in hook matches config
+
+### Hook errors
+
+**Problem**: Hook command fails
+
+**Solution**:
+1. Test command manually in terminal
+2. Use absolute paths in hooks
+3. Check command is installed
+4. Add error handling to hook commands
+
+## Integration Issues
+
+### Bundler errors
+
+**Problem**: Build fails with icon imports
+
+**Solution**:
+1. Ensure bundler can handle JSX/TSX
+2. Check output file is included in build
+3. Verify import path is correct
+
+### Framework compatibility
+
+**Problem**: Icons don't work in framework
+
+**Solution**: Currently only React is supported. For other frameworks:
+1. Request support via GitHub issues
+2. Manually convert generated components
+
+## Getting Help
+
+Still stuck? 
+
+1. Check [GitHub Issues](https://github.com/fellipeutaka/denji/issues)
+2. Search existing issues for similar problems
+3. Create new issue with:
+   - Denji version (`denji --version`)
+   - Node/Bun version
+   - Config file contents
+   - Error messages
+   - Steps to reproduce

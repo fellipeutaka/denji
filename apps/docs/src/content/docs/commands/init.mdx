@@ -1,0 +1,97 @@
+---
+title: denji init
+description: Initialize a new Denji project
+---
+
+import { Callout } from "fumadocs-ui/components/callout";
+
+Initialize a new project with config file and icons template.
+
+## Usage
+
+```bash
+denji init [options]
+```
+
+## Options
+
+### --output
+
+**Type:** `string`
+
+Specify output file path.
+
+```bash
+denji init --output ./src/components/icons.tsx
+```
+
+### --framework
+
+**Type:** `string`
+
+Target framework (currently only `react`).
+
+```bash
+denji init --framework react
+```
+
+### --typescript
+
+**Type:** `boolean`  
+**Default:** `true`
+
+Generate TypeScript output.
+
+```bash
+denji init --typescript
+```
+
+### --a11y
+
+**Type:** `"hidden" | "img" | "title" | "presentation"`
+
+Set default accessibility strategy.
+
+```bash
+denji init --a11y hidden
+```
+
+## What Gets Created
+
+Running `denji init` creates:
+
+1. **denji.json** - Configuration file
+   ```json
+   {
+     "$schema": "./node_modules/denji/configuration_schema.json",
+     "output": "./src/icons.tsx",
+     "framework": "react",
+     "typescript": true
+   }
+   ```
+
+2. **icons.tsx** - Template file for icons
+   ```tsx
+   export const Icons = {};
+   ```
+
+<Callout type="info">
+The init command is safe to run multiple times. It won't overwrite existing configs.
+</Callout>
+
+## Examples
+
+Basic initialization:
+```bash
+denji init
+```
+
+Custom output path:
+```bash
+denji init --output ./components/icons.tsx
+```
+
+With accessibility:
+```bash
+denji init --a11y hidden --output ./src/icons.tsx
+```

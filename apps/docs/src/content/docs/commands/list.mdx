@@ -1,0 +1,74 @@
+---
+title: denji list
+description: List all icons in your project
+---
+
+Display all icons currently in your project.
+
+## Usage
+
+```bash
+denji list [options]
+```
+
+## Options
+
+### --json
+
+**Type:** `boolean`
+
+Output as JSON format.
+
+```bash
+denji list --json
+```
+
+## Examples
+
+List icons (human-readable):
+```bash
+denji list
+```
+
+Output:
+```
+Icons in ./src/icons.tsx:
+- Check (lucide:check)
+- HomeOutline (mdi:home-outline)
+- ArrowRight (lucide:arrow-right)
+
+Total: 3 icons
+```
+
+List as JSON:
+```bash
+denji list --json
+```
+
+Output:
+```json
+{
+  "icons": [
+    {
+      "name": "Check",
+      "source": "lucide:check"
+    },
+    {
+      "name": "HomeOutline",
+      "source": "mdi:home-outline"
+    },
+    {
+      "name": "ArrowRight",
+      "source": "lucide:arrow-right"
+    }
+  ],
+  "total": 3
+}
+```
+
+## Use Cases
+
+- Audit project icons
+- Generate documentation
+- CI/CD validation
+- Export icon inventory

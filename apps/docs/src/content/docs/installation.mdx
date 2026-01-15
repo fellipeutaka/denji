@@ -1,0 +1,76 @@
+---
+title: Installation
+description: Install and set up Denji in your project
+---
+
+import { Tab, Tabs } from "fumadocs-ui/components/tabs";
+
+## Install Package
+
+Install Denji as a dev dependency:
+
+<Tabs items={["bun", "npm", "pnpm", "yarn"]}>
+  <Tab value="bun">
+    ```bash
+    bun add -D denji
+    ```
+  </Tab>
+  <Tab value="npm">
+    ```bash
+    npm install -D denji
+    ```
+  </Tab>
+  <Tab value="pnpm">
+    ```bash
+    pnpm add -D denji
+    ```
+  </Tab>
+  <Tab value="yarn">
+    ```bash
+    yarn add -D denji
+    ```
+  </Tab>
+</Tabs>
+
+## Initialize Project
+
+Run the init command to set up config and template:
+
+```bash
+denji init
+```
+
+This creates:
+- `denji.json` - Configuration file
+- `src/icons.tsx` - Icons template file (or your custom output path)
+
+### Custom Initialization
+
+You can customize initialization with flags:
+
+```bash
+denji init --output ./src/components/icons.tsx --a11y hidden
+```
+
+Available options:
+- `--output <path>` - Output file path
+- `--framework <name>` - Target framework (currently only `react`)
+- `--typescript` - Enable TypeScript (default: true)
+- `--a11y <strategy>` - Accessibility strategy
+
+## Verify Installation
+
+Check that Denji is installed correctly:
+
+```bash
+denji --version
+```
+
+You should see the installed version number.
+
+## Next Steps
+
+<Cards>
+  <Card title="Configuration" href="/docs/configuration" description="Configure Denji options" />
+  <Card title="Add Icons" href="/docs/commands/add" description="Start adding icons" />
+</Cards>

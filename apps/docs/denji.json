@@ -1,0 +1,7 @@
+{
+  "$schema": "./public/configuration_schema.json",
+  "output": "./src/components/icons.tsx",
+  "framework": "react",
+  "typescript": true,
+  "a11y": "hidden"
+}

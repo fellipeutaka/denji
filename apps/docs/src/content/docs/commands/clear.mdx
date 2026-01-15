@@ -1,0 +1,69 @@
+---
+title: denji clear
+description: Remove all icons from your project
+---
+
+import { Callout } from "fumadocs-ui/components/callout";
+
+Remove all icons from the project.
+
+## Usage
+
+```bash
+denji clear [options]
+```
+
+## Options
+
+### --yes
+
+**Type:** `boolean`  
+**Alias:** `-y`
+
+Skip confirmation prompt.
+
+```bash
+denji clear --yes
+```
+
+## Examples
+
+Clear with confirmation:
+```bash
+denji clear
+```
+
+Output:
+```
+? Are you sure you want to remove all icons? (y/N)
+```
+
+Clear without confirmation:
+```bash
+denji clear --yes
+```
+
+## How It Works
+
+1. Shows confirmation prompt (unless `--yes` is used)
+2. Removes all icons from icons file
+3. Resets to empty template
+4. Runs `postClear` hooks (if configured)
+
+<Callout type="warn">
+This action cannot be undone. Make sure to commit your changes before clearing.
+</Callout>
+
+## After Clearing
+
+The icons file is reset to:
+
+```tsx
+export const Icons = {};
+```
+
+You can start fresh by adding new icons:
+
+```bash
+denji add lucide:check
+```
