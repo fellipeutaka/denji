@@ -1,0 +1,51 @@
+{
+  "name": "denji",
+  "description": "A CLI tool to manage your SVG icons",
+  "type": "module",
+  "private": false,
+  "version": "0.0.1",
+  "author": {
+    "name": "Fellipe Utaka",
+    "email": "fellipeutaka@gmail.com",
+    "url": "https://github.com/fellipeutaka"
+  },
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/fellipeutaka/denji.git"
+  },
+  "main": "./dist/index.mjs",
+  "module": "./dist/index.mjs",
+  "bin": "./dist/index.mjs",
+  "files": [
+    "dist",
+    "configuration_schema.json",
+    "README.md"
+  ],
+  "sideEffects": false,
+  "scripts": {
+    "dev": "bun run src/index.ts",
+    "start": "node .",
+    "build": "bun run generate-schema && tsdown",
+    "generate-schema": "bun run scripts/generate-schema.ts",
+    "type-check": "tsc --noEmit --incremental false",
+    "lint": "biome check",
+    "lint:fix": "biome check --write",
+    "lint:doctor": "ultracite doctor"
+  },
+  "dependencies": {
+    "@clack/prompts": "^0.11.0",
+    "@svgr/core": "^8.1.0",
+    "@svgr/plugin-jsx": "^8.1.0",
+    "@svgr/plugin-svgo": "^8.1.0",
+    "commander": "^14.0.2",
+    "iconify-icon": "^3.0.2",
+    "oxc-parser": "^0.108.0",
+    "picocolors": "^1.1.1",
+    "zod": "^4.3.5"
+  },
+  "devDependencies": {
+    "@iconify/types": "^2.0.0",
+    "tsdown": "^0.20.0-beta.1"
+  }
+}

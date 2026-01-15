@@ -1,6 +1,9 @@
 # dependencies (bun install)
 node_modules
 
+# turbo cache
+.turbo
+
 # output
 out
 dist
@@ -34,5 +37,4 @@ report.[0-9]_.[0-9]_.[0-9]_.[0-9]_.json
 .DS_Store
 
 # experiments
-
 experiments
