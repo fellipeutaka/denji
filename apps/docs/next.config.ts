@@ -1,5 +1,6 @@
 import { createMDX } from "fumadocs-mdx/next";
 import type { NextConfig } from "next";
+import { siteConfig } from "@/config/site";
 
 const withMDX = createMDX();
 
@@ -21,11 +22,23 @@ const config: NextConfig = {
   async redirects() {
     return [
       {
+        destination: siteConfig.links.github,
+        permanent: true,
+        source: "/github",
+      },
+      {
         source: "/",
         destination: "/docs",
         permanent: true,
       },
     ];
+  },
+  images: {
+    remotePatterns: [
+      {
+        hostname: "media1.tenor.com",
+      },
+    ],
   },
   experimental: {
     turbopackFileSystemCacheForDev: true,
