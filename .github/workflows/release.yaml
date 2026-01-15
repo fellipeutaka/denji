@@ -28,6 +28,13 @@ jobs:
       - name: Setup Bun
         uses: oven-sh/setup-bun@v2
 
+      # This is necessary since Bun doesn't support OIDC yet. See https://github.com/oven-sh/bun/issues/22423
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: lts/*
+          registry-url: "https://registry.npmjs.org"
+
       - name: Install dependencies
         run: bun install --frozen-lockfile
 
@@ -40,6 +47,6 @@ jobs:
         with:
           commit: "chore(release): version packages"
           title: "chore(release): version packages"
-          publish: "bun run changeset publish"
+          publish: "npm run changeset publish"
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
