@@ -40,17 +40,27 @@ export function validateIconName(icon: string) {
 // ============================================================================
 
 const SPLIT_REGEX = /[-_]/;
+const LEADING_DIGIT_REGEX = /^\d/;
 
 export function toComponentName(icon: string) {
   const name = icon.split(":")[1];
   if (!name) {
     throw new Error(`Invalid icon format: ${icon}`);
   }
-  return name
+
+  const segments = name
     .split(SPLIT_REGEX)
     .filter(Boolean)
-    .map((s) => s.at(0)?.toUpperCase() + s.slice(1).toLowerCase())
-    .join("");
+    .map((s) => s.at(0)?.toUpperCase() + s.slice(1).toLowerCase());
+
+  // Move leading numeric segments to end (JS identifiers can't start with numbers)
+  let first = segments[0];
+  while (first && LEADING_DIGIT_REGEX.test(first)) {
+    segments.push(segments.shift() ?? "");
+    first = segments[0];
+  }
+
+  return segments.join("");
 }
 
 // ============================================================================
