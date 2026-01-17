@@ -56,6 +56,18 @@ Set default accessibility strategy.
 denji init --a11y hidden
 ```
 
+### --track-source / --no-track-source
+
+**Type:** `boolean`  
+**Default:** `true`
+
+Track Iconify source names by adding `data-icon` attribute to icons.
+
+```bash
+denji init --track-source
+denji init --no-track-source
+```
+
 ## What Gets Created
 
 Running `denji init` creates:
@@ -66,7 +78,8 @@ Running `denji init` creates:
      "$schema": "./node_modules/denji/configuration_schema.json",
      "output": "./src/icons.tsx",
      "framework": "react",
-     "typescript": true
+     "typescript": true,
+     "trackSource": true
    }
    ```
 

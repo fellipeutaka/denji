@@ -122,6 +122,8 @@ function getA11yProps(
 
 interface SvgToComponentOptions {
   a11y?: A11y;
+  trackSource?: boolean;
+  iconName?: string;
 }
 
 export async function svgToComponent(
@@ -129,8 +131,12 @@ export async function svgToComponent(
   name: string,
   options: SvgToComponentOptions = {}
 ) {
-  const { a11y } = options;
-  const svgProps = getA11yProps(a11y, name);
+  const { a11y, trackSource, iconName } = options;
+  const svgProps: Record<string, string> = getA11yProps(a11y, name);
+
+  if (trackSource && iconName) {
+    svgProps["data-icon"] = iconName;
+  }
 
   const jsCode = await transform(
     svg,

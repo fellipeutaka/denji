@@ -136,6 +136,8 @@ async function runAdd(icons: string[], options: AddOptions) {
     // Convert to component
     const component = await svgToComponent(svgResult.value, componentName, {
       a11y: a11yOverride ?? config.a11y,
+      trackSource: config.trackSource ?? true,
+      iconName: icon,
     });
 
     // Insert or replace

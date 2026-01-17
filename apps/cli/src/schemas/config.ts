@@ -34,6 +34,12 @@ export const configSchema = z
       .describe(
         "Accessibility strategy for SVG icons (hidden: aria-hidden, img: role=img with aria-label, title: <title> element, presentation: role=presentation, false: no a11y attrs)"
       ),
+    trackSource: z
+      .boolean()
+      .default(true)
+      .describe(
+        "Add data-icon attribute with Iconify source name (enables update command, debugging, and identifying icon collections)"
+      ),
     hooks: z
       .object({
         preAdd: z

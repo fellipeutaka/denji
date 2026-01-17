@@ -16,6 +16,7 @@ Configuration is stored in `denji.json` at your project root.
   "framework": "react",
   "typescript": true,
   "a11y": "hidden",
+  "trackSource": true,
   "hooks": {
     "postAdd": ["npx biome check --write ./src/icons.tsx"]
   }
@@ -111,6 +112,25 @@ You can override a11y per icon using the `--a11y` flag:
 denji add lucide:check --a11y img
 ```
 </Callout>
+
+### trackSource
+
+**Type:** `boolean`  
+**Default:** `true`
+
+Add `data-icon` attribute with the original Iconify source name. Useful for debugging, identifying icon collections, and enabling future `update` command.
+
+```json
+{
+  "trackSource": true
+}
+```
+
+When enabled, icons include the source attribute:
+
+```tsx
+<svg data-icon="lucide:check">...</svg>
+```
 
 ### hooks
 

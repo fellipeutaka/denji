@@ -2,12 +2,10 @@ import path from "node:path";
 import { intro, outro } from "@clack/prompts";
 import { Command } from "commander";
 import {
-  type A11y,
   a11ySchema,
   CONFIG_FILE,
   type Config,
   configSchema,
-  type Framework,
   frameworkSchema,
 } from "~/schemas/config";
 import { getIconsTemplate } from "~/templates/icons";
@@ -23,6 +21,7 @@ interface InitOptions {
   framework?: string;
   typescript?: boolean;
   a11y?: string;
+  trackSource?: boolean;
 }
 
 export const init = new Command()
@@ -38,6 +37,8 @@ export const init = new Command()
   .option("--typescript", "Use TypeScript", true)
   .option("--no-typescript", "Use JavaScript")
   .option("--a11y <strategy>", "Accessibility strategy for SVG icons")
+  .option("--track-source", "Track Iconify source names", true)
+  .option("--no-track-source", "Don't track Iconify source names")
   .action(async (options: InitOptions) => {
     intro("denji init");
 
@@ -128,7 +129,7 @@ async function resolveConfig(options: InitOptions) {
   if (!frameworkResult.success) {
     return new Err(`Invalid framework: ${frameworkInput}. Use: react`);
   }
-  const framework: Framework = frameworkResult.data;
+  const framework = frameworkResult.data;
 
   const typescript =
     options.typescript ??
@@ -173,9 +174,23 @@ async function resolveConfig(options: InitOptions) {
       `Invalid a11y strategy: ${a11yInput}. Use: hidden, img, title, presentation, false`
     );
   }
-  const a11y: A11y = a11yResult.data;
+  const a11y = a11yResult.data;
 
-  const config = configSchema.parse({ output, framework, typescript, a11y });
+  const trackSource =
+    options.trackSource ??
+    (await enhancedConfirm({
+      message:
+        "Track Iconify source names? (for update command, debugging, identifying collections)",
+      initialValue: true,
+    }));
+
+  const config = configSchema.parse({
+    output,
+    framework,
+    typescript,
+    a11y,
+    trackSource,
+  });
   return new Ok(config);
 }
 
