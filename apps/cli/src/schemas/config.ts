@@ -13,6 +13,7 @@ export const configSchema = z
     $schema: z
       .string()
       .optional()
+      .default("https://denji-docs.vercel.app/configuration_schema.json")
       .describe(
         "The URL of the JSON Schema for this configuration file (e.g., './node_modules/denji/configuration_schema.json')"
       ),
