@@ -17,7 +17,7 @@ Configuration is stored in `denji.json` at your project root.
   "typescript": true,
   "a11y": "hidden",
   "hooks": {
-    "postAdd": ["bunx biome check --write ./src/icons.tsx"]
+    "postAdd": ["npx biome check --write ./src/icons.tsx"]
   }
 }
 ```
@@ -123,7 +123,7 @@ Lifecycle hooks to run shell commands at specific points:
 {
   "hooks": {
     "preAdd": ["echo 'Adding icons...'"],
-    "postAdd": ["bunx biome check --write ./src/icons.tsx"],
+    "postAdd": ["npx biome check --write ./src/icons.tsx"],
     "preRemove": [],
     "postRemove": ["echo 'Removed icons'"],
     "preClear": [],
