@@ -49,8 +49,11 @@ export const Icons = {} as const satisfies Record<string, Icon>;
 `
 );
 
-// Create mock functions for @clack/prompts
-const confirmMock = mock(() => Promise.resolve<boolean | symbol>(true));
+// Create mock functions for prompts
+const enhancedConfirmMock = mock(
+  (_options: { message: string; initialValue?: boolean }) =>
+    Promise.resolve<boolean | symbol>(true)
+);
 const cancelMock = mock((_message?: string) => undefined);
 const isCancelMock = mock((_value: unknown) => false);
 
@@ -77,10 +80,14 @@ mock.module("~/templates/icons", () => ({
   getIconsTemplate: getIconsTemplateMock,
 }));
 
+mock.module("~/utils/prompts", () => ({
+  enhancedConfirm: enhancedConfirmMock,
+  CANCEL_MESSAGE: "Operation cancelled.",
+}));
+
 mock.module("@clack/prompts", () => ({
   intro: mock(() => undefined),
   outro: mock(() => undefined),
-  confirm: confirmMock,
   cancel: cancelMock,
   isCancel: isCancelMock,
 }));
@@ -106,7 +113,7 @@ describe("ClearCommand", () => {
     runHooksMock.mockReset();
     getExistingIconNamesMock.mockReset();
     getIconsTemplateMock.mockReset();
-    confirmMock.mockReset();
+    enhancedConfirmMock.mockReset();
     cancelMock.mockReset();
     isCancelMock.mockReset();
 
@@ -126,7 +133,7 @@ describe("ClearCommand", () => {
     runHooksMock.mockResolvedValue(new Ok(null));
     getExistingIconNamesMock.mockReturnValue(["Check", "Home"]);
     getIconsTemplateMock.mockReturnValue("export const Icons = {};");
-    confirmMock.mockResolvedValue(true);
+    enhancedConfirmMock.mockResolvedValue(true);
     isCancelMock.mockReturnValue(false);
 
     // Spy on logger
@@ -161,7 +168,7 @@ describe("ClearCommand", () => {
       const result = await command.run(options);
 
       expect(result.isOk()).toBe(true);
-      expect(confirmMock).not.toHaveBeenCalled();
+      expect(enhancedConfirmMock).not.toHaveBeenCalled();
       expect(writeFileMock).toHaveBeenCalledTimes(1);
     });
 
@@ -174,7 +181,7 @@ describe("ClearCommand", () => {
       const result = await command.run(options);
 
       expect(result.isOk()).toBe(true);
-      expect(confirmMock).toHaveBeenCalledTimes(1);
+      expect(enhancedConfirmMock).toHaveBeenCalledTimes(1);
       expect(writeFileMock).toHaveBeenCalledTimes(1);
     });
 
@@ -417,7 +424,7 @@ describe("ClearCommand", () => {
     it("calls cancel when user declines confirmation but continues", async () => {
       // Note: Current implementation calls cancel() but doesn't return early
       // This test documents actual behavior
-      confirmMock.mockResolvedValue(false);
+      enhancedConfirmMock.mockResolvedValue(false);
 
       const options: ClearOptions = {
         cwd: "/test/project",
@@ -431,17 +438,18 @@ describe("ClearCommand", () => {
       expect(writeFileMock).toHaveBeenCalled();
     });
 
-    it("exits gracefully when user cancels prompt", () => {
-      isCancelMock.mockReturnValue(true);
-      confirmMock.mockResolvedValue(Symbol.for("cancel"));
+    it("exits gracefully when user cancels prompt", async () => {
+      // enhancedConfirm calls process.exit(0) when cancelled
+      enhancedConfirmMock.mockImplementation(() => {
+        process.exit(0);
+      });
 
       const options: ClearOptions = {
         cwd: "/test/project",
         yes: false,
       };
 
-      expect(command.run(options)).rejects.toThrow("process.exit(0)");
-      expect(cancelMock).toHaveBeenCalled();
+      await expect(command.run(options)).rejects.toThrow("process.exit(0)");
     });
 
     it("shows correct icon count in confirmation message", async () => {
@@ -460,7 +468,7 @@ describe("ClearCommand", () => {
 
       await command.run(options);
 
-      expect(confirmMock).toHaveBeenCalledWith(
+      expect(enhancedConfirmMock).toHaveBeenCalledWith(
         expect.objectContaining({
           message: "Remove all 5 icon(s)?",
         })
@@ -477,7 +485,7 @@ describe("ClearCommand", () => {
 
       await command.run(options);
 
-      expect(confirmMock).toHaveBeenCalledWith(
+      expect(enhancedConfirmMock).toHaveBeenCalledWith(
         expect.objectContaining({
           message: "Remove all 1 icon(s)?",
         })

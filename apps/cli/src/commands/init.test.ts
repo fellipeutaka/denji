@@ -18,14 +18,22 @@ const writeFileMock = mock((_file: string, _data: string) =>
   Promise.resolve<Ok<null, string> | Err<null, string>>(new Ok(null))
 );
 
-// Create mock functions for @clack/prompts
-const textMock = mock(() =>
-  Promise.resolve<string | symbol>("./src/icons.tsx")
+// Create mock functions for prompts
+const enhancedTextMock = mock(
+  (_options: { message: string; defaultValue?: string }) =>
+    Promise.resolve<string | symbol>("./src/icons.tsx")
 );
-const selectMock = mock(() =>
-  Promise.resolve<string | boolean | symbol>("react")
+const enhancedSelectMock = mock(
+  (_options: {
+    message: string;
+    options: Array<{ value: unknown; label: string; hint?: string }>;
+    initialValue?: unknown;
+  }) => Promise.resolve<string | boolean | symbol>("react")
 );
-const confirmMock = mock(() => Promise.resolve(true));
+const enhancedConfirmMock = mock(
+  (_options: { message: string; initialValue?: boolean }) =>
+    Promise.resolve<boolean | symbol>(true)
+);
 const cancelMock = mock((_message?: string) => undefined);
 const isCancelMock = mock((_value: unknown) => false);
 
@@ -36,12 +44,15 @@ mock.module("~/utils/fs", () => ({
   writeFile: writeFileMock,
 }));
 
+mock.module("~/utils/prompts", () => ({
+  enhancedText: enhancedTextMock,
+  enhancedSelect: enhancedSelectMock,
+  enhancedConfirm: enhancedConfirmMock,
+}));
+
 mock.module("@clack/prompts", () => ({
   intro: mock(() => undefined),
   outro: mock(() => undefined),
-  text: textMock,
-  select: selectMock,
-  confirm: confirmMock,
   cancel: cancelMock,
   isCancel: isCancelMock,
 }));
@@ -89,9 +100,9 @@ describe("InitCommand", () => {
     accessMock.mockReset();
     mkdirMock.mockReset();
     writeFileMock.mockReset();
-    textMock.mockReset();
-    selectMock.mockReset();
-    confirmMock.mockReset();
+    enhancedTextMock.mockReset();
+    enhancedSelectMock.mockReset();
+    enhancedConfirmMock.mockReset();
     cancelMock.mockReset();
     isCancelMock.mockReset();
 
@@ -99,6 +110,9 @@ describe("InitCommand", () => {
     mkdirMock.mockResolvedValue(new Ok(null));
     writeFileMock.mockResolvedValue(new Ok(null));
     isCancelMock.mockReturnValue(false);
+    enhancedTextMock.mockResolvedValue("./src/icons.tsx");
+    enhancedSelectMock.mockResolvedValue("react");
+    enhancedConfirmMock.mockResolvedValue(true);
 
     // Spy on logger
     loggerSuccessSpy = spyOn(logger, "success").mockImplementation(
@@ -138,18 +152,22 @@ describe("InitCommand", () => {
       const result = await command.run(options);
 
       expect(result.isOk()).toBe(true);
-      expect(textMock).not.toHaveBeenCalled();
-      expect(selectMock).not.toHaveBeenCalled();
-      expect(confirmMock).not.toHaveBeenCalled();
+      expect(enhancedTextMock).not.toHaveBeenCalled();
+      expect(enhancedSelectMock).not.toHaveBeenCalled();
+      expect(enhancedConfirmMock).not.toHaveBeenCalled();
       expect(writeFileMock).toHaveBeenCalledTimes(2);
     });
 
     it("prompts for missing values", async () => {
       setupAccessMock(["/test/project"]);
 
-      textMock.mockResolvedValue("./src/icons.tsx");
-      selectMock.mockResolvedValueOnce("react").mockResolvedValueOnce("hidden");
-      confirmMock.mockResolvedValueOnce(true).mockResolvedValueOnce(true);
+      enhancedTextMock.mockResolvedValue("./src/icons.tsx");
+      enhancedSelectMock
+        .mockResolvedValueOnce("react")
+        .mockResolvedValueOnce("hidden");
+      enhancedConfirmMock
+        .mockResolvedValueOnce(true)
+        .mockResolvedValueOnce(true);
 
       const options: InitOptions = {
         cwd: "/test/project",
@@ -158,9 +176,9 @@ describe("InitCommand", () => {
       const result = await command.run(options);
 
       expect(result.isOk()).toBe(true);
-      expect(textMock).toHaveBeenCalledTimes(1); // output
-      expect(selectMock).toHaveBeenCalledTimes(2); // framework, a11y
-      expect(confirmMock).toHaveBeenCalledTimes(2); // typescript, trackSource
+      expect(enhancedTextMock).toHaveBeenCalledTimes(1); // output
+      expect(enhancedSelectMock).toHaveBeenCalledTimes(2); // framework, a11y
+      expect(enhancedConfirmMock).toHaveBeenCalledTimes(2); // typescript, trackSource
       expect(writeFileMock).toHaveBeenCalledTimes(2);
     });
 
@@ -245,8 +263,12 @@ describe("InitCommand", () => {
     it("accepts a11y strategy: false via prompt", async () => {
       setupAccessMock(["/test/project"]);
 
-      selectMock.mockResolvedValueOnce("react").mockResolvedValueOnce(false);
-      confirmMock.mockResolvedValueOnce(true).mockResolvedValueOnce(true);
+      enhancedSelectMock
+        .mockResolvedValueOnce("react")
+        .mockResolvedValueOnce(false);
+      enhancedConfirmMock
+        .mockResolvedValueOnce(true)
+        .mockResolvedValueOnce(true);
 
       const options: InitOptions = {
         cwd: "/test/project",
@@ -653,15 +675,16 @@ describe("InitCommand", () => {
 
     it("exits gracefully when user cancels prompt", () => {
       setupAccessMock(["/test/project"]);
-      isCancelMock.mockReturnValue(true);
-      textMock.mockResolvedValue(Symbol.for("cancel"));
+      // enhancedText calls process.exit(0) when cancelled
+      enhancedTextMock.mockImplementation(() => {
+        process.exit(0);
+      });
 
       const options: InitOptions = {
         cwd: "/test/project",
       };
 
       expect(command.run(options)).rejects.toThrow("process.exit(0)");
-      expect(cancelMock).toHaveBeenCalled();
     });
 
     it("includes $schema default value in config", async () => {
