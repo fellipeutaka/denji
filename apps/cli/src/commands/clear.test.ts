@@ -40,15 +40,6 @@ const runHooksMock = mock((_hooks: string[] | undefined, _cwd: string) =>
 // Create mock for getExistingIconNames
 const getExistingIconNamesMock = mock((_content: string) => ["Check", "Home"]);
 
-// Create mock for getIconsTemplate
-const getIconsTemplateMock = mock(
-  (_config: Config) => `export type IconProps = React.ComponentProps<"svg">;
-export type Icon = (props: IconProps) => React.JSX.Element;
-
-export const Icons = {} as const satisfies Record<string, Icon>;
-`
-);
-
 // Create mock functions for prompts
 const enhancedConfirmMock = mock(
   (_options: { message: string; initialValue?: boolean }) =>
@@ -74,10 +65,6 @@ mock.module("~/utils/hooks", () => ({
 
 mock.module("~/utils/icons", () => ({
   getExistingIconNames: getExistingIconNamesMock,
-}));
-
-mock.module("~/templates/icons", () => ({
-  getIconsTemplate: getIconsTemplateMock,
 }));
 
 mock.module("~/utils/prompts", () => ({
@@ -112,7 +99,6 @@ describe("ClearCommand", () => {
     loadConfigMock.mockReset();
     runHooksMock.mockReset();
     getExistingIconNamesMock.mockReset();
-    getIconsTemplateMock.mockReset();
     enhancedConfirmMock.mockReset();
     cancelMock.mockReset();
     isCancelMock.mockReset();
@@ -132,7 +118,6 @@ describe("ClearCommand", () => {
     );
     runHooksMock.mockResolvedValue(new Ok(null));
     getExistingIconNamesMock.mockReturnValue(["Check", "Home"]);
-    getIconsTemplateMock.mockReturnValue("export const Icons = {};");
     enhancedConfirmMock.mockResolvedValue(true);
     isCancelMock.mockReturnValue(false);
 
@@ -186,8 +171,6 @@ describe("ClearCommand", () => {
     });
 
     it("resets icons file to template", async () => {
-      getIconsTemplateMock.mockReturnValue("export const Icons = {};");
-
       const options: ClearOptions = {
         cwd: "/test/project",
         yes: true,
@@ -195,9 +178,10 @@ describe("ClearCommand", () => {
 
       await command.run(options);
 
+      // Uses real getIconsTemplate - config has typescript: true
       expect(writeFileMock).toHaveBeenCalledWith(
         expect.stringContaining("icons.tsx"),
-        "export const Icons = {};"
+        expect.stringContaining("export const Icons = {}")
       );
     });
 
