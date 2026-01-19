@@ -5,6 +5,7 @@ import {
   parseIconsFile,
   removeIcon,
   replaceIcon,
+  svgToComponent,
   toComponentName,
   validateIconName,
 } from "./icons";
@@ -423,5 +424,109 @@ describe("removeIcon", () => {
   it("returns unchanged content if icon not found", () => {
     const result = removeIcon(singleIconFile, "NotFound");
     expect(result).toBe(singleIconFile);
+  });
+});
+
+const COMPONENT_START_REGEX = /^Home: \(props\) => \(<svg/;
+const COMPONENT_END_REGEX = /<\/svg>\)$/;
+
+describe("svgToComponent", () => {
+  const simpleSvg = '<svg viewBox="0 0 24 24"><path d="M0 0h24v24H0z"/></svg>';
+
+  describe("basic output format", () => {
+    it("returns component in expected format", async () => {
+      const result = await svgToComponent(simpleSvg, "Home");
+      expect(result).toMatch(COMPONENT_START_REGEX);
+      expect(result).toMatch(COMPONENT_END_REGEX);
+    });
+
+    it("uses provided component name", async () => {
+      const result = await svgToComponent(simpleSvg, "CustomIcon");
+      expect(result).toStartWith("CustomIcon: (props) => (");
+    });
+
+    it("spreads props on svg element", async () => {
+      const result = await svgToComponent(simpleSvg, "Home");
+      expect(result).toContain("{...props}");
+    });
+  });
+
+  describe("a11y options", () => {
+    it("adds aria-hidden when a11y is hidden", async () => {
+      const result = await svgToComponent(simpleSvg, "Home", {
+        a11y: "hidden",
+      });
+      expect(result).toContain('aria-hidden="true"');
+    });
+
+    it("adds role=img and aria-label when a11y is img", async () => {
+      const result = await svgToComponent(simpleSvg, "ArrowRight", {
+        a11y: "img",
+      });
+      expect(result).toContain('role="img"');
+      // converts camelCase name to readable aria-label
+      expect(result).toContain('aria-label="Arrow Right"');
+    });
+
+    it("adds role=presentation when a11y is presentation", async () => {
+      const result = await svgToComponent(simpleSvg, "Home", {
+        a11y: "presentation",
+      });
+      expect(result).toContain('role="presentation"');
+    });
+
+    it("injects title element when a11y is title", async () => {
+      const result = await svgToComponent(simpleSvg, "ArrowUpRight", {
+        a11y: "title",
+      });
+      // converts camelCase name to readable title
+      expect(result).toContain("<title>Arrow Up Right</title>");
+    });
+
+    it("adds no a11y attributes when a11y is undefined", async () => {
+      const result = await svgToComponent(simpleSvg, "Home");
+      expect(result).not.toContain("aria-hidden");
+      expect(result).not.toContain("aria-label");
+      expect(result).not.toContain('role="img"');
+      expect(result).not.toContain('role="presentation"');
+      expect(result).not.toContain("<title>");
+    });
+  });
+
+  describe("trackSource option", () => {
+    it("adds data-icon attribute when trackSource is true", async () => {
+      const result = await svgToComponent(simpleSvg, "Home", {
+        trackSource: true,
+        iconName: "lucide:home",
+      });
+      expect(result).toContain('data-icon="lucide:home"');
+    });
+
+    it("does not add data-icon when trackSource is false", async () => {
+      const result = await svgToComponent(simpleSvg, "Home", {
+        trackSource: false,
+        iconName: "lucide:home",
+      });
+      expect(result).not.toContain("data-icon");
+    });
+
+    it("does not add data-icon when iconName is missing", async () => {
+      const result = await svgToComponent(simpleSvg, "Home", {
+        trackSource: true,
+      });
+      expect(result).not.toContain("data-icon");
+    });
+  });
+
+  describe("combined options", () => {
+    it("combines a11y and trackSource options", async () => {
+      const result = await svgToComponent(simpleSvg, "Home", {
+        a11y: "hidden",
+        trackSource: true,
+        iconName: "mdi:home",
+      });
+      expect(result).toContain('aria-hidden="true"');
+      expect(result).toContain('data-icon="mdi:home"');
+    });
   });
 });
