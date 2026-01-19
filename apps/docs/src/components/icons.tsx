@@ -100,3 +100,5 @@ export const Icons = {
     </svg>
   ),
 } as const satisfies Record<string, Icon>;
+
+export type IconName = keyof typeof Icons;

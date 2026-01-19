@@ -7,6 +7,8 @@ export function getIconsTemplate(config: Config): string {
 export type Icon = (props: IconProps) => React.JSX.Element;
 
 export const Icons = {} as const satisfies Record<string, Icon>;
+
+export type IconName = keyof typeof Icons;
 `;
     }
 

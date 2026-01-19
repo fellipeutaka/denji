@@ -224,19 +224,19 @@ With custom animation:
 
 ## TypeScript
 
-Icons are fully typed:
+Icons are fully typed. Import the types you need:
 
 ```tsx
-import type { Icons, IconProps, Icon } from "./icons";
+import type { IconProps, Icon, IconName } from "./icons";
 
-// Get all icon names
-type IconName = keyof typeof Icons;
-
-// Icon component props (already exported from icons.tsx)
+// All available types:
 // IconProps = React.ComponentProps<"svg">
-
-// Icon component type (already exported from icons.tsx)
 // Icon = (props: IconProps) => React.JSX.Element
+// IconName = keyof typeof Icons
+
+// Example usage
+const iconName: IconName = "Check"; // ✅ Type-safe
+const invalidIcon: IconName = "NonExistent"; // ❌ Type error
 ```
 
 ## Tips

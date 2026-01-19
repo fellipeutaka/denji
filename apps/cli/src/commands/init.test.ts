@@ -356,8 +356,15 @@ describe("InitCommand", () => {
 
       const iconsCall = getWriteCall("icons.tsx");
       expect(iconsCall).toBeDefined();
-      expect(iconsCall?.[1]).toContain("export type IconProps");
-      expect(iconsCall?.[1]).toContain("as const satisfies");
+      expect(
+        iconsCall?.[1]
+      ).toBe(`export type IconProps = React.ComponentProps<"svg">;
+export type Icon = (props: IconProps) => React.JSX.Element;
+
+export const Icons = {} as const satisfies Record<string, Icon>;
+
+export type IconName = keyof typeof Icons;
+`);
     });
 
     it("writes JavaScript icons template for react + javascript", async () => {
