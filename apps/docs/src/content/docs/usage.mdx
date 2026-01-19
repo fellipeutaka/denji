@@ -127,35 +127,33 @@ function CloseButton() {
 }
 ```
 
-### Icon with Tooltip
-
-```tsx
-function InfoIcon() {
-  return (
-    <div className="group relative">
-      <Icons.Info className="size-4" />
-      <div className="hidden group-hover:block">
-        Additional information
-      </div>
-    </div>
-  );
-}
-```
-
 ### Status Icons
 
 ```tsx
-function Status({ type }: { type: "success" | "error" | "warning" }) {
-  const config = {
-    success: { icon: Icons.Check, color: "text-green-500" },
-    error: { icon: Icons.X, color: "text-red-500" },
-    warning: { icon: Icons.AlertTriangle, color: "text-yellow-500" },
-  };
+const status = {
+  success: { icon: Icons.Check, color: "text-green-500" },
+  error: { icon: Icons.X, color: "text-red-500" },
+  warning: { icon: Icons.AlertTriangle, color: "text-yellow-500" },
+};
 
-  const { icon: Icon, color } = config[type];
-
-  return <Icon className={`size-5 ${color}`} />;
+export interface StatusIconProps extends IconProps {
+  type: keyof typeof status;
 }
+
+export function StatusIcon({ type, className, ...props }: StatusIconProps) {
+  const statusConfig = status[type];
+
+  if (!statusConfig) {
+    throw new Error(`Invalid status type: "${type}".`);
+  }
+
+  const { icon: Icon, color } = statusConfig;
+
+  return <Icon className={cn(color, "size-5", className)} {...props} />;
+}
+
+// Usage
+<StatusIcon type="warning" className="size-8" />
 ```
 
 ### Loading Spinner
@@ -171,98 +169,32 @@ function LoadingSpinner() {
 }
 ```
 
-## Dynamic Icons
+### Dynamic Icons
 
-### Icon Map
-
-```tsx
-const iconMap = {
-  check: Icons.Check,
-  home: Icons.Home,
-  user: Icons.User,
-} as const;
-
-function DynamicIcon({ name }: { name: keyof typeof iconMap }) {
-  const Icon = iconMap[name];
-  return <Icon className="size-4" />;
-}
-```
-
-### From Props
+<Callout type="warn">
+Dynamic icon patterns should only be used when icon names come from external sources (CMS, database, API). For static use cases, prefer direct imports like `<Icons.Check />` - this enables better tree-shaking and smaller bundles.
+</Callout>
 
 ```tsx
-type IconName = keyof typeof Icons;
-
-interface IconButtonProps {
-  icon: IconName;
-  label: string;
+export interface DynamicIconProps extends IconProps {
+  name: keyof typeof Icons
 }
 
-function IconButton({ icon, label }: IconButtonProps) {
-  const Icon = Icons[icon];
-  
-  return (
-    <button>
-      <Icon className="size-4" />
-      {label}
-    </button>
-  );
+export function DynamicIcon({ name, ...props }: DynamicIconProps) {
+  const Icon = Icons[name];
+
+  if (!Icon) {
+    throw new Error(`Icon with name "${name}" does not exist.`);
+  }
+
+  return <Icon {...props} />;
 }
 
 // Usage
-<IconButton icon="Check" label="Save" />
+<DynamicIcon name="Check" className="size-4" />
 ```
 
-## TypeScript
-
-Icons are fully typed:
-
-```tsx
-import { type Icons } from "./icons";
-
-// Get all icon names
-type IconName = keyof typeof Icons;
-
-// Icon component props
-type IconProps = React.ComponentProps<typeof Icons.Check>;
-
-// Icon component type
-type IconComponent = typeof Icons.Check;
-```
-
-## Advanced
-
-### Custom Wrapper
-
-Create a wrapper for consistent styling:
-
-```tsx
-interface IconProps extends React.SVGProps<SVGSVGElement> {
-  name: keyof typeof Icons;
-  size?: "sm" | "md" | "lg";
-}
-
-const sizeMap = {
-  sm: "size-4",
-  md: "size-6",
-  lg: "size-8",
-};
-
-function Icon({ name, size = "md", className, ...props }: IconProps) {
-  const Component = Icons[name];
-  return (
-    <Component 
-      className={`${sizeMap[size]} ${className}`} 
-      {...props} 
-    />
-  );
-}
-
-// Usage
-<Icon name="Check" size="lg" />
-```
-
-### Animation
+### Animations
 
 ```tsx
 function AnimatedCheck() {
@@ -288,6 +220,23 @@ With custom animation:
 
 ```tsx
 <Icons.Loader className="size-6 spin" />
+```
+
+## TypeScript
+
+Icons are fully typed:
+
+```tsx
+import type { Icons, IconProps, Icon } from "./icons";
+
+// Get all icon names
+type IconName = keyof typeof Icons;
+
+// Icon component props (already exported from icons.tsx)
+// IconProps = React.ComponentProps<"svg">
+
+// Icon component type (already exported from icons.tsx)
+// Icon = (props: IconProps) => React.JSX.Element
 ```
 
 ## Tips
