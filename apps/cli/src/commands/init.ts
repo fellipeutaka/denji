@@ -34,10 +34,10 @@ export const init = new Command()
   )
   .option("--output <file>", "Output file path for icons")
   .option("--framework <framework>", "Framework to use")
-  .option("--typescript", "Use TypeScript", true)
+  .option("--typescript", "Use TypeScript")
   .option("--no-typescript", "Use JavaScript")
   .option("--a11y <strategy>", "Accessibility strategy for SVG icons")
-  .option("--track-source", "Track Iconify source names", true)
+  .option("--track-source", "Track Iconify source names")
   .option("--no-track-source", "Don't track Iconify source names")
   .action(async (options: InitOptions) => {
     intro("denji init");
