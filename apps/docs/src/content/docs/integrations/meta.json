@@ -1,0 +1,3 @@
+{
+  "pages": ["eslint", "prettier", "biome", "ultracite", "oxlint", "oxfmt"]
+}

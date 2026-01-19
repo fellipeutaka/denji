@@ -1,0 +1,3 @@
+{
+  "pages": ["init", "add", "remove", "list", "clear"]
+}
