@@ -8,6 +8,8 @@ import {
   spyOn,
 } from "bun:test";
 import type { Config } from "~/schemas/config";
+// Import real icon utilities (already tested in icons.test.ts)
+import { getExistingIconNames } from "~/utils/icons";
 import { Err, Ok } from "~/utils/result";
 
 // Create mock functions for fs utilities
@@ -37,9 +39,6 @@ const runHooksMock = mock((_hooks: string[] | undefined, _cwd: string) =>
   Promise.resolve<Ok<null, string> | Err<null, string>>(new Ok(null))
 );
 
-// Create mock for getExistingIconNames
-const getExistingIconNamesMock = mock((_content: string) => ["Check", "Home"]);
-
 // Create mock functions for prompts
 const enhancedConfirmMock = mock(
   (_options: { message: string; initialValue?: boolean }) =>
@@ -64,7 +63,7 @@ mock.module("~/utils/hooks", () => ({
 }));
 
 mock.module("~/utils/icons", () => ({
-  getExistingIconNames: getExistingIconNamesMock,
+  getExistingIconNames,
 }));
 
 mock.module("~/utils/prompts", () => ({
@@ -98,14 +97,19 @@ describe("ClearCommand", () => {
     writeFileMock.mockReset();
     loadConfigMock.mockReset();
     runHooksMock.mockReset();
-    getExistingIconNamesMock.mockReset();
     enhancedConfirmMock.mockReset();
     cancelMock.mockReset();
     isCancelMock.mockReset();
 
-    // Default success implementations
+    // Default success implementations with realistic icons file content
     accessMock.mockResolvedValue(true);
-    readFileMock.mockResolvedValue(new Ok("mock icons content"));
+    readFileMock.mockResolvedValue(
+      new Ok(`export const Icons = {
+  Check: (props) => (<svg {...props}></svg>),
+  Home: (props) => (<svg {...props}></svg>),
+} as const;
+`)
+    );
     writeFileMock.mockResolvedValue(new Ok(null));
     loadConfigMock.mockResolvedValue(
       new Ok({
@@ -117,7 +121,6 @@ describe("ClearCommand", () => {
       })
     );
     runHooksMock.mockResolvedValue(new Ok(null));
-    getExistingIconNamesMock.mockReturnValue(["Check", "Home"]);
     enhancedConfirmMock.mockResolvedValue(true);
     isCancelMock.mockReturnValue(false);
 
@@ -186,7 +189,11 @@ describe("ClearCommand", () => {
     });
 
     it("returns early when no icons to remove", async () => {
-      getExistingIconNamesMock.mockReturnValue([]);
+      // Use empty icons file
+      readFileMock.mockResolvedValue(
+        new Ok(`export const Icons = {} as const;
+`)
+      );
 
       const options: ClearOptions = {
         cwd: "/test/project",
@@ -437,13 +444,16 @@ describe("ClearCommand", () => {
     });
 
     it("shows correct icon count in confirmation message", async () => {
-      getExistingIconNamesMock.mockReturnValue([
-        "Icon1",
-        "Icon2",
-        "Icon3",
-        "Icon4",
-        "Icon5",
-      ]);
+      readFileMock.mockResolvedValue(
+        new Ok(`export const Icons = {
+  Icon1: (props) => (<svg {...props}></svg>),
+  Icon2: (props) => (<svg {...props}></svg>),
+  Icon3: (props) => (<svg {...props}></svg>),
+  Icon4: (props) => (<svg {...props}></svg>),
+  Icon5: (props) => (<svg {...props}></svg>),
+} as const;
+`)
+      );
 
       const options: ClearOptions = {
         cwd: "/test/project",
@@ -460,7 +470,12 @@ describe("ClearCommand", () => {
     });
 
     it("handles single icon correctly", async () => {
-      getExistingIconNamesMock.mockReturnValue(["SingleIcon"]);
+      readFileMock.mockResolvedValue(
+        new Ok(`export const Icons = {
+  SingleIcon: (props) => (<svg {...props}></svg>),
+} as const;
+`)
+      );
 
       const options: ClearOptions = {
         cwd: "/test/project",

@@ -8,6 +8,8 @@ import {
   spyOn,
 } from "bun:test";
 import type { Config } from "~/schemas/config";
+// Import real icon utilities (already tested in icons.test.ts)
+import { parseIconsFile } from "~/utils/icons";
 import { Err, Ok } from "~/utils/result";
 
 // Create mock functions for fs utilities
@@ -34,14 +36,6 @@ const runHooksMock = mock((_hooks: string[] | undefined, _cwd: string) =>
   Promise.resolve<Ok<null, string> | Err<null, string>>(new Ok(null))
 );
 
-// Create mock for parseIconsFile
-const parseIconsFileMock = mock((_content: string) => ({
-  icons: [
-    { name: "Check", source: "lucide" },
-    { name: "Home", source: "lucide" },
-  ],
-}));
-
 // Mock modules before importing
 mock.module("~/utils/fs", () => ({
   access: accessMock,
@@ -57,7 +51,7 @@ mock.module("~/utils/hooks", () => ({
 }));
 
 mock.module("~/utils/icons", () => ({
-  parseIconsFile: parseIconsFileMock,
+  parseIconsFile,
 }));
 
 mock.module("@clack/prompts", () => ({
@@ -84,11 +78,16 @@ describe("ListCommand", () => {
     readFileMock.mockReset();
     loadConfigMock.mockReset();
     runHooksMock.mockReset();
-    parseIconsFileMock.mockReset();
 
-    // Default success implementations
+    // Default success implementations with realistic icons file content
     accessMock.mockResolvedValue(true);
-    readFileMock.mockResolvedValue(new Ok("mock icons content"));
+    readFileMock.mockResolvedValue(
+      new Ok(`export const Icons = {
+  Check: (props) => (<svg {...props}></svg>),
+  Home: (props) => (<svg {...props}></svg>),
+} as const;
+`)
+    );
     loadConfigMock.mockResolvedValue(
       new Ok({
         $schema: "https://denji-docs.vercel.app/configuration_schema.json",
@@ -99,12 +98,6 @@ describe("ListCommand", () => {
       })
     );
     runHooksMock.mockResolvedValue(new Ok(null));
-    parseIconsFileMock.mockReturnValue({
-      icons: [
-        { name: "Check", source: "lucide" },
-        { name: "Home", source: "lucide" },
-      ],
-    });
 
     // Spy on logger
     loggerInfoSpy = spyOn(logger, "info").mockImplementation(() => undefined);
@@ -165,7 +158,10 @@ describe("ListCommand", () => {
     });
 
     it("shows info message when no icons found", async () => {
-      parseIconsFileMock.mockReturnValue({ icons: [] });
+      readFileMock.mockResolvedValue(
+        new Ok(`export const Icons = {} as const;
+`)
+      );
 
       const options: ListOptions = {
         cwd: "/test/project",
@@ -181,7 +177,10 @@ describe("ListCommand", () => {
     });
 
     it("outputs empty JSON when no icons found with --json", async () => {
-      parseIconsFileMock.mockReturnValue({ icons: [] });
+      readFileMock.mockResolvedValue(
+        new Ok(`export const Icons = {} as const;
+`)
+      );
 
       const options: ListOptions = {
         cwd: "/test/project",
@@ -436,9 +435,12 @@ describe("ListCommand", () => {
 
   describe("edge cases", () => {
     it("handles single icon", async () => {
-      parseIconsFileMock.mockReturnValue({
-        icons: [{ name: "Check", source: "lucide" }],
-      });
+      readFileMock.mockResolvedValue(
+        new Ok(`export const Icons = {
+  Check: (props) => (<svg {...props}></svg>),
+} as const;
+`)
+      );
 
       const options: ListOptions = {
         cwd: "/test/project",
@@ -453,11 +455,16 @@ describe("ListCommand", () => {
     });
 
     it("handles many icons", async () => {
-      const manyIcons = Array.from({ length: 100 }, (_, i) => ({
-        name: `Icon${i}`,
-        source: "lucide",
-      }));
-      parseIconsFileMock.mockReturnValue({ icons: manyIcons });
+      const iconEntries = Array.from(
+        { length: 100 },
+        (_, i) => `  Icon${i}: (props) => (<svg {...props}></svg>)`
+      ).join(",\n");
+      readFileMock.mockResolvedValue(
+        new Ok(`export const Icons = {
+${iconEntries},
+} as const;
+`)
+      );
 
       const options: ListOptions = {
         cwd: "/test/project",
@@ -530,7 +537,10 @@ describe("ListCommand", () => {
     });
 
     it("runs postList hooks even when no icons found", async () => {
-      parseIconsFileMock.mockReturnValue({ icons: [] });
+      readFileMock.mockResolvedValue(
+        new Ok(`export const Icons = {} as const;
+`)
+      );
       loadConfigMock.mockResolvedValue(
         new Ok({
           $schema: "https://denji-docs.vercel.app/configuration_schema.json",

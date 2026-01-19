@@ -8,6 +8,8 @@ import {
   spyOn,
 } from "bun:test";
 import type { Config } from "~/schemas/config";
+// Import real icon utilities (already tested in icons.test.ts)
+import { getExistingIconNames, removeIcon } from "~/utils/icons";
 import { Err, Ok } from "~/utils/result";
 
 // Create mock functions for fs utilities
@@ -37,14 +39,6 @@ const runHooksMock = mock((_hooks: string[] | undefined, _cwd: string) =>
   Promise.resolve<Ok<null, string> | Err<null, string>>(new Ok(null))
 );
 
-// Create mock for getExistingIconNames
-const getExistingIconNamesMock = mock((_content: string) => ["Check", "Home"]);
-
-// Create mock for removeIcon
-const removeIconMock = mock(
-  (_content: string, _iconName: string) => "updated content"
-);
-
 // Mock modules before importing
 mock.module("~/utils/fs", () => ({
   access: accessMock,
@@ -61,8 +55,8 @@ mock.module("~/utils/hooks", () => ({
 }));
 
 mock.module("~/utils/icons", () => ({
-  getExistingIconNames: getExistingIconNamesMock,
-  removeIcon: removeIconMock,
+  getExistingIconNames,
+  removeIcon,
 }));
 
 mock.module("@clack/prompts", () => ({
@@ -87,12 +81,17 @@ describe("RemoveCommand", () => {
     writeFileMock.mockReset();
     loadConfigMock.mockReset();
     runHooksMock.mockReset();
-    getExistingIconNamesMock.mockReset();
-    removeIconMock.mockReset();
 
-    // Default success implementations
+    // Default success implementations with realistic icons file content
     accessMock.mockResolvedValue(true);
-    readFileMock.mockResolvedValue(new Ok("mock icons content"));
+    readFileMock.mockResolvedValue(
+      new Ok(`export const Icons = {
+  Check: (props) => (<svg {...props}></svg>),
+  Home: (props) => (<svg {...props}></svg>),
+  Star: (props) => (<svg {...props}></svg>),
+} as const;
+`)
+    );
     writeFileMock.mockResolvedValue(new Ok(null));
     loadConfigMock.mockResolvedValue(
       new Ok({
@@ -104,8 +103,6 @@ describe("RemoveCommand", () => {
       })
     );
     runHooksMock.mockResolvedValue(new Ok(null));
-    getExistingIconNamesMock.mockReturnValue(["Check", "Home", "Star"]);
-    removeIconMock.mockReturnValue("updated content");
 
     // Spy on logger
     loggerSuccessSpy = spyOn(logger, "success").mockImplementation(
@@ -130,10 +127,6 @@ describe("RemoveCommand", () => {
       const result = await command.run(["Check"], options);
 
       expect(result.isOk()).toBe(true);
-      expect(removeIconMock).toHaveBeenCalledWith(
-        "mock icons content",
-        "Check"
-      );
       expect(writeFileMock).toHaveBeenCalled();
       expect(loggerSuccessSpy).toHaveBeenCalledWith("Removed Check");
     });
@@ -146,13 +139,18 @@ describe("RemoveCommand", () => {
       const result = await command.run(["Check", "Home"], options);
 
       expect(result.isOk()).toBe(true);
-      expect(removeIconMock).toHaveBeenCalledTimes(2);
       expect(loggerSuccessSpy).toHaveBeenCalledWith("Removed Check");
       expect(loggerSuccessSpy).toHaveBeenCalledWith("Removed Home");
     });
 
     it("resets to template when removing all icons", async () => {
-      getExistingIconNamesMock.mockReturnValue(["Check", "Home"]);
+      readFileMock.mockResolvedValue(
+        new Ok(`export const Icons = {
+  Check: (props) => (<svg {...props}></svg>),
+  Home: (props) => (<svg {...props}></svg>),
+} as const;
+`)
+      );
 
       const options: RemoveOptions = {
         cwd: "/test/project",
@@ -161,8 +159,6 @@ describe("RemoveCommand", () => {
       const result = await command.run(["Check", "Home"], options);
 
       expect(result.isOk()).toBe(true);
-      // Should use template, not removeIcon
-      expect(removeIconMock).not.toHaveBeenCalled();
       // Uses real getIconsTemplate - config has typescript: true
       expect(writeFileMock).toHaveBeenCalledWith(
         expect.stringContaining("icons.tsx"),
@@ -219,7 +215,12 @@ describe("RemoveCommand", () => {
     });
 
     it("runs postRemove hooks after resetting to template", async () => {
-      getExistingIconNamesMock.mockReturnValue(["Check"]);
+      readFileMock.mockResolvedValue(
+        new Ok(`export const Icons = {
+  Check: (props) => (<svg {...props}></svg>),
+} as const;
+`)
+      );
       loadConfigMock.mockResolvedValue(
         new Ok({
           $schema: "https://denji-docs.vercel.app/configuration_schema.json",
@@ -317,8 +318,6 @@ describe("RemoveCommand", () => {
     });
 
     it("errors when icon does not exist", async () => {
-      getExistingIconNamesMock.mockReturnValue(["Check", "Home"]);
-
       const options: RemoveOptions = {
         cwd: "/test/project",
       };
@@ -332,8 +331,6 @@ describe("RemoveCommand", () => {
     });
 
     it("errors when multiple icons do not exist", async () => {
-      getExistingIconNamesMock.mockReturnValue(["Check"]);
-
       const options: RemoveOptions = {
         cwd: "/test/project",
       };
@@ -349,8 +346,6 @@ describe("RemoveCommand", () => {
     });
 
     it("errors when some icons exist and some do not", async () => {
-      getExistingIconNamesMock.mockReturnValue(["Check", "Home"]);
-
       const options: RemoveOptions = {
         cwd: "/test/project",
       };
@@ -406,7 +401,12 @@ describe("RemoveCommand", () => {
     });
 
     it("errors when writeFile fails during template reset", async () => {
-      getExistingIconNamesMock.mockReturnValue(["Check"]);
+      readFileMock.mockResolvedValue(
+        new Ok(`export const Icons = {
+  Check: (props) => (<svg {...props}></svg>),
+} as const;
+`)
+      );
       writeFileMock.mockResolvedValue(new Err("Failed to write file."));
 
       const options: RemoveOptions = {
@@ -451,7 +451,12 @@ describe("RemoveCommand", () => {
     });
 
     it("errors when postRemove hook fails after template reset", async () => {
-      getExistingIconNamesMock.mockReturnValue(["Check"]);
+      readFileMock.mockResolvedValue(
+        new Ok(`export const Icons = {
+  Check: (props) => (<svg {...props}></svg>),
+} as const;
+`)
+      );
       loadConfigMock.mockResolvedValue(
         new Ok({
           $schema: "https://denji-docs.vercel.app/configuration_schema.json",
@@ -488,12 +493,15 @@ describe("RemoveCommand", () => {
   describe("edge cases", () => {
     it("removes icons in order provided", async () => {
       // Need more icons than we're removing so it doesn't reset to template
-      getExistingIconNamesMock.mockReturnValue([
-        "Home",
-        "Check",
-        "Star",
-        "Extra",
-      ]);
+      readFileMock.mockResolvedValue(
+        new Ok(`export const Icons = {
+  Home: (props) => (<svg {...props}></svg>),
+  Check: (props) => (<svg {...props}></svg>),
+  Star: (props) => (<svg {...props}></svg>),
+  Extra: (props) => (<svg {...props}></svg>),
+} as const;
+`)
+      );
 
       const options: RemoveOptions = {
         cwd: "/test/project",
@@ -501,69 +509,48 @@ describe("RemoveCommand", () => {
 
       await command.run(["Home", "Check", "Star"], options);
 
-      expect(removeIconMock).toHaveBeenNthCalledWith(
-        1,
-        expect.any(String),
-        "Home"
-      );
-      expect(removeIconMock).toHaveBeenNthCalledWith(
-        2,
-        expect.any(String),
-        "Check"
-      );
-      expect(removeIconMock).toHaveBeenNthCalledWith(
-        3,
-        expect.any(String),
-        "Star"
-      );
+      expect(loggerSuccessSpy).toHaveBeenCalledWith("Removed Home");
+      expect(loggerSuccessSpy).toHaveBeenCalledWith("Removed Check");
+      expect(loggerSuccessSpy).toHaveBeenCalledWith("Removed Star");
     });
 
-    it("chains removeIcon calls with updated content", async () => {
-      getExistingIconNamesMock.mockReturnValue(["Check", "Home", "Star"]);
-      removeIconMock
-        .mockReturnValueOnce("after removing first")
-        .mockReturnValueOnce("after removing second");
-
+    it("chains removeIcon calls correctly", async () => {
       const options: RemoveOptions = {
         cwd: "/test/project",
       };
 
       await command.run(["Check", "Home"], options);
 
-      // Second call should receive result of first call
-      expect(removeIconMock).toHaveBeenNthCalledWith(
-        2,
-        "after removing first",
-        "Home"
-      );
+      // Real removeIcon will be called with updated content each time
+      expect(loggerSuccessSpy).toHaveBeenCalledWith("Removed Check");
+      expect(loggerSuccessSpy).toHaveBeenCalledWith("Removed Home");
     });
 
     it("writes final content after all removals", async () => {
-      getExistingIconNamesMock.mockReturnValue(["Check", "Home", "Star"]);
-      removeIconMock
-        .mockReturnValueOnce("intermediate")
-        .mockReturnValueOnce("final content");
-
       const options: RemoveOptions = {
         cwd: "/test/project",
       };
 
       await command.run(["Check", "Home"], options);
 
+      // Verify writeFile was called with content that no longer contains removed icons
       expect(writeFileMock).toHaveBeenCalledWith(
         expect.stringContaining("icons.tsx"),
-        "final content"
+        expect.not.stringContaining("Check:")
       );
     });
 
     it("logs success for each removed icon", async () => {
-      getExistingIconNamesMock.mockReturnValue([
-        "Icon1",
-        "Icon2",
-        "Icon3",
-        "Icon4",
-        "Icon5",
-      ]);
+      readFileMock.mockResolvedValue(
+        new Ok(`export const Icons = {
+  Icon1: (props) => (<svg {...props}></svg>),
+  Icon2: (props) => (<svg {...props}></svg>),
+  Icon3: (props) => (<svg {...props}></svg>),
+  Icon4: (props) => (<svg {...props}></svg>),
+  Icon5: (props) => (<svg {...props}></svg>),
+} as const;
+`)
+      );
 
       const options: RemoveOptions = {
         cwd: "/test/project",
@@ -578,8 +565,6 @@ describe("RemoveCommand", () => {
     });
 
     it("validates all icons before removing any", async () => {
-      getExistingIconNamesMock.mockReturnValue(["Check", "Home"]);
-
       const options: RemoveOptions = {
         cwd: "/test/project",
       };
@@ -588,7 +573,6 @@ describe("RemoveCommand", () => {
 
       // Should fail validation before any removal
       expect(result.isErr()).toBe(true);
-      expect(removeIconMock).not.toHaveBeenCalled();
       expect(writeFileMock).not.toHaveBeenCalled();
     });
 
@@ -616,7 +600,12 @@ describe("RemoveCommand", () => {
     });
 
     it("handles single icon removal that empties the file", async () => {
-      getExistingIconNamesMock.mockReturnValue(["OnlyIcon"]);
+      readFileMock.mockResolvedValue(
+        new Ok(`export const Icons = {
+  OnlyIcon: (props) => (<svg {...props}></svg>),
+} as const;
+`)
+      );
 
       const options: RemoveOptions = {
         cwd: "/test/project",

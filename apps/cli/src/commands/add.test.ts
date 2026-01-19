@@ -8,6 +8,14 @@ import {
   spyOn,
 } from "bun:test";
 import type { Config } from "~/schemas/config";
+// Import real icon utilities (already tested in icons.test.ts)
+import {
+  getExistingIconNames,
+  insertIconAlphabetically,
+  replaceIcon,
+  toComponentName,
+  validateIconName,
+} from "~/utils/icons";
 import { Err, Ok } from "~/utils/result";
 
 // Create mock functions for fs utilities
@@ -37,19 +45,7 @@ const runHooksMock = mock((_hooks: string[] | undefined, _cwd: string) =>
   Promise.resolve<Ok<null, string> | Err<null, string>>(new Ok(null))
 );
 
-// Create mock for icon utilities
-type IconNameResult =
-  | Ok<{ source: string; name: string }, string>
-  | Err<{ source: string; name: string }, string>;
-const validateIconNameMock = mock(
-  (_icon: string) =>
-    new Ok({ source: "lucide", name: "check" }) as IconNameResult
-);
-const getExistingIconNamesMock = mock((_content: string) => [] as string[]);
-const toComponentNameMock = mock((icon: string) => {
-  const name = icon.split(":")[1] || icon;
-  return name.charAt(0).toUpperCase() + name.slice(1);
-});
+// Create mock for external icon operations (network, complex transforms)
 const fetchIconMock = mock((_icon: string) =>
   Promise.resolve<Ok<string, string> | Err<string, string>>(
     new Ok('<svg><path d="M0 0h24v24H0z"/></svg>')
@@ -60,14 +56,7 @@ const svgToComponentMock = mock(
     _svg: string,
     name: string,
     _options: { a11y?: unknown; trackSource?: boolean; iconName?: string }
-  ) => Promise.resolve(`export const ${name} = () => <svg />;`)
-);
-const insertIconAlphabeticallyMock = mock(
-  (_content: string, _name: string, component: string) =>
-    `${_content}\n${component}`
-);
-const replaceIconMock = mock(
-  (_content: string, _name: string, component: string) => component
+  ) => Promise.resolve(`${name}: (props) => (<svg {...props}></svg>)`)
 );
 
 // Create mock for enhanced confirm
@@ -92,13 +81,13 @@ mock.module("~/utils/hooks", () => ({
 }));
 
 mock.module("~/utils/icons", () => ({
-  validateIconName: validateIconNameMock,
-  getExistingIconNames: getExistingIconNamesMock,
-  toComponentName: toComponentNameMock,
+  validateIconName,
+  getExistingIconNames,
+  toComponentName,
   fetchIcon: fetchIconMock,
   svgToComponent: svgToComponentMock,
-  insertIconAlphabetically: insertIconAlphabeticallyMock,
-  replaceIcon: replaceIconMock,
+  insertIconAlphabetically,
+  replaceIcon,
 }));
 
 mock.module("~/utils/prompts", () => ({
@@ -129,13 +118,8 @@ describe("AddCommand", () => {
     writeFileMock.mockReset();
     loadConfigMock.mockReset();
     runHooksMock.mockReset();
-    validateIconNameMock.mockReset();
-    getExistingIconNamesMock.mockReset();
-    toComponentNameMock.mockReset();
     fetchIconMock.mockReset();
     svgToComponentMock.mockReset();
-    insertIconAlphabeticallyMock.mockReset();
-    replaceIconMock.mockReset();
     enhancedConfirmMock.mockReset();
 
     // Default success implementations
@@ -152,25 +136,11 @@ describe("AddCommand", () => {
       })
     );
     runHooksMock.mockResolvedValue(new Ok(null));
-    validateIconNameMock.mockReturnValue(
-      new Ok({ source: "lucide", name: "check" })
-    );
-    getExistingIconNamesMock.mockReturnValue([]);
-    toComponentNameMock.mockImplementation((icon: string) => {
-      const name = icon.split(":")[1] || icon;
-      return name.charAt(0).toUpperCase() + name.slice(1);
-    });
     fetchIconMock.mockResolvedValue(
       new Ok('<svg><path d="M0 0h24v24H0z"/></svg>')
     );
     svgToComponentMock.mockImplementation((_svg, name) =>
-      Promise.resolve(`export const ${name} = () => <svg />;`)
-    );
-    insertIconAlphabeticallyMock.mockImplementation(
-      (content, _name, component) => `${content}\n${component}`
-    );
-    replaceIconMock.mockImplementation(
-      (_content, _name, component) => component
+      Promise.resolve(`${name}: (props) => (<svg {...props}></svg>)`)
     );
     enhancedConfirmMock.mockResolvedValue(true);
 
@@ -203,7 +173,6 @@ describe("AddCommand", () => {
       expect(result.isOk()).toBe(true);
       expect(fetchIconMock).toHaveBeenCalledWith("lucide:check");
       expect(svgToComponentMock).toHaveBeenCalled();
-      expect(insertIconAlphabeticallyMock).toHaveBeenCalled();
       expect(writeFileMock).toHaveBeenCalled();
       expect(loggerSuccessSpy).toHaveBeenCalledWith("Added Check");
     });
@@ -242,7 +211,13 @@ describe("AddCommand", () => {
     });
 
     it("overwrites existing icon when confirmed", async () => {
-      getExistingIconNamesMock.mockReturnValue(["Check"]);
+      // Use realistic content with existing icon
+      readFileMock.mockResolvedValue(
+        new Ok(`export const Icons = {
+  Check: (props) => (<svg {...props}></svg>),
+} as const;
+`)
+      );
       enhancedConfirmMock.mockResolvedValue(true);
 
       const options: AddOptions = {
@@ -257,12 +232,16 @@ describe("AddCommand", () => {
           message: 'Icon "Check" already exists. Overwrite?',
         })
       );
-      expect(replaceIconMock).toHaveBeenCalled();
       expect(loggerSuccessSpy).toHaveBeenCalledWith("Replaced Check");
     });
 
     it("skips existing icon when overwrite declined", async () => {
-      getExistingIconNamesMock.mockReturnValue(["Check"]);
+      readFileMock.mockResolvedValue(
+        new Ok(`export const Icons = {
+  Check: (props) => (<svg {...props}></svg>),
+} as const;
+`)
+      );
       enhancedConfirmMock.mockResolvedValue(false);
 
       const options: AddOptions = {
@@ -273,7 +252,6 @@ describe("AddCommand", () => {
 
       expect(result.isOk()).toBe(true);
       expect(loggerInfoSpy).toHaveBeenCalledWith("Skipped Check");
-      expect(replaceIconMock).not.toHaveBeenCalled();
       expect(writeFileMock).not.toHaveBeenCalled();
     });
 
@@ -432,14 +410,11 @@ describe("AddCommand", () => {
     });
 
     it("errors when icon name is invalid", async () => {
-      validateIconNameMock.mockReturnValue(
-        new Err('Invalid icon format: "invalid". Use "source:name" format.')
-      );
-
       const options: AddOptions = {
         cwd: "/test/project",
       };
 
+      // Real validateIconName will reject "invalid" format
       const result = await command.run(["invalid"], options);
 
       expect(result.isErr()).toBe(true);
@@ -614,7 +589,12 @@ describe("AddCommand", () => {
 
   describe("edge cases", () => {
     it("does not write file when all icons skipped", async () => {
-      getExistingIconNamesMock.mockReturnValue(["Check"]);
+      readFileMock.mockResolvedValue(
+        new Ok(`export const Icons = {
+  Check: (props) => (<svg {...props}></svg>),
+} as const;
+`)
+      );
       enhancedConfirmMock.mockResolvedValue(false);
 
       const options: AddOptions = {
@@ -627,7 +607,12 @@ describe("AddCommand", () => {
     });
 
     it("does not run postAdd hooks when no icons added", async () => {
-      getExistingIconNamesMock.mockReturnValue(["Check"]);
+      readFileMock.mockResolvedValue(
+        new Ok(`export const Icons = {
+  Check: (props) => (<svg {...props}></svg>),
+} as const;
+`)
+      );
       enhancedConfirmMock.mockResolvedValue(false);
       loadConfigMock.mockResolvedValue(
         new Ok({
@@ -727,17 +712,16 @@ describe("AddCommand", () => {
     });
 
     it("tracks newly added icons to prevent duplicates in same batch", async () => {
-      // First call returns empty array, simulating initial state
-      getExistingIconNamesMock.mockReturnValue([]);
-
       const options: AddOptions = {
         cwd: "/test/project",
       };
 
       await command.run(["lucide:check", "lucide:home"], options);
 
-      // Both should be added (insertIconAlphabetically called for both)
-      expect(insertIconAlphabeticallyMock).toHaveBeenCalledTimes(2);
+      // Both should be added successfully
+      expect(loggerSuccessSpy).toHaveBeenCalledWith("Added Check");
+      expect(loggerSuccessSpy).toHaveBeenCalledWith("Added Home");
+      expect(writeFileMock).toHaveBeenCalled();
     });
 
     it("accepts all valid a11y strategies", async () => {
@@ -763,12 +747,6 @@ describe("AddCommand", () => {
     });
 
     it("handles icon from different sources", async () => {
-      toComponentNameMock.mockImplementation((icon: string) => {
-        const parts = icon.split(":");
-        const name = parts[1] ?? parts[0] ?? "";
-        return name.charAt(0).toUpperCase() + name.slice(1);
-      });
-
       const options: AddOptions = {
         cwd: "/test/project",
       };
