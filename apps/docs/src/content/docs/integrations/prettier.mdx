@@ -1,0 +1,320 @@
+---
+title: Prettier
+description: Integrate Denji with Prettier for opinionated code formatting
+---
+
+import { Callout } from "fumadocs-ui/components/callout";
+import { Tab, Tabs } from "fumadocs-ui/components/tabs";
+
+[Prettier](https://prettier.io/) is an opinionated code formatter that enforces a consistent style by parsing and re-printing code with its own rules.
+
+## Installation
+
+```npm
+npm install -D prettier
+```
+
+## Basic Setup
+
+Add Prettier to your Denji hooks to automatically format icons after adding them:
+
+```json title="denji.json"
+{
+  "output": "./src/icons.tsx",
+  "framework": "react",
+  "typescript": true,
+  "hooks": {
+    "postAdd": [
+      "npx prettier --write ./src/icons.tsx"
+    ]
+  }
+}
+```
+
+## Configuration Examples
+
+### Format with Log Level
+
+Control output verbosity:
+
+```json title="denji.json"
+{
+  "hooks": {
+    "postAdd": [
+      "npx prettier --write --log-level warn ./src/icons.tsx"
+    ]
+  }
+}
+```
+
+### Multiple Hooks
+
+Format after various operations:
+
+```json title="denji.json"
+{
+  "hooks": {
+    "postAdd": [
+      "npx prettier --write ./src/icons.tsx"
+    ],
+    "postRemove": [
+      "npx prettier --write ./src/icons.tsx"
+    ],
+    "postClear": [
+      "npx prettier --write ./src/icons.tsx"
+    ]
+  }
+}
+```
+
+### Check Before, Format After
+
+Validate formatting before adding, then fix:
+
+```json title="denji.json"
+{
+  "hooks": {
+    "preAdd": [
+      "npx prettier --check ./src/icons.tsx"
+    ],
+    "postAdd": [
+      "npx prettier --write ./src/icons.tsx"
+    ]
+  }
+}
+```
+
+## Common Commands
+
+<Tabs items={["Format Files", "Check Only", "Custom Config", "With Parser"]}>
+<Tab value="Format Files">
+
+```bash
+npx prettier --write ./src/icons.tsx
+```
+
+Formats the icons file according to Prettier rules.
+
+</Tab>
+<Tab value="Check Only">
+
+```bash
+npx prettier --check ./src/icons.tsx
+```
+
+Checks if files are formatted without modifying them. Returns exit code 1 if unformatted. Useful for CI pipelines.
+
+</Tab>
+<Tab value="Custom Config">
+
+```bash
+npx prettier --write --config .prettierrc.json ./src/icons.tsx
+```
+
+Uses a specific Prettier configuration file.
+
+</Tab>
+<Tab value="With Parser">
+
+```bash
+npx prettier --write --parser typescript ./src/icons.tsx
+```
+
+Explicitly specifies the parser to use.
+
+</Tab>
+</Tabs>
+
+## Prettier Options
+
+### Common Flags
+
+| Flag | Description |
+|------|-------------|
+| `--write` | Edit files in place |
+| `--check` | Check if files are formatted |
+| `--config` | Path to config file |
+| `--log-level` | Log level (`silent`, `error`, `warn`, `log`, `debug`) |
+| `--parser` | Parser to use (`typescript`, `babel`, etc.) |
+
+### Examples with Options
+
+```json title="denji.json"
+{
+  "hooks": {
+    "postAdd": [
+      "npx prettier --write --log-level error ./src/icons.tsx"
+    ]
+  }
+}
+```
+
+## Combining with ESLint
+
+Prettier handles formatting, while ESLint handles code quality:
+
+```json title="denji.json"
+{
+  "hooks": {
+    "postAdd": [
+      "npx eslint --fix ./src/icons.tsx",
+      "npx prettier --write ./src/icons.tsx"
+    ]
+  }
+}
+```
+
+<Callout type="warn">
+When using Prettier with ESLint, install `eslint-config-prettier` to disable ESLint formatting rules that conflict with Prettier:
+
+```npm
+npm install -D eslint-config-prettier
+```
+
+Then add it to your ESLint config:
+
+```js title="eslint.config.js"
+import prettier from "eslint-config-prettier";
+
+export default [
+  // ... other configs
+  prettier,
+];
+```
+</Callout>
+
+## Package Manager Alternatives
+
+<Tabs items={["npm", "pnpm", "yarn", "bun"]}>
+<Tab value="npm">
+
+```json
+{
+  "hooks": {
+    "postAdd": ["npx prettier --write ./src/icons.tsx"]
+  }
+}
+```
+
+</Tab>
+<Tab value="pnpm">
+
+```json
+{
+  "hooks": {
+    "postAdd": ["pnpm exec prettier --write ./src/icons.tsx"]
+  }
+}
+```
+
+</Tab>
+<Tab value="yarn">
+
+```json
+{
+  "hooks": {
+    "postAdd": ["yarn exec prettier --write ./src/icons.tsx"]
+  }
+}
+```
+
+</Tab>
+<Tab value="bun">
+
+```json
+{
+  "hooks": {
+    "postAdd": ["bunx prettier --write ./src/icons.tsx"]
+  }
+}
+```
+
+</Tab>
+</Tabs>
+
+## Using Package Scripts
+
+Define a script in `package.json`:
+
+```json title="package.json"
+{
+  "scripts": {
+    "format": "prettier --write .",
+    "format:icons": "prettier --write ./src/icons.tsx",
+    "format:check": "prettier --check ."
+  }
+}
+```
+
+Reference it in your Denji config:
+
+```json title="denji.json"
+{
+  "hooks": {
+    "postAdd": ["npm run format:icons"]
+  }
+}
+```
+
+
+
+## Performance Tips
+
+1. **Target specific file** - Format only the icons file:
+   ```json
+   "postAdd": ["npx prettier --write ./src/icons.tsx"]
+   ```
+
+2. **Use log level** - Reduce output noise:
+   ```json
+   "postAdd": ["npx prettier --write --log-level error ./src/icons.tsx"]
+   ```
+
+3. **Cache in CI** - Use caching in CI pipelines:
+   ```bash
+   npx prettier --check --cache ./src/icons.tsx
+   ```
+
+## Troubleshooting
+
+### Prettier Not Found
+
+Install Prettier as a dev dependency:
+
+```npm
+npm install -D prettier
+```
+
+### Formatting Doesn't Match Editor
+
+Ensure your editor is using the same Prettier version and configuration:
+
+- VS Code: Install the Prettier extension
+- Check that `"editor.formatOnSave": true` is enabled
+- Verify `.prettierrc` is in the project root
+
+### Conflicting with ESLint
+
+Install `eslint-config-prettier` to disable conflicting rules:
+
+```npm
+npm install -D eslint-config-prettier
+```
+
+### Different Formatting in CI
+
+Ensure the same Prettier version is installed in CI and locally. Pin the version in `package.json`:
+
+```json
+{
+  "devDependencies": {
+    "prettier": "3.2.5"
+  }
+}
+```
+
+## Related
+
+- [ESLint Integration](/docs/integrations/eslint) - Code quality rules
+- [Biome Integration](/docs/integrations/biome) - All-in-one alternative
+- [Configuration](/docs/configuration) - Denji configuration options

@@ -1,0 +1,473 @@
+---
+title: Oxfmt
+description: Integrate Denji with Oxfmt for high-performance Rust-based formatting
+---
+
+import { Callout } from "fumadocs-ui/components/callout";
+import { Tab, Tabs } from "fumadocs-ui/components/tabs";
+
+[Oxfmt](https://oxc.rs/docs/guide/usage/formatter.html) is a high-performance formatter for the JavaScript ecosystem, built on the Oxc compiler stack. Written in Rust, it targets large codebases and CI environments with an emphasis on high throughput and predictable performance.
+
+<Callout type="warn">
+Oxfmt is currently in **alpha**. Please join the [RFC discussion](https://github.com/oxc-project/oxc/discussions/13608) for feedback and updates.
+</Callout>
+
+## Supported Languages
+
+JavaScript, JSX, TypeScript, TSX, JSON, JSONC, JSON5, YAML, TOML, HTML, Angular, Vue, CSS, SCSS, Less, Markdown, MDX, GraphQL, Ember, Handlebars
+
+## Key Features
+
+- **Built for scale**: ~30x faster than Prettier and 2x faster than Biome ([benchmarks](https://github.com/oxc-project/bench-formatter))
+- **Prettier-compatible**: ~95% compatibility with Prettier's JavaScript/TypeScript test suite
+- **Batteries included**: Built-in import sorting, Tailwind CSS class sorting, package.json field sorting, and embedded formatting (CSS-in-JS, GraphQL, etc.)
+- **No additional dependencies**: Works out of the box with minimal configuration
+
+## Installation
+
+```npm
+npm install -D oxfmt
+```
+
+<Callout type="info">
+The `oxfmt` CLI behaves similarly to Prettier by default, allowing adoption with minimal changes to scripts and tooling.
+</Callout>
+
+## Basic Setup
+
+Add Oxfmt to your Denji hooks to automatically format icons after adding them:
+
+```json title="denji.json"
+{
+  "output": "./src/icons.tsx",
+  "framework": "react",
+  "typescript": true,
+  "hooks": {
+    "postAdd": [
+      "oxfmt ./src/icons.tsx"
+    ]
+  }
+}
+```
+
+## Configuration Examples
+
+### Format with Default Settings
+
+```json title="denji.json"
+{
+  "hooks": {
+    "postAdd": [
+      "oxfmt ./src/icons.tsx"
+    ]
+  }
+}
+```
+
+### Format with Custom Config
+
+```json title="denji.json"
+{
+  "hooks": {
+    "postAdd": [
+      "oxfmt --config oxfmt.config.json ./src/icons.tsx"
+    ]
+  }
+}
+```
+
+### Multiple Hooks
+
+Format after various operations:
+
+```json title="denji.json"
+{
+  "hooks": {
+    "postAdd": [
+      "oxfmt ./src/icons.tsx"
+    ],
+    "postRemove": [
+      "oxfmt ./src/icons.tsx"
+    ],
+    "postClear": [
+      "oxfmt ./src/icons.tsx"
+    ]
+  }
+}
+```
+
+### Check Before, Format After
+
+Validate formatting before adding, then fix:
+
+```json title="denji.json"
+{
+  "hooks": {
+    "preAdd": [
+      "oxfmt --check ./src/icons.tsx"
+    ],
+    "postAdd": [
+      "oxfmt ./src/icons.tsx"
+    ]
+  }
+}
+```
+
+### Combine with Oxlint
+
+Lint and format together:
+
+```json title="denji.json"
+{
+  "hooks": {
+    "postAdd": [
+      "oxlint ./src/icons.tsx",
+      "oxfmt ./src/icons.tsx"
+    ]
+  }
+}
+```
+
+## Common Commands
+
+<Tabs items={["Format Files", "Check Only", "Custom Config", "Stdin"]}>
+<Tab value="Format Files">
+
+```bash
+oxfmt ./src/icons.tsx
+```
+
+Formats the icons file with Oxfmt. Changes are written directly to the file. If `oxfmt` is not installed globally, use `npx oxfmt` or `npm run fmt`.
+
+</Tab>
+<Tab value="Check Only">
+
+```bash
+oxfmt --check ./src/icons.tsx
+```
+
+Checks if files are formatted without modifying them. Returns a non-zero exit code if any files need formatting. Useful for CI pipelines.
+
+</Tab>
+<Tab value="Custom Config">
+
+```bash
+oxfmt --config oxfmt.config.json ./src/icons.tsx
+```
+
+Uses a specific Oxfmt configuration file. Oxfmt looks for `oxfmt.config.json` by default.
+
+</Tab>
+<Tab value="Stdin">
+
+```bash
+cat ./src/icons.tsx | oxfmt --stdin-filepath icons.tsx
+```
+
+Formats code from stdin. The `--stdin-filepath` option helps Oxfmt determine the correct parser and formatting rules.
+
+</Tab>
+</Tabs>
+
+## Common Flags
+
+| Flag | Description |
+|------|-------------|
+| `--check` | Check if files are formatted without writing |
+| `--config <path>` | Specify config file path |
+| `--stdin-filepath <path>` | Treat stdin input as this file path |
+
+## Package Manager Alternatives
+
+<Tabs items={["npm", "pnpm", "yarn", "bun"]}>
+<Tab value="npm">
+
+```json
+{
+  "hooks": {
+    "postAdd": ["oxfmt ./src/icons.tsx"]
+  }
+}
+```
+
+</Tab>
+<Tab value="pnpm">
+
+```json
+{
+  "hooks": {
+    "postAdd": ["pnpm exec oxfmt ./src/icons.tsx"]
+  }
+}
+```
+
+</Tab>
+<Tab value="yarn">
+
+```json
+{
+  "hooks": {
+    "postAdd": ["yarn oxfmt ./src/icons.tsx"]
+  }
+}
+```
+
+</Tab>
+<Tab value="bun">
+
+```json
+{
+  "hooks": {
+    "postAdd": ["bunx oxfmt ./src/icons.tsx"]
+  }
+}
+```
+
+</Tab>
+</Tabs>
+
+## Using Package Scripts
+
+Define a script in `package.json`:
+
+```json title="package.json"
+{
+  "scripts": {
+    "fmt": "oxfmt",
+    "fmt:check": "oxfmt --check",
+    "fmt:icons": "oxfmt ./src/icons.tsx"
+  }
+}
+```
+
+Reference it in your Denji config:
+
+```json title="denji.json"
+{
+  "hooks": {
+    "postAdd": ["npm run fmt:icons"]
+  }
+}
+```
+
+## Combining with Linters
+
+### With Oxlint (Recommended)
+
+Use the full Oxc toolchain:
+
+```json title="denji.json"
+{
+  "hooks": {
+    "postAdd": [
+      "oxlint ./src/icons.tsx",
+      "oxfmt ./src/icons.tsx"
+    ]
+  }
+}
+```
+
+### With ESLint
+
+```json title="denji.json"
+{
+  "hooks": {
+    "postAdd": [
+      "eslint --fix ./src/icons.tsx",
+      "oxfmt ./src/icons.tsx"
+    ]
+  }
+}
+```
+
+### With Biome
+
+```json title="denji.json"
+{
+  "hooks": {
+    "postAdd": [
+      "@biomejs/biome lint --write ./src/icons.tsx",
+      "oxfmt ./src/icons.tsx"
+    ]
+  }
+}
+```
+
+<Callout type="warn">
+Mixing formatters (like Oxfmt and Biome) can cause conflicts. Choose one formatter and stick with it. Oxfmt is Prettier-compatible, so migration from Prettier should be seamless.
+</Callout>
+
+## Performance Comparison
+
+Based on [official benchmarks](https://github.com/oxc-project/bench-formatter), Oxfmt shows significant performance improvements:
+
+- **~30x faster** than Prettier
+- **~2x faster** than Biome
+- Written in Rust on the Oxc compiler stack
+- Avoids architectural bottlenecks common in existing formatter implementations
+- Optimized for large codebases and CI environments
+
+<Callout type="info">
+Oxfmt's performance makes it ideal for large monorepos and high-throughput CI pipelines where formatting time impacts developer productivity.
+</Callout>
+
+## Migration from Prettier
+
+### Step 1: Install Oxc
+
+```npm
+npm install -D oxfmt
+```
+
+### Step 2: Update Denji Config
+
+```json title="denji.json"
+{
+  "hooks": {
+    "postAdd": [
+      "oxfmt ./src/icons.tsx"
+    ]
+  }
+}
+```
+
+### Step 3: Update Package Scripts
+
+```json title="package.json"
+{
+  "scripts": {
+    "fmt": "oxfmt",
+    "fmt:check": "oxfmt --check"
+  }
+}
+```
+
+### Step 4: (Optional) Remove Prettier
+
+Once confident, remove Prettier:
+
+```bash
+npm uninstall prettier
+```
+
+## Best Practices
+
+1. **Install as a dev dependency** - Don't rely on `npx` for consistent CI builds:
+   ```bash
+   npm install -D oxfmt
+   ```
+
+2. **Use package scripts** - Define formatting commands in `package.json` for consistency:
+   ```json
+   {
+     "scripts": {
+       "fmt": "oxfmt",
+       "fmt:check": "oxfmt --check"
+     }
+   }
+   ```
+
+3. **Target specific files in hooks** - Format only what changed:
+   ```json
+   "postAdd": ["oxfmt ./src/icons.tsx"]
+   ```
+
+4. **Use `--check` in CI** - Validate formatting without writing files:
+   ```bash
+   oxfmt --check .
+   ```
+
+5. **Prettier compatibility** - Oxfmt matches Prettier's JavaScript formatting at ~95% test suite compatibility. Any differences are considered bugs and should be reported.
+
+## Troubleshooting
+
+### Command Not Found
+
+Install Oxfmt as a dev dependency:
+
+```npm
+npm install -D oxfmt
+```
+
+Or use `npx`:
+
+```bash
+npx oxfmt ./src/icons.tsx
+```
+
+### Formatting Differences from Prettier
+
+Oxfmt aims for ~95% compatibility with Prettier's JavaScript/TypeScript formatting. If you encounter formatting differences:
+
+1. Check if you're using the latest version of Oxfmt
+2. Verify your config matches Prettier's settings
+3. Report differences as bugs on the [Oxfmt GitHub](https://github.com/oxc-project/oxc/issues)
+
+The Oxfmt team works with the Prettier team to converge on formatting over time.
+
+### Hook Fails
+
+If the icons file doesn't exist yet, Oxfmt will fail. Use `postAdd` hooks (not `preAdd`) to ensure the file exists:
+
+```json
+{
+  "hooks": {
+    "postAdd": ["oxfmt ./src/icons.tsx"]
+  }
+}
+```
+
+### Alpha Status Issues
+
+Oxfmt is currently in alpha. If you encounter issues:
+
+1. Check the [RFC discussion](https://github.com/oxc-project/oxc/discussions/13608) for known issues
+2. Report bugs on [GitHub Issues](https://github.com/oxc-project/oxc/issues)
+3. Consider using Prettier for production if stability is critical
+
+## Oxfmt vs Prettier
+
+| Feature | Oxfmt | Prettier |
+|---------|-------|----------|
+| Speed | ~30x faster (Rust) | Baseline (JavaScript) |
+| Maturity | Alpha | Stable |
+| Compatibility | ~95% with Prettier | Industry standard |
+| Language Support | JS, TS, JSON, HTML, CSS, MD, GraphQL, and more | Many languages |
+| Built-in Features | Import sorting, Tailwind sorting, embedded formatting | Plugins required |
+| Editor Support | Growing | Extensive |
+
+<Callout type="info">
+Choose Oxfmt for performance in large codebases and CI. Choose Prettier for maximum stability and editor integration. Oxfmt aims to be a drop-in replacement for Prettier with significantly better performance.
+</Callout>
+
+## Complete Oxc Toolchain
+
+Use both Oxlint and Oxfmt for a complete Rust-based toolchain:
+
+```json title="denji.json"
+{
+  "hooks": {
+    "postAdd": [
+      "oxlint ./src/icons.tsx",
+      "oxfmt ./src/icons.tsx"
+    ]
+  }
+}
+```
+
+```json title="package.json"
+{
+  "scripts": {
+    "lint": "oxlint .",
+    "fmt": "oxfmt",
+    "check": "oxlint . && oxfmt --check"
+  }
+}
+```
+
+## Related
+
+- [Oxlint Integration](/docs/integrations/oxlint) - Pair with Oxlint for complete Oxc toolchain
+- [Biome Integration](/docs/integrations/biome) - Alternative all-in-one tool
+- [Prettier Integration](/docs/integrations/prettier) - Oxfmt aims for Prettier compatibility
+- [Hooks](/docs/hooks) - Learn about Denji hooks

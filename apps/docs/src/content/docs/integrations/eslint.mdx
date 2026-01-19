@@ -1,0 +1,319 @@
+---
+title: ESLint
+description: Integrate Denji with ESLint for JavaScript and TypeScript linting
+---
+
+import { Callout } from "fumadocs-ui/components/callout";
+import { Tab, Tabs } from "fumadocs-ui/components/tabs";
+
+[ESLint](https://eslint.org/) is a pluggable linting utility for JavaScript and TypeScript that helps identify and fix problematic patterns in your code.
+
+## Installation
+
+```npm
+npm install -D eslint
+```
+
+## Basic Setup
+
+Add ESLint to your Denji hooks to automatically fix linting issues after adding icons:
+
+```json title="denji.json"
+{
+  "output": "./src/icons.tsx",
+  "framework": "react",
+  "typescript": true,
+  "hooks": {
+    "postAdd": [
+      "npx eslint --fix ./src/icons.tsx"
+    ]
+  }
+}
+```
+
+## Configuration Examples
+
+### Fix with Quiet Mode
+
+Suppress warnings and only show errors:
+
+```json title="denji.json"
+{
+  "hooks": {
+    "postAdd": [
+      "npx eslint --fix --quiet ./src/icons.tsx"
+    ]
+  }
+}
+```
+
+### Multiple Hooks
+
+Run ESLint after various operations:
+
+```json title="denji.json"
+{
+  "hooks": {
+    "postAdd": [
+      "npx eslint --fix ./src/icons.tsx"
+    ],
+    "postRemove": [
+      "npx eslint --fix ./src/icons.tsx"
+    ],
+    "postClear": [
+      "npx eslint --fix ./src/icons.tsx"
+    ]
+  }
+}
+```
+
+### Check Before, Fix After
+
+Validate before adding, then fix issues:
+
+```json title="denji.json"
+{
+  "hooks": {
+    "preAdd": [
+      "npx eslint ./src/icons.tsx"
+    ],
+    "postAdd": [
+      "npx eslint --fix ./src/icons.tsx"
+    ]
+  }
+}
+```
+
+## Common Commands
+
+<Tabs items={["Fix Files", "Check Only", "Custom Config", "With Cache"]}>
+<Tab value="Fix Files">
+
+```bash
+npx eslint --fix ./src/icons.tsx
+```
+
+Automatically fixes linting issues in the icons file.
+
+</Tab>
+<Tab value="Check Only">
+
+```bash
+npx eslint ./src/icons.tsx
+```
+
+Checks for issues without modifying files. Useful for CI pipelines or pre-commit hooks.
+
+</Tab>
+<Tab value="Custom Config">
+
+```bash
+npx eslint --fix --config eslint.config.js ./src/icons.tsx
+```
+
+Uses a specific ESLint configuration file.
+
+</Tab>
+<Tab value="With Cache">
+
+```bash
+npx eslint --fix --cache --cache-location .eslintcache ./src/icons.tsx
+```
+
+Enables caching for faster subsequent runs.
+
+</Tab>
+</Tabs>
+
+## ESLint Options
+
+### Common Flags
+
+| Flag | Description |
+|------|-------------|
+| `--fix` | Automatically fix problems |
+| `--quiet` | Report errors only, ignore warnings |
+| `--cache` | Store results for faster runs |
+| `--config` | Specify config file path |
+| `--no-error-on-unmatched-pattern` | Prevent errors when no files match |
+
+### Examples with Options
+
+```json title="denji.json"
+{
+  "hooks": {
+    "postAdd": [
+      "npx eslint --fix --cache --cache-location .eslintcache ./src/icons.tsx"
+    ]
+  }
+}
+```
+
+## Combining with Prettier
+
+ESLint handles code quality rules, while Prettier handles formatting:
+
+```json title="denji.json"
+{
+  "hooks": {
+    "postAdd": [
+      "npx eslint --fix ./src/icons.tsx",
+      "npx prettier --write ./src/icons.tsx"
+    ]
+  }
+}
+```
+
+<Callout type="warn">
+When using ESLint with Prettier, install `eslint-config-prettier` to disable ESLint rules that conflict with Prettier:
+
+```npm
+npm install -D eslint-config-prettier
+```
+
+Then add it to your ESLint config:
+
+```js title="eslint.config.js"
+import prettier from "eslint-config-prettier";
+
+export default [
+  // ... other configs
+  prettier,
+];
+```
+</Callout>
+
+## Package Manager Alternatives
+
+<Tabs items={["npm", "pnpm", "yarn", "bun"]}>
+<Tab value="npm">
+
+```json
+{
+  "hooks": {
+    "postAdd": ["npx eslint --fix ./src/icons.tsx"]
+  }
+}
+```
+
+</Tab>
+<Tab value="pnpm">
+
+```json
+{
+  "hooks": {
+    "postAdd": ["pnpm exec eslint --fix ./src/icons.tsx"]
+  }
+}
+```
+
+</Tab>
+<Tab value="yarn">
+
+```json
+{
+  "hooks": {
+    "postAdd": ["yarn exec eslint --fix ./src/icons.tsx"]
+  }
+}
+```
+
+</Tab>
+<Tab value="bun">
+
+```json
+{
+  "hooks": {
+    "postAdd": ["bunx eslint --fix ./src/icons.tsx"]
+  }
+}
+```
+
+</Tab>
+</Tabs>
+
+## Using Package Scripts
+
+Define a script in `package.json`:
+
+```json title="package.json"
+{
+  "scripts": {
+    "lint": "eslint --fix .",
+    "lint:icons": "eslint --fix ./src/icons.tsx"
+  }
+}
+```
+
+Reference it in your Denji config:
+
+```json title="denji.json"
+{
+  "hooks": {
+    "postAdd": ["npm run lint:icons"]
+  }
+}
+```
+
+## Performance Tips
+
+1. **Use cache** - Enable caching for faster linting:
+   ```json
+   "postAdd": ["npx eslint --fix --cache ./src/icons.tsx"]
+   ```
+
+2. **Target specific file** - Lint only the icons file instead of globs:
+   ```json
+   "postAdd": ["npx eslint --fix ./src/icons.tsx"]
+   ```
+
+3. **Suppress warnings** - Use `--quiet` to only report errors:
+   ```json
+   "postAdd": ["npx eslint --fix --quiet ./src/icons.tsx"]
+   ```
+
+## Troubleshooting
+
+### ESLint Not Found
+
+Install ESLint as a dev dependency:
+
+```npm
+npm install -D eslint
+```
+
+### Parse Errors with TypeScript
+
+Ensure you have TypeScript ESLint parser installed:
+
+```npm
+npm install -D @typescript-eslint/parser @typescript-eslint/eslint-plugin
+```
+
+### Hook Fails on First Run
+
+If the icons file doesn't exist yet, ESLint may fail. Use `--no-error-on-unmatched-pattern`:
+
+```json
+{
+  "hooks": {
+    "postAdd": [
+      "npx eslint --fix --no-error-on-unmatched-pattern ./src/icons.tsx"
+    ]
+  }
+}
+```
+
+### Conflicting Rules with Prettier
+
+Install and configure `eslint-config-prettier` to disable conflicting rules:
+
+```npm
+npm install -D eslint-config-prettier
+```
+
+## Related
+
+- [Prettier Integration](/docs/integrations/prettier) - Code formatting
+- [Biome Integration](/docs/integrations/biome) - All-in-one alternative
+- [Configuration](/docs/configuration) - Denji configuration options

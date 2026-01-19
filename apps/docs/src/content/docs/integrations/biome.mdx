@@ -1,0 +1,418 @@
+---
+title: Biome
+description: Integrate Denji with Biome for fast all-in-one formatting and linting
+---
+
+import { Callout } from "fumadocs-ui/components/callout";
+import { Tab, Tabs } from "fumadocs-ui/components/tabs";
+
+[Biome](https://biomejs.dev/) is a fast, all-in-one toolchain for web projects that provides formatting and linting in a single tool. It's built in Rust for maximum performance and serves as a drop-in replacement for ESLint and Prettier.
+
+## Installation
+
+```npm
+npm install -D @biomejs/biome
+```
+
+## Basic Setup
+
+Add Biome to your Denji hooks to automatically format and lint icons after adding them:
+
+```json title="denji.json"
+{
+  "output": "./src/icons.tsx",
+  "framework": "react",
+  "typescript": true,
+  "hooks": {
+    "postAdd": [
+      "npx @biomejs/biome check --write ./src/icons.tsx"
+    ]
+  }
+}
+```
+
+<Callout type="info">
+The `check` command runs both formatting and linting in a single pass, making Biome faster than running separate tools.
+</Callout>
+
+## Configuration Examples
+
+### Format and Lint with Safe Fixes
+
+```json title="denji.json"
+{
+  "hooks": {
+    "postAdd": [
+      "npx @biomejs/biome check --write ./src/icons.tsx"
+    ]
+  }
+}
+```
+
+### Format Only
+
+```json title="denji.json"
+{
+  "hooks": {
+    "postAdd": [
+      "npx @biomejs/biome format --write ./src/icons.tsx"
+    ]
+  }
+}
+```
+
+### Lint Only
+
+```json title="denji.json"
+{
+  "hooks": {
+    "postAdd": [
+      "npx @biomejs/biome lint --write ./src/icons.tsx"
+    ]
+  }
+}
+```
+
+### Multiple Hooks
+
+Run Biome after various operations:
+
+```json title="denji.json"
+{
+  "hooks": {
+    "postAdd": [
+      "npx @biomejs/biome check --write ./src/icons.tsx"
+    ],
+    "postRemove": [
+      "npx @biomejs/biome check --write ./src/icons.tsx"
+    ],
+    "postClear": [
+      "npx @biomejs/biome check --write ./src/icons.tsx"
+    ]
+  }
+}
+```
+
+### Apply Unsafe Fixes
+
+For more aggressive fixes that might change code behavior:
+
+```json title="denji.json"
+{
+  "hooks": {
+    "postAdd": [
+      "npx @biomejs/biome check --write --unsafe ./src/icons.tsx"
+    ]
+  }
+}
+```
+
+<Callout type="warn">
+Use `--unsafe` with caution as it may apply fixes that change code behavior. Review changes carefully.
+</Callout>
+
+## Common Commands
+
+<Tabs items={["Check & Fix", "Format Only", "Lint Only", "CI Mode"]}>
+<Tab value="Check & Fix">
+
+```bash
+npx @biomejs/biome check --write ./src/icons.tsx
+```
+
+Runs formatting and linting with automatic safe fixes applied. This is the most common command.
+
+</Tab>
+<Tab value="Format Only">
+
+```bash
+npx @biomejs/biome format --write ./src/icons.tsx
+```
+
+Formats files without running the linter. Faster when you only need formatting.
+
+</Tab>
+<Tab value="Lint Only">
+
+```bash
+npx @biomejs/biome lint --write ./src/icons.tsx
+```
+
+Lints files with automatic safe fixes, without formatting. Useful when formatting is handled separately.
+
+</Tab>
+<Tab value="CI Mode">
+
+```bash
+npx @biomejs/biome ci ./src/icons.tsx
+```
+
+Runs checks without fixes and exits with error code on issues. Perfect for CI pipelines to ensure code quality.
+
+</Tab>
+</Tabs>
+
+## Biome Commands
+
+### `check`
+
+Runs both formatting and linting:
+
+```bash
+# Check and fix
+npx @biomejs/biome check --write ./src/icons.tsx
+
+# Check only (no fixes)
+npx @biomejs/biome check ./src/icons.tsx
+
+# Apply unsafe fixes
+npx @biomejs/biome check --write --unsafe ./src/icons.tsx
+
+# Check staged files
+npx @biomejs/biome check --staged
+```
+
+### `format`
+
+Runs only formatting:
+
+```bash
+# Format files
+npx @biomejs/biome format --write ./src/icons.tsx
+
+# Check formatting
+npx @biomejs/biome format ./src/icons.tsx
+```
+
+### `lint`
+
+Runs only linting:
+
+```bash
+# Lint with fixes
+npx @biomejs/biome lint --write ./src/icons.tsx
+
+# Lint without fixes
+npx @biomejs/biome lint ./src/icons.tsx
+
+# Apply unsafe fixes
+npx @biomejs/biome lint --write --unsafe ./src/icons.tsx
+```
+
+### `ci`
+
+CI mode - checks without fixes:
+
+```bash
+npx @biomejs/biome ci ./src/icons.tsx
+```
+
+
+
+## Package Manager Alternatives
+
+<Tabs items={["npm", "pnpm", "yarn", "bun"]}>
+<Tab value="npm">
+
+```json
+{
+  "hooks": {
+    "postAdd": ["npx @biomejs/biome check --write ./src/icons.tsx"]
+  }
+}
+```
+
+</Tab>
+<Tab value="pnpm">
+
+```json
+{
+  "hooks": {
+    "postAdd": ["pnpm exec biome check --write ./src/icons.tsx"]
+  }
+}
+```
+
+</Tab>
+<Tab value="yarn">
+
+```json
+{
+  "hooks": {
+    "postAdd": ["yarn exec biome check --write ./src/icons.tsx"]
+  }
+}
+```
+
+</Tab>
+<Tab value="bun">
+
+```json
+{
+  "hooks": {
+    "postAdd": ["bunx biome check --write ./src/icons.tsx"]
+  }
+}
+```
+
+</Tab>
+</Tabs>
+
+## Using Package Scripts
+
+Define a script in `package.json`:
+
+```json title="package.json"
+{
+  "scripts": {
+    "format": "biome check --write .",
+    "format:icons": "biome check --write ./src/icons.tsx",
+    "lint": "biome lint .",
+    "check": "biome ci ."
+  }
+}
+```
+
+Reference it in your Denji config:
+
+```json title="denji.json"
+{
+  "hooks": {
+    "postAdd": ["npm run format:icons"]
+  }
+}
+```
+
+## Performance Comparison
+
+Biome is significantly faster than traditional tooling:
+
+- **5-10x faster** than ESLint for linting
+- **20-30x faster** than Prettier for formatting
+- **Single tool** replaces both ESLint and Prettier
+- **Zero config** works out of the box
+
+<Callout type="info">
+Biome's performance gains come from being written in Rust and designed from the ground up for speed.
+</Callout>
+
+## Migration from ESLint/Prettier
+
+### Step 1: Remove Old Tools
+
+```bash
+npm uninstall eslint prettier eslint-config-prettier
+```
+
+### Step 2: Install Biome
+
+```npm
+npm install -D @biomejs/biome
+```
+
+### Step 3: Initialize Configuration
+
+```bash
+npx @biomejs/biome init
+```
+
+### Step 4: Update Denji Config
+
+```json title="denji.json"
+{
+  "hooks": {
+    "postAdd": [
+      "npx @biomejs/biome check --write ./src/icons.tsx"
+    ]
+  }
+}
+```
+
+### Step 5: Update Package Scripts
+
+```json title="package.json"
+{
+  "scripts": {
+    "format": "biome check --write .",
+    "lint": "biome lint .",
+    "check": "biome ci ."
+  }
+}
+```
+
+## Performance Tips
+
+1. **Use `check` command** - Runs formatting and linting in one pass:
+   ```json
+   "postAdd": ["npx @biomejs/biome check --write ./src/icons.tsx"]
+   ```
+
+2. **Target specific file** - Avoid unnecessary file scanning:
+   ```json
+   "postAdd": ["npx @biomejs/biome check --write ./src/icons.tsx"]
+   ```
+
+3. **Use `--changed` flag** - Only check modified files:
+   ```bash
+   npx @biomejs/biome check --changed --write
+   ```
+
+4. **Enable caching** - Biome caches by default for faster subsequent runs
+
+## Troubleshooting
+
+### Biome Not Found
+
+Install Biome as a dev dependency:
+
+```npm
+npm install -D @biomejs/biome
+```
+
+### Different Formatting than Prettier
+
+Biome aims for Prettier compatibility but may have minor differences. You can configure Biome to match your preferences in `biome.json`.
+
+### Hook Fails on First Run
+
+If the icons file doesn't exist yet, use the `--files-ignore-unknown` flag:
+
+```json
+{
+  "hooks": {
+    "postAdd": [
+      "npx @biomejs/biome check --write --files-ignore-unknown ./src/icons.tsx"
+    ]
+  }
+}
+```
+
+### Unsafe Fixes Required
+
+Some issues require unsafe fixes. Review the output and decide:
+
+```bash
+npx @biomejs/biome check --write --unsafe ./src/icons.tsx
+```
+
+## Biome vs ESLint/Prettier
+
+| Feature | Biome | ESLint + Prettier |
+|---------|-------|-------------------|
+| Speed | Very fast (Rust) | Slower (JavaScript) |
+| Setup | Zero config | Requires configuration |
+| Tools | All-in-one | Separate tools |
+| Rules | 200+ rules | 1000+ rules (with plugins) |
+| Compatibility | High Prettier compatibility | N/A |
+| Ecosystem | Growing | Mature |
+
+<Callout type="info">
+Choose Biome for speed and simplicity. Choose ESLint if you need specific plugins or rules not yet available in Biome.
+</Callout>
+
+## Related
+
+- [Ultracite Integration](/docs/integrations/ultracite) - Zero-config Biome preset
+- [ESLint Integration](/docs/integrations/eslint) - Alternative linter
+- [Prettier Integration](/docs/integrations/prettier) - Alternative formatter
+- [Configuration](/docs/configuration) - Denji configuration options

@@ -1,0 +1,488 @@
+---
+title: Ultracite
+description: Integrate Denji with Ultracite for zero-config Biome preset
+---
+
+import { Callout } from "fumadocs-ui/components/callout";
+import { Tab, Tabs } from "fumadocs-ui/components/tabs";
+
+[Ultracite](https://docs.ultracite.ai) is a highly opinionated, zero-configuration preset for JavaScript and TypeScript linting and formatting. It supports three major toolchains:
+
+- **[Biome](https://biomejs.dev/)** — The modern, all-in-one toolchain written in Rust
+- **[ESLint](https://eslint.org/) + [Prettier](https://prettier.io/) + [Stylelint](https://stylelint.io/)** — The most mature and comprehensive linting ecosystem
+- **[Oxlint](https://oxc.rs/docs/guide/usage/linter.html) + [Oxfmt](https://oxc.rs/docs/guide/usage/formatter.html)** — The fastest linter available, 50-100x faster than ESLint
+
+## Quick Start
+
+The fastest way to get started is using the interactive installer:
+
+```bash
+npx ultracite init
+```
+
+This will:
+1. Detect your project structure
+2. Ask which toolchain you prefer (Biome, ESLint+Prettier, or Oxlint+Oxfmt)
+3. Install necessary dependencies
+4. Create appropriate configuration files
+5. Set up editor integration
+
+<Callout type="info">
+For manual installation, run `npm install -D ultracite` and then configure your preferred toolchain.
+</Callout>
+
+## How It Works
+
+Once set up, Ultracite runs mostly in the background — **automatically formatting your code and applying fixes every time you save your files**. Because the underlying tools are highly optimized (especially the Rust-based Biome and Oxlint), running Ultracite's checks is extremely fast and can comfortably run on every save without lag. This means you can focus on building and shipping instead of manually correcting style issues or debugging runtime errors.
+
+## Basic Setup
+
+Add Ultracite to your Denji hooks to automatically fix and format icons after adding them:
+
+```json title="denji.json"
+{
+  "output": "./src/icons.tsx",
+  "framework": "react",
+  "typescript": true,
+  "hooks": {
+    "postAdd": [
+      "npx ultracite fix ./src/icons.tsx"
+    ]
+  }
+}
+```
+
+## Configuration Examples
+
+### Fix with All Safe Fixes
+
+```json title="denji.json"
+{
+  "hooks": {
+    "postAdd": [
+      "npx ultracite fix ./src/icons.tsx"
+    ]
+  }
+}
+```
+
+### Check Only
+
+```json title="denji.json"
+{
+  "hooks": {
+    "preAdd": [
+      "npx ultracite check ./src/icons.tsx"
+    ]
+  }
+}
+```
+
+### Multiple Hooks
+
+Run Ultracite after various operations:
+
+```json title="denji.json"
+{
+  "hooks": {
+    "postAdd": [
+      "npx ultracite fix ./src/icons.tsx"
+    ],
+    "postRemove": [
+      "npx ultracite fix ./src/icons.tsx"
+    ],
+    "postClear": [
+      "npx ultracite fix ./src/icons.tsx"
+    ]
+  }
+}
+```
+
+### Apply Unsafe Fixes
+
+For more aggressive fixes:
+
+```json title="denji.json"
+{
+  "hooks": {
+    "postAdd": [
+      "npx ultracite fix --unsafe ./src/icons.tsx"
+    ]
+  }
+}
+```
+
+<Callout type="warn">
+Use `--unsafe` with caution as it may apply fixes that change code behavior. Review changes carefully.
+</Callout>
+
+## Common Commands
+
+<Tabs items={["Fix Issues", "Check Only", "Unsafe Fixes", "Specific Linter"]}>
+<Tab value="Fix Issues">
+
+```bash
+npx ultracite fix ./src/icons.tsx
+```
+
+Runs linter and formatter with automatic fixes applied. This is the most common command.
+
+</Tab>
+<Tab value="Check Only">
+
+```bash
+npx ultracite check ./src/icons.tsx
+```
+
+Checks for issues without modifying files. Useful for CI pipelines or pre-commit hooks.
+
+</Tab>
+<Tab value="Unsafe Fixes">
+
+```bash
+npx ultracite fix --unsafe ./src/icons.tsx
+```
+
+Applies potentially breaking changes for more aggressive fixes.
+
+</Tab>
+<Tab value="Specific Linter">
+
+```bash
+npx ultracite fix --linter biome ./src/icons.tsx
+```
+
+Uses a specific linter. Options: `biome`, `eslint`, `oxlint`.
+
+</Tab>
+</Tabs>
+
+## Ultracite Commands
+
+### `fix`
+
+Fixes all auto-fixable issues:
+
+```bash
+# Fix all files
+npx ultracite fix
+
+# Fix specific files
+npx ultracite fix ./src/icons.tsx
+
+# Apply unsafe fixes
+npx ultracite fix --unsafe ./src/icons.tsx
+
+# Use specific linter
+npx ultracite fix --linter biome ./src/icons.tsx
+```
+
+### `check`
+
+Checks for issues without fixes:
+
+```bash
+# Check all files
+npx ultracite check
+
+# Check specific files
+npx ultracite check ./src/icons.tsx
+
+# Filter by severity
+npx ultracite check --diagnostic-level error ./src/icons.tsx
+```
+
+### `doctor`
+
+Diagnoses setup and configuration:
+
+```bash
+npx ultracite doctor
+```
+
+## Core Principles
+
+Ultracite is designed with these key goals:
+
+### Lightning-Fast Performance
+
+Ultracite benefits from the performance of Rust-based tools like [Biome](https://biomejs.dev/) and [Oxlint](https://oxc.rs/), enabling instant feedback even on large codebases. This allows it to run automatically on every file save without lag.
+
+### Zero-Config by Design
+
+Ultracite is designed to be zero-config by default. This allows new users to get started quickly without needing to configure their linter or formatter, saving teams time when onboarding new developers.
+
+The goal is to provide a default configuration that works for most projects, while still allowing customization for those who need it.
+
+### Intuitive and Simple
+
+Ultracite should be as invisible as possible. Preferably, it should not require any configuration or action from the user. When feedback is needed, it should be easy to understand and act on.
+
+### Maximum Type Safety
+
+Ultracite is designed to be as type-safe as possible. It uses TypeScript's strict mode and additional lint rules to catch errors and provide suggestions for improvements.
+
+### Plays Nice with Others
+
+Ultracite works alongside other tools and libraries without conflict. You can choose the toolchain that best fits your project's needs.
+
+## Toolchain Selection
+
+Ultracite automatically detects and uses the appropriate linter:
+
+1. Checks for `biome.json` → uses **Biome**
+2. Checks for `.eslintrc.*` or `eslint.config.js` → uses **ESLint + Prettier + Stylelint**
+3. Checks for `oxlint.json` → uses **Oxlint + Oxfmt**
+4. Falls back to **Biome** (default)
+
+You can also explicitly specify a toolchain:
+
+```bash
+npx ultracite fix --linter biome ./src/icons.tsx
+npx ultracite fix --linter eslint ./src/icons.tsx
+npx ultracite fix --linter oxlint ./src/icons.tsx
+```
+
+## Package Manager Alternatives
+
+<Tabs items={["npm", "pnpm", "yarn", "bun"]}>
+<Tab value="npm">
+
+```json
+{
+  "hooks": {
+    "postAdd": ["npx ultracite fix ./src/icons.tsx"]
+  }
+}
+```
+
+</Tab>
+<Tab value="pnpm">
+
+```json
+{
+  "hooks": {
+    "postAdd": ["pnpm exec ultracite fix ./src/icons.tsx"]
+  }
+}
+```
+
+</Tab>
+<Tab value="yarn">
+
+```json
+{
+  "hooks": {
+    "postAdd": ["yarn exec ultracite fix ./src/icons.tsx"]
+  }
+}
+```
+
+</Tab>
+<Tab value="bun">
+
+```json
+{
+  "hooks": {
+    "postAdd": ["bunx ultracite fix ./src/icons.tsx"]
+  }
+}
+```
+
+</Tab>
+</Tabs>
+
+## Using Package Scripts
+
+Define a script in `package.json`:
+
+```json title="package.json"
+{
+  "scripts": {
+    "format": "ultracite fix .",
+    "format:icons": "ultracite fix ./src/icons.tsx",
+    "check": "ultracite check ."
+  }
+}
+```
+
+Reference it in your Denji config:
+
+```json title="denji.json"
+{
+  "hooks": {
+    "postAdd": ["npm run format:icons"]
+  }
+}
+```
+
+## Diagnostic Levels
+
+Filter checks by severity:
+
+```bash
+# Only errors
+npx ultracite check --diagnostic-level error ./src/icons.tsx
+
+# Errors and warnings
+npx ultracite check --diagnostic-level warning ./src/icons.tsx
+
+# All diagnostics
+npx ultracite check --diagnostic-level hint ./src/icons.tsx
+```
+
+Use in hooks:
+
+```json title="denji.json"
+{
+  "hooks": {
+    "preAdd": [
+      "npx ultracite check --diagnostic-level error ./src/icons.tsx"
+    ]
+  }
+}
+```
+
+## Migration from ESLint/Prettier
+
+### Step 1: Remove Old Tools
+
+```bash
+npm uninstall eslint prettier @typescript-eslint/parser @typescript-eslint/eslint-plugin
+```
+
+### Step 2: Install Ultracite
+
+```npm
+npm install -D ultracite
+```
+
+### Step 3: Update Denji Config
+
+```json title="denji.json"
+{
+  "hooks": {
+    "postAdd": [
+      "npx ultracite fix ./src/icons.tsx"
+    ]
+  }
+}
+```
+
+### Step 4: Update Package Scripts
+
+```json title="package.json"
+{
+  "scripts": {
+    "format": "ultracite fix .",
+    "lint": "ultracite check .",
+    "check": "ultracite check ."
+  }
+}
+```
+
+### Step 5: Run Doctor
+
+Verify everything is set up correctly:
+
+```bash
+npx ultracite doctor
+```
+
+## Performance Tips
+
+1. **Target specific files** - Avoid unnecessary scanning:
+   ```json
+   "postAdd": ["npx ultracite fix ./src/icons.tsx"]
+   ```
+
+2. **Use check for validation** - Faster when you don't need fixes:
+   ```json
+   "preAdd": ["npx ultracite check ./src/icons.tsx"]
+   ```
+
+3. **Filter diagnostics** - Only show errors in CI:
+   ```bash
+   npx ultracite check --diagnostic-level error
+   ```
+
+## Troubleshooting
+
+### Ultracite Not Found
+
+Install Ultracite as a dev dependency:
+
+```npm
+npm install -D ultracite
+```
+
+### No Linter Detected
+
+Run the doctor command to diagnose:
+
+```bash
+npx ultracite doctor
+```
+
+Ultracite will suggest which configuration file to create.
+
+### Hook Fails on First Run
+
+If the icons file doesn't exist yet, Ultracite may fail. Ensure the file exists before running:
+
+```json
+{
+  "hooks": {
+    "postAdd": [
+      "npx ultracite fix ./src/icons.tsx"
+    ]
+  }
+}
+```
+
+### Unsafe Fixes Required
+
+Some issues require unsafe fixes. Review the output and decide:
+
+```bash
+npx ultracite fix --unsafe ./src/icons.tsx
+```
+
+### Different Linter Needed
+
+Specify which linter to use:
+
+```bash
+npx ultracite fix --linter eslint ./src/icons.tsx
+```
+
+## Ultracite vs Direct Tooling
+
+| Feature | Ultracite | Biome | ESLint + Prettier | Oxlint + Oxfmt |
+|---------|-----------|-------|-------------------|----------------|
+| Setup | `npx ultracite init` | Manual config | Complex config | Manual setup |
+| Config Required | Zero | Minimal | Extensive | Minimal |
+| Speed (Biome) | Very fast | Very fast | N/A | N/A |
+| Speed (ESLint) | Fast | N/A | Baseline | N/A |
+| Speed (Oxlint) | Extremely fast | N/A | N/A | Extremely fast |
+| Opinionated | Highly | Moderately | Flexible | Minimal |
+| Type Safety | Maximum | High | Configurable | Growing |
+| Toolchain Choice | 3 options | N/A | N/A | N/A |
+| Setup Time | < 1 minute | ~5 minutes | ~30 minutes | ~10 minutes |
+
+<Callout type="info">
+Choose Ultracite for zero-config setup with maximum type safety and multiple toolchain options. Choose direct tooling (Biome, ESLint, or Oxlint) if you need granular control over every configuration detail.
+</Callout>
+
+## Code Standards
+
+Ultracite enforces strict, opinionated standards optimized for modern development. See the [Ultracite documentation](https://docs.ultracite.ai).
+
+## Related
+
+- [Biome Integration](/docs/integrations/biome) - One of Ultracite's supported toolchains
+- [ESLint Integration](/docs/integrations/eslint) - One of Ultracite's supported toolchains
+- [Prettier Integration](/docs/integrations/prettier) - Part of ESLint toolchain option
+- [Oxlint Integration](/docs/integrations/oxlint) - One of Ultracite's supported toolchains
+- [Oxfmt Integration](/docs/integrations/oxfmt) - Part of Oxlint toolchain option
+- [Configuration](/docs/configuration) - Denji configuration options

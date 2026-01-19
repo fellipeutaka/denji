@@ -1,0 +1,635 @@
+---
+title: Oxlint
+description: Integrate Denji with Oxlint for high-performance Rust-based linting
+---
+
+import { Callout } from "fumadocs-ui/components/callout";
+import { Tab, Tabs } from "fumadocs-ui/components/tabs";
+
+[Oxlint](https://oxc.rs/docs/guide/usage/linter.html) is a high-performance JavaScript and TypeScript linter written in Rust, part of the Oxc project. Built for scale, Oxlint is 50-100x faster than ESLint while providing correctness-focused defaults and over 520 rules.
+
+## Key Features
+
+- **Built for scale** - Optimized for large repositories and CI environments
+- **Type-aware linting (alpha)** - Opt-in type checking using tsgolint and typescript-go
+- **Multi-file analysis** - Project-wide module graph for cross-file checks
+- **Automatic fixes** - Applies safe transformations automatically
+- **Correctness-focused** - Prioritizes high-signal checks that surface incorrect, unsafe, or useless code
+
+## Installation
+
+Install Oxlint as a dev dependency:
+
+```npm
+npm install -D oxlint
+```
+
+Add scripts to your `package.json`:
+
+```json title="package.json"
+{
+  "scripts": {
+    "lint": "oxlint",
+    "lint:fix": "oxlint --fix"
+  }
+}
+```
+
+<Callout type="info">
+Oxlint is 50-100x faster than ESLint, making it ideal for large codebases and CI pipelines where linting time matters.
+</Callout>
+
+## Basic Setup
+
+Add Oxlint to your Denji hooks to automatically lint icons after adding them:
+
+```json title="denji.json"
+{
+  "output": "./src/icons.tsx",
+  "framework": "react",
+  "typescript": true,
+  "hooks": {
+    "postAdd": [
+      "oxlint --fix ./src/icons.tsx"
+    ]
+  }
+}
+```
+
+## Automatic Fixes
+
+Oxlint can automatically fix many issues using the `--fix` flag:
+
+```json title="denji.json"
+{
+  "hooks": {
+    "postAdd": [
+      "oxlint --fix ./src/icons.tsx"
+    ]
+  }
+}
+```
+
+This applies safe transformations to your code, fixing common issues automatically.
+
+<Callout type="info">
+While Oxlint fixes many issues, you may still want to combine it with a formatter like [Oxfmt](/docs/integrations/oxfmt) or [Biome](/docs/integrations/biome) for consistent code style.
+</Callout>
+
+## Type-Aware Linting
+
+Type-aware linting enables rules that rely on TypeScript's type system, such as detecting unhandled promises or unsafe assignments. In Oxlint, type-aware linting is provided by [`tsgolint`](https://github.com/oxc-project/tsgolint) and uses [`typescript-go`](https://github.com/microsoft/typescript-go).
+
+<Callout type="warn">
+This feature is currently **alpha**. Rule coverage, performance, and compatibility continue to improve. It requires TypeScript 7.0+ and an additional dependency.
+</Callout>
+
+### Installation
+
+Type-aware linting requires an additional dependency:
+
+```npm
+npm install -D oxlint-tsgolint@latest
+```
+
+### Usage
+
+To enable type-aware linting, you must pass the `--type-aware` flag:
+
+```json title="denji.json"
+{
+  "hooks": {
+    "postAdd": [
+      "oxlint --type-aware --fix ./src/icons.tsx"
+    ]
+  }
+}
+```
+
+Type-aware linting is **opt-in** and does not run unless the `--type-aware` flag is provided.
+
+### Configuration
+
+Type-aware rules are configured like other Oxlint rules in `.oxlintrc.json`:
+
+```json title=".oxlintrc.json"
+{
+  "plugins": ["typescript"],
+  "rules": {
+    "typescript/no-floating-promises": "error",
+    "typescript/no-unsafe-assignment": "warn"
+  }
+}
+```
+
+### With Type Checking
+
+Enable type checking to report TypeScript errors alongside lint results:
+
+```json title="denji.json"
+{
+  "hooks": {
+    "postAdd": [
+      "oxlint --type-aware --type-check --fix ./src/icons.tsx"
+    ]
+  }
+}
+```
+
+This can replace a separate `tsc --noEmit` step in your workflow.
+
+See the [official type-aware linting docs](https://oxc.rs/docs/guide/usage/linter/type-aware) for more details.
+
+## Multi-File Analysis
+
+Oxlint supports multi-file analysis as a first-class capability. When enabled, Oxlint builds a project-wide module graph and shares parsing and resolution across rules.
+
+This improves checks that depend on cross-file imports and helps avoid performance issues with rules like `import/no-cycle` that often cause slowdowns in ESLint.
+
+See the [official multi-file analysis docs](https://oxc.rs/docs/guide/usage/linter/multi-file-analysis) for more details.
+
+## Configuration Examples
+
+### Lint and Fix with Default Rules
+
+```json title="denji.json"
+{
+  "hooks": {
+    "postAdd": [
+      "oxlint --fix ./src/icons.tsx"
+    ]
+  }
+}
+```
+
+### Deny Warnings
+
+Treat warnings as errors:
+
+```json title="denji.json"
+{
+  "hooks": {
+    "postAdd": [
+      "oxlint --fix --deny-warnings ./src/icons.tsx"
+    ]
+  }
+}
+```
+
+### Multiple Hooks
+
+Run Oxlint after various operations:
+
+```json title="denji.json"
+{
+  "hooks": {
+    "postAdd": [
+      "oxlint --fix ./src/icons.tsx"
+    ],
+    "postRemove": [
+      "oxlint --fix ./src/icons.tsx"
+    ],
+    "preAdd": [
+      "oxlint ./src/icons.tsx"
+    ]
+  }
+}
+```
+
+### Combine with Formatter
+
+Lint and format together:
+
+```json title="denji.json"
+{
+  "hooks": {
+    "postAdd": [
+      "oxlint --fix ./src/icons.tsx",
+      "oxc fmt ./src/icons.tsx"
+    ]
+  }
+}
+```
+
+## Common Commands
+
+<Tabs items={["Lint & Fix", "Lint Only", "Deny Warnings", "Specific Rules"]}>
+<Tab value="Lint & Fix">
+
+```bash
+oxlint --fix ./src/icons.tsx
+```
+
+Lints and automatically fixes issues in the icons file.
+
+</Tab>
+<Tab value="Lint Only">
+
+```bash
+oxlint ./src/icons.tsx
+```
+
+Lints without applying fixes. Useful for CI checks.
+
+</Tab>
+<Tab value="Deny Warnings">
+
+```bash
+oxlint --fix --deny-warnings ./src/icons.tsx
+```
+
+Treats warnings as errors. Useful for strict CI checks.
+
+</Tab>
+<Tab value="Specific Rules">
+
+```bash
+oxlint --fix -D no-alert -W no-debugger -A no-plusplus ./src/icons.tsx
+```
+
+Controls rule severities:
+- `-D` (deny/error)
+- `-W` (warn)
+- `-A` (allow/off)
+
+</Tab>
+</Tabs>
+
+## Rule Severity Control
+
+Control rule severities directly from the command line:
+
+```bash
+# Deny (error)
+oxlint -D no-alert ./src/icons.tsx
+
+# Warn
+oxlint -W no-debugger ./src/icons.tsx
+
+# Allow (disable)
+oxlint -A no-plusplus ./src/icons.tsx
+
+# Combine multiple
+oxlint -D no-alert -W no-debugger -A no-plusplus ./src/icons.tsx
+```
+
+Use in hooks:
+
+```json title="denji.json"
+{
+  "hooks": {
+    "postAdd": [
+      "oxlint --fix -D no-alert -D no-debugger ./src/icons.tsx"
+    ]
+  }
+}
+```
+
+## Common Flags
+
+| Flag | Description |
+|------|-------------|
+| `--fix` | Automatically fix issues |
+| `--type-aware` | Enable type-aware linting (requires oxlint-tsgolint) |
+| `--type-check` | Report TypeScript errors alongside lint results |
+| `--deny-warnings` | Treat warnings as errors |
+| `--config` | Path to config file |
+| `-D <rule>` | Deny/error for specific rule |
+| `-W <rule>` | Warn for specific rule |
+| `-A <rule>` | Allow/disable specific rule |
+| `--silent` | Suppress output |
+
+## Package Manager Alternatives
+
+<Tabs items={["npm", "pnpm", "yarn", "bun"]}>
+<Tab value="npm">
+
+```json
+{
+  "hooks": {
+    "postAdd": ["npm run lint:fix"]
+  }
+}
+```
+
+</Tab>
+<Tab value="pnpm">
+
+```json
+{
+  "hooks": {
+    "postAdd": ["pnpm lint:fix"]
+  }
+}
+```
+
+</Tab>
+<Tab value="yarn">
+
+```json
+{
+  "hooks": {
+    "postAdd": ["yarn lint:fix"]
+  }
+}
+```
+
+</Tab>
+<Tab value="bun">
+
+```json
+{
+  "hooks": {
+    "postAdd": ["bun run lint:fix"]
+  }
+}
+```
+
+</Tab>
+</Tabs>
+
+<Callout type="info">
+If Oxlint is not installed locally, you can use `npx oxlint@latest` to run the latest version without installation.
+</Callout>
+
+## Using Package Scripts
+
+Define scripts in `package.json`:
+
+```json title="package.json"
+{
+  "scripts": {
+    "lint": "oxlint .",
+    "lint:fix": "oxlint --fix .",
+    "lint:icons": "oxlint --fix ./src/icons.tsx",
+    "lint:strict": "oxlint --deny-warnings ."
+  }
+}
+```
+
+Reference them in your Denji config:
+
+```json title="denji.json"
+{
+  "hooks": {
+    "postAdd": ["npm run lint:icons"]
+  }
+}
+```
+
+## Combining with Formatters
+
+Oxlint includes automatic fixes for many rules, but you may still want to combine it with a formatter for consistent code style:
+
+### With Oxfmt
+
+```json title="denji.json"
+{
+  "hooks": {
+    "postAdd": [
+      "oxlint --fix ./src/icons.tsx",
+      "oxc fmt ./src/icons.tsx"
+    ]
+  }
+}
+```
+
+### With Biome
+
+```json title="denji.json"
+{
+  "hooks": {
+    "postAdd": [
+      "oxlint --fix ./src/icons.tsx",
+      "biome format --write ./src/icons.tsx"
+    ]
+  }
+}
+```
+
+### With Prettier
+
+```json title="denji.json"
+{
+  "hooks": {
+    "postAdd": [
+      "oxlint --fix ./src/icons.tsx",
+      "prettier --write ./src/icons.tsx"
+    ]
+  }
+}
+```
+
+## Supported File Types
+
+Oxlint works with:
+
+- JavaScript and TypeScript (`.js`, `.mjs`, `.cjs`, `.ts`, `.mts`, `.cts`)
+- JSX and TSX (`.jsx`, `.tsx`)
+- Framework files (`.vue`, `.svelte`, `.astro`) - lints `<script>` blocks only
+
+## Supported Rules
+
+Oxlint includes over 520 rules from:
+
+- ESLint core rules
+- TypeScript ESLint rules
+- React plugin rules
+- JSX a11y rules
+- Import plugin rules
+- Unicorn plugin rules
+- Jest plugin rules
+
+See the [official rules documentation](https://oxc.rs/docs/guide/usage/linter/rules) for the complete rule list.
+
+## Migration from ESLint
+
+### Using Migration Tools
+
+Oxlint provides tools to help migrate from ESLint:
+
+#### 1. @oxlint/migrate
+
+Automatically converts your ESLint config to Oxlint format:
+
+```bash
+npx @oxlint/migrate
+```
+
+This tool analyzes your existing `.eslintrc` or `eslint.config.js` and generates an equivalent Oxlint configuration.
+
+#### 2. eslint-plugin-oxlint
+
+Run both linters side-by-side during migration:
+
+```npm
+npm install -D eslint-plugin-oxlint
+```
+
+This plugin disables overlapping ESLint rules, letting you run Oxlint for performance while keeping ESLint for rules not yet supported by Oxlint.
+
+### Manual Migration Steps
+
+#### Step 1: Install Oxlint
+
+```npm
+npm install -D oxlint
+```
+
+#### Step 2: Test Oxlint
+
+Run Oxlint alongside ESLint to compare:
+
+```bash
+oxlint ./src
+```
+
+#### Step 3: Update Denji Config
+
+```json title="denji.json"
+{
+  "hooks": {
+    "postAdd": [
+      "oxlint --fix ./src/icons.tsx"
+    ]
+  }
+}
+```
+
+#### Step 4: (Optional) Remove ESLint
+
+Once confident, remove ESLint:
+
+```bash
+npm uninstall eslint @typescript-eslint/parser @typescript-eslint/eslint-plugin
+```
+
+<Callout type="info">
+For large repositories, consider an incremental migration: run Oxlint first for speed, then run ESLint with overlapping rules disabled using `eslint-plugin-oxlint`.
+</Callout>
+
+## Oxlint vs ESLint
+
+| Feature | Oxlint | ESLint |
+|---------|--------|--------|
+| Speed | Very fast (Rust) | Slower (JavaScript) |
+| Performance | 50-100x faster | Baseline |
+| Rules | 520+ built-in rules | 1000+ rules (with plugins) |
+| Auto-fix | Yes | Yes |
+| Type-aware | Yes (opt-in, alpha, requires tsgolint) | Yes (via TypeScript) |
+| Multi-file analysis | Yes | Limited |
+| Plugins | Built-in + experimental JS plugins | Extensive ecosystem |
+| Config | Simple | Complex |
+| Memory | Low | Higher |
+| Reliability | Crashes treated as bugs | Mature |
+
+<Callout type="info">
+Choose Oxlint for speed and simplicity in large codebases. Choose ESLint if you need specific plugins or custom rules not yet available in Oxlint.
+</Callout>
+
+## Performance Tips
+
+1. **Use `--fix` by default** - Apply fixes automatically instead of running twice:
+   ```json
+   "postAdd": ["oxlint --fix ./src/icons.tsx"]
+   ```
+
+2. **Target specific files** - Avoid unnecessary scanning:
+   ```json
+   "postAdd": ["oxlint --fix ./src/icons.tsx"]
+   ```
+
+3. **Use in CI** - Leverage speed for fast CI checks:
+   ```bash
+   oxlint --deny-warnings .
+   ```
+
+4. **Enable multi-file analysis** - For import-related checks:
+   ```bash
+   oxlint --fix .
+   ```
+
+## Troubleshooting
+
+### Oxlint Not Found
+
+Install Oxlint as a dev dependency:
+
+```npm
+npm install -D oxlint
+```
+
+Or use npx to run without installing:
+
+```bash
+npx oxlint@latest ./src/icons.tsx
+```
+
+### Version Issues
+
+Pin to a specific version in `package.json`:
+
+```json
+{
+  "devDependencies": {
+    "oxlint": "^0.15.0"
+  }
+}
+```
+
+### Hook Fails on First Run
+
+If the icons file doesn't exist yet, Oxlint may fail. Ensure the file exists or handle the error:
+
+```json
+{
+  "hooks": {
+    "postAdd": [
+      "oxlint --fix ./src/icons.tsx || true"
+    ]
+  }
+}
+```
+
+### No Output
+
+Oxlint only outputs when it finds issues. This is expected behavior. Use `--deny-warnings` in CI to ensure non-zero exit codes for warnings:
+
+```bash
+oxlint --deny-warnings ./src/icons.tsx
+```
+
+### Type-Aware Rules Not Working
+
+Type-aware linting requires:
+
+1. Install the additional dependency:
+   ```bash
+   npm install -D oxlint-tsgolint@latest
+   ```
+
+2. Use the `--type-aware` flag:
+   ```bash
+   oxlint --type-aware ./src/icons.tsx
+   ```
+
+3. Ensure you have a valid `tsconfig.json` in your project root
+
+4. TypeScript 7.0+ is required - legacy `tsconfig` options (like `baseUrl`) may not be supported
+
+If issues persist, enable debug logging:
+```bash
+OXC_LOG=debug oxlint --type-aware ./src/icons.tsx
+```
+
+### Rule Configuration
+
+For custom rule configuration, create an `oxlint.json` file. Refer to the [Oxlint configuration documentation](https://oxc.rs/docs/guide/usage/linter/config-file-reference) for options.
+
+## Related
+
+- [Oxfmt Integration](/docs/integrations/oxfmt) - Oxc formatter
+- [Biome Integration](/docs/integrations/biome) - Alternative all-in-one tool
+- [ESLint Integration](/docs/integrations/eslint) - Alternative with mature ecosystem
+- [Configuration](/docs/configuration) - Denji configuration options
+- [Official Oxlint Documentation](https://oxc.rs/docs/guide/usage/linter) - Complete reference

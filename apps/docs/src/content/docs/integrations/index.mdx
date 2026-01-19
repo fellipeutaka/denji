@@ -1,0 +1,183 @@
+---
+title: Integrations
+description: Integrate Denji with linters and formatters using lifecycle hooks
+---
+
+import { Callout } from "fumadocs-ui/components/callout";
+import { Tab, Tabs } from "fumadocs-ui/components/tabs";
+
+Denji provides lifecycle hooks that allow you to integrate with popular linters and formatters. Hooks run shell commands automatically after operations like adding or removing icons, ensuring your generated code stays formatted and lint-free.
+
+## Available Tools
+
+<Cards>
+  <Card title="ESLint" href="/docs/integrations/eslint" description="Pluggable JavaScript linter" />
+  <Card title="Prettier" href="/docs/integrations/prettier" description="Opinionated code formatter" />
+  <Card title="Biome" href="/docs/integrations/biome" description="Fast all-in-one toolchain" />
+  <Card title="Ultracite" href="/docs/integrations/ultracite" description="Zero-config Biome preset" />
+  <Card title="Oxlint" href="/docs/integrations/oxlint" description="High-performance Rust linter" />
+  <Card title="Oxfmt" href="/docs/integrations/oxfmt" description="Oxc project formatter" />
+</Cards>
+
+## Available Hooks
+
+Denji supports the following lifecycle hooks:
+
+- `preAdd` - Before adding icons
+- `postAdd` - After adding icons *(most common)*
+- `preRemove` - Before removing icons
+- `postRemove` - After removing icons
+- `preClear` - Before clearing all icons
+- `postClear` - After clearing all icons
+- `preList` - Before listing icons
+- `postList` - After listing icons
+
+<Callout type="info">
+The `postAdd` hook is the most commonly used, as it formats the generated icons file after new icons are added.
+</Callout>
+
+## Configuration Format
+
+Hooks are configured in your `denji.json` file:
+
+```json
+{
+  "output": "./src/icons.tsx",
+  "framework": "react",
+  "typescript": true,
+  "hooks": {
+    "postAdd": [
+      "npx biome check --write ./src/icons.tsx"
+    ]
+  }
+}
+```
+
+Each hook accepts an array of shell commands that run sequentially. If any command fails (exits with non-zero code), subsequent commands in that hook won't run.
+
+## Quick Examples
+
+<Tabs items={["Biome", "ESLint + Prettier", "Ultracite", "Oxlint + Oxfmt"]}>
+<Tab value="Biome">
+
+```json title="denji.json"
+{
+  "hooks": {
+    "postAdd": [
+      "npx @biomejs/biome check --write ./src/icons.tsx"
+    ]
+  }
+}
+```
+
+</Tab>
+<Tab value="ESLint + Prettier">
+
+```json title="denji.json"
+{
+  "hooks": {
+    "postAdd": [
+      "npx eslint --fix ./src/icons.tsx",
+      "npx prettier --write ./src/icons.tsx"
+    ]
+  }
+}
+```
+
+</Tab>
+<Tab value="Ultracite">
+
+```json title="denji.json"
+{
+  "hooks": {
+    "postAdd": [
+      "npx ultracite fix ./src/icons.tsx"
+    ]
+  }
+}
+```
+
+</Tab>
+<Tab value="Oxlint + Oxfmt">
+
+```json title="denji.json"
+{
+  "hooks": {
+    "postAdd": [
+      "npx oxlint@latest ./src/icons.tsx",
+      "npx oxc@latest fmt ./src/icons.tsx"
+    ]
+  }
+}
+```
+
+</Tab>
+</Tabs>
+
+## Best Practices
+
+1. **Keep hooks fast** - Hooks run after every operation, so use focused commands
+2. **Use `postAdd` for formatting** - This is the most common use case
+3. **Avoid side effects** - Hooks should only operate on the icons file
+4. **Test your hooks** - Run `denji add` with a test icon to verify hooks work
+5. **Use consistent tools** - Don't mix conflicting formatters (e.g., Prettier + Biome)
+6. **Commit your config** - Share hook configuration with your team via version control
+
+<Callout type="warn">
+Running multiple formatters (like Prettier and Biome) can cause conflicts. Choose one formatter and stick with it.
+</Callout>
+
+## Package Manager Support
+
+Denji hooks work with any package manager. Adjust commands based on your setup:
+
+<Tabs items={["npm", "pnpm", "yarn", "bun"]}>
+<Tab value="npm">
+
+```json
+{
+  "hooks": {
+    "postAdd": ["npx biome check --write ./src/icons.tsx"]
+  }
+}
+```
+
+</Tab>
+<Tab value="pnpm">
+
+```json
+{
+  "hooks": {
+    "postAdd": ["pnpm exec biome check --write ./src/icons.tsx"]
+  }
+}
+```
+
+</Tab>
+<Tab value="yarn">
+
+```json
+{
+  "hooks": {
+    "postAdd": ["yarn exec biome check --write ./src/icons.tsx"]
+  }
+}
+```
+
+</Tab>
+<Tab value="bun">
+
+```json
+{
+  "hooks": {
+    "postAdd": ["bunx biome check --write ./src/icons.tsx"]
+  }
+}
+```
+
+</Tab>
+</Tabs>
+
+## Next Steps
+
+Choose a tool from the list above to see detailed integration instructions and examples.
