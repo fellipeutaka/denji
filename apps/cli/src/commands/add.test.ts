@@ -55,8 +55,20 @@ const svgToComponentMock = mock(
   (
     _svg: string,
     name: string,
-    _options: { a11y?: unknown; trackSource?: boolean; iconName?: string }
-  ) => Promise.resolve(`${name}: (props) => (<svg {...props}></svg>)`)
+    options: {
+      a11y?: unknown;
+      trackSource?: boolean;
+      iconName?: string;
+      forwardRef?: boolean;
+    }
+  ) => {
+    if (options.forwardRef) {
+      return Promise.resolve(
+        `${name}: forwardRef<SVGSVGElement, IconProps>((props, ref) => (<svg ref={ref} {...props}></svg>))`
+      );
+    }
+    return Promise.resolve(`${name}: (props) => (<svg {...props}></svg>)`);
+  }
 );
 
 // Create mock for enhanced confirm
@@ -139,9 +151,14 @@ describe("AddCommand", () => {
     fetchIconMock.mockResolvedValue(
       new Ok('<svg><path d="M0 0h24v24H0z"/></svg>')
     );
-    svgToComponentMock.mockImplementation((_svg, name) =>
-      Promise.resolve(`${name}: (props) => (<svg {...props}></svg>)`)
-    );
+    svgToComponentMock.mockImplementation((_svg, name, options) => {
+      if (options?.forwardRef) {
+        return Promise.resolve(
+          `${name}: forwardRef<SVGSVGElement, IconProps>((props, ref) => (<svg ref={ref} {...props}></svg>))`
+        );
+      }
+      return Promise.resolve(`${name}: (props) => (<svg {...props}></svg>)`);
+    });
     enhancedConfirmMock.mockResolvedValue(true);
 
     // Spy on logger
@@ -759,6 +776,199 @@ describe("AddCommand", () => {
       expect(fetchIconMock).toHaveBeenCalledWith("mdi:home");
       expect(fetchIconMock).toHaveBeenCalledWith("lucide:check");
       expect(fetchIconMock).toHaveBeenCalledWith("heroicons:star");
+    });
+  });
+
+  // ============================================
+  // FORWARDREF TESTS
+  // ============================================
+
+  describe("forwardRef option", () => {
+    it("passes forwardRef: true to svgToComponent when config has forwardRef enabled", async () => {
+      loadConfigMock.mockResolvedValue(
+        new Ok({
+          $schema: "https://denji-docs.vercel.app/configuration_schema.json",
+          output: "./src/icons.tsx",
+          framework: "react",
+          typescript: true,
+          trackSource: true,
+          react: {
+            forwardRef: true,
+          },
+        })
+      );
+
+      const options: AddOptions = {
+        cwd: "/test/project",
+      };
+
+      await command.run(["lucide:check"], options);
+
+      expect(svgToComponentMock).toHaveBeenCalledWith(
+        expect.any(String),
+        expect.any(String),
+        expect.objectContaining({ forwardRef: true })
+      );
+    });
+
+    it("passes forwardRef: false to svgToComponent when config has forwardRef disabled", async () => {
+      loadConfigMock.mockResolvedValue(
+        new Ok({
+          $schema: "https://denji-docs.vercel.app/configuration_schema.json",
+          output: "./src/icons.tsx",
+          framework: "react",
+          typescript: true,
+          trackSource: true,
+        })
+      );
+
+      const options: AddOptions = {
+        cwd: "/test/project",
+      };
+
+      await command.run(["lucide:check"], options);
+
+      expect(svgToComponentMock).toHaveBeenCalledWith(
+        expect.any(String),
+        expect.any(String),
+        expect.objectContaining({ forwardRef: false })
+      );
+    });
+
+    it("adds forwardRef import on first icon when Icons is empty and forwardRef enabled", async () => {
+      loadConfigMock.mockResolvedValue(
+        new Ok({
+          $schema: "https://denji-docs.vercel.app/configuration_schema.json",
+          output: "./src/icons.tsx",
+          framework: "react",
+          typescript: true,
+          trackSource: true,
+          react: {
+            forwardRef: true,
+          },
+        })
+      );
+      readFileMock.mockResolvedValue(new Ok("export const Icons = {};"));
+
+      const options: AddOptions = {
+        cwd: "/test/project",
+      };
+
+      await command.run(["lucide:check"], options);
+
+      const writeCall = writeFileMock.mock.calls[0];
+      expect(writeCall).toBeDefined();
+      expect(writeCall?.[1]).toContain('import { forwardRef } from "react"');
+    });
+
+    it("does not add forwardRef import when Icons already has icons", async () => {
+      loadConfigMock.mockResolvedValue(
+        new Ok({
+          $schema: "https://denji-docs.vercel.app/configuration_schema.json",
+          output: "./src/icons.tsx",
+          framework: "react",
+          typescript: true,
+          trackSource: true,
+          react: {
+            forwardRef: true,
+          },
+        })
+      );
+      readFileMock.mockResolvedValue(
+        new Ok(`import { forwardRef } from "react";
+
+export const Icons = {
+  Home: forwardRef<SVGSVGElement, IconProps>((props, ref) => (<svg ref={ref} {...props}></svg>)),
+};`)
+      );
+
+      const options: AddOptions = {
+        cwd: "/test/project",
+      };
+
+      await command.run(["lucide:check"], options);
+
+      const writeCall = writeFileMock.mock.calls[0];
+      expect(writeCall).toBeDefined();
+      // Should only have one import statement, not duplicated
+      const content = writeCall?.[1] as string;
+      const importCount = (content.match(/import { forwardRef }/g) || [])
+        .length;
+      expect(importCount).toBe(1);
+    });
+
+    it("does not add forwardRef import when forwardRef is disabled", async () => {
+      loadConfigMock.mockResolvedValue(
+        new Ok({
+          $schema: "https://denji-docs.vercel.app/configuration_schema.json",
+          output: "./src/icons.tsx",
+          framework: "react",
+          typescript: true,
+          trackSource: true,
+        })
+      );
+      readFileMock.mockResolvedValue(new Ok("export const Icons = {};"));
+
+      const options: AddOptions = {
+        cwd: "/test/project",
+      };
+
+      await command.run(["lucide:check"], options);
+
+      const writeCall = writeFileMock.mock.calls[0];
+      expect(writeCall).toBeDefined();
+      expect(writeCall?.[1]).not.toContain("import { forwardRef }");
+    });
+
+    it("generates forwardRef component syntax when enabled", async () => {
+      loadConfigMock.mockResolvedValue(
+        new Ok({
+          $schema: "https://denji-docs.vercel.app/configuration_schema.json",
+          output: "./src/icons.tsx",
+          framework: "react",
+          typescript: true,
+          trackSource: true,
+          react: {
+            forwardRef: true,
+          },
+        })
+      );
+      readFileMock.mockResolvedValue(new Ok("export const Icons = {};"));
+
+      const options: AddOptions = {
+        cwd: "/test/project",
+      };
+
+      await command.run(["lucide:check"], options);
+
+      const writeCall = writeFileMock.mock.calls[0];
+      expect(writeCall).toBeDefined();
+      expect(writeCall?.[1]).toContain("forwardRef<SVGSVGElement, IconProps>");
+      expect(writeCall?.[1]).toContain("ref={ref}");
+    });
+
+    it("generates regular arrow function when forwardRef is disabled", async () => {
+      loadConfigMock.mockResolvedValue(
+        new Ok({
+          $schema: "https://denji-docs.vercel.app/configuration_schema.json",
+          output: "./src/icons.tsx",
+          framework: "react",
+          typescript: true,
+          trackSource: true,
+        })
+      );
+      readFileMock.mockResolvedValue(new Ok("export const Icons = {};"));
+
+      const options: AddOptions = {
+        cwd: "/test/project",
+      };
+
+      await command.run(["lucide:check"], options);
+
+      const writeCall = writeFileMock.mock.calls[0];
+      expect(writeCall).toBeDefined();
+      expect(writeCall?.[1]).toContain("(props) => (<svg");
+      expect(writeCall?.[1]).not.toContain("forwardRef<SVGSVGElement");
     });
   });
 });

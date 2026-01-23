@@ -27,6 +27,7 @@ const loadConfigMock = mock((_cwd: string) =>
       framework: "react",
       typescript: true,
       trackSource: true,
+      forwardRef: false,
     })
   )
 );
@@ -95,6 +96,7 @@ describe("ListCommand", () => {
         framework: "react",
         typescript: true,
         trackSource: true,
+        forwardRef: false,
       })
     );
     runHooksMock.mockResolvedValue(new Ok(null));
@@ -206,6 +208,7 @@ describe("ListCommand", () => {
           framework: "react",
           typescript: true,
           trackSource: true,
+          forwardRef: false,
           hooks: {
             preList: ["echo pre"],
           },
@@ -229,6 +232,7 @@ describe("ListCommand", () => {
           framework: "react",
           typescript: true,
           trackSource: true,
+          forwardRef: false,
           hooks: {
             postList: ["echo post"],
           },
@@ -252,6 +256,7 @@ describe("ListCommand", () => {
           framework: "react",
           typescript: true,
           trackSource: true,
+          forwardRef: false,
           hooks: {
             postList: ["echo post"],
           },
@@ -350,6 +355,7 @@ describe("ListCommand", () => {
           framework: "react",
           typescript: true,
           trackSource: true,
+          forwardRef: false,
           hooks: {
             preList: ["exit 1"],
           },
@@ -377,6 +383,7 @@ describe("ListCommand", () => {
           framework: "react",
           typescript: true,
           trackSource: true,
+          forwardRef: false,
           hooks: {
             postList: ["exit 1"],
           },
@@ -406,6 +413,7 @@ describe("ListCommand", () => {
           framework: "react",
           typescript: true,
           trackSource: true,
+          forwardRef: false,
           hooks: {
             postList: ["exit 1"],
           },
@@ -488,6 +496,7 @@ ${iconEntries},
           framework: "react",
           typescript: true,
           trackSource: true,
+          forwardRef: false,
         })
       );
 
@@ -510,6 +519,7 @@ ${iconEntries},
           framework: "react",
           typescript: true,
           trackSource: true,
+          forwardRef: false,
         })
       );
 
@@ -548,6 +558,7 @@ ${iconEntries},
           framework: "react",
           typescript: true,
           trackSource: true,
+          forwardRef: false,
           hooks: {
             postList: ["echo done"],
           },

@@ -1,9 +1,25 @@
+/** biome-ignore-all lint/performance/noDelete: For this script it's fine */
 import path from "node:path";
 import { z } from "zod";
 import { CONFIG_SCHEMA_FILE, configSchema } from "~/schemas/config";
 import { writeFile } from "~/utils/fs";
 
-const jsonSchema = z.toJSONSchema(configSchema);
+const jsonSchema = z.toJSONSchema(configSchema, {
+  override: ({ jsonSchema }) => {
+    // Fix intersection schemas: use unevaluatedProperties instead of additionalProperties
+    if (!jsonSchema.allOf) {
+      return;
+    }
+
+    for (const sub of jsonSchema.allOf) {
+      delete sub.additionalProperties;
+      for (const oneOf of sub.oneOf ?? []) {
+        delete oneOf.additionalProperties;
+      }
+    }
+    jsonSchema.unevaluatedProperties = false;
+  },
+});
 const schemaContent = JSON.stringify(jsonSchema, null, 2);
 
 // Write to CLI directory

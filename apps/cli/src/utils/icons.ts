@@ -124,6 +124,7 @@ interface SvgToComponentOptions {
   a11y?: A11y;
   trackSource?: boolean;
   iconName?: string;
+  forwardRef?: boolean;
 }
 
 export async function svgToComponent(
@@ -131,7 +132,7 @@ export async function svgToComponent(
   name: string,
   options: SvgToComponentOptions = {}
 ) {
-  const { a11y, trackSource, iconName } = options;
+  const { a11y, trackSource, iconName, forwardRef } = options;
   const svgProps: Record<string, string> = getA11yProps(a11y, name);
 
   if (trackSource && iconName) {
@@ -176,6 +177,12 @@ export async function svgToComponent(
       SVG_OPENING_TAG_REGEX,
       `<svg$1><title>${readableName}</title>`
     );
+  }
+
+  if (forwardRef) {
+    // Add ref={ref} to the svg element
+    result = result.replace(SVG_OPENING_TAG_REGEX, "<svg$1 ref={ref}>");
+    return `${name}: forwardRef<SVGSVGElement, IconProps>((props, ref) => (${result}))`;
   }
 
   return `${name}: (props) => (${result})`;

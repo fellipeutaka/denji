@@ -22,6 +22,7 @@ export interface InitOptions {
   typescript?: boolean;
   a11y?: string;
   trackSource?: boolean;
+  forwardRef?: boolean;
 }
 
 export const init = new Command()
@@ -39,6 +40,8 @@ export const init = new Command()
   .option("--a11y <strategy>", "Accessibility strategy for SVG icons")
   .option("--track-source", "Track Iconify source names")
   .option("--no-track-source", "Don't track Iconify source names")
+  .option("--forward-ref", "Use forwardRef for React icon components")
+  .option("--no-forward-ref", "Don't use forwardRef for React icon components")
   .action(async (options: InitOptions) => {
     intro("denji init");
 
@@ -187,14 +190,42 @@ export class InitCommand {
         initialValue: true,
       }));
 
+    // Get framework-specific options
+    const frameworkOptions = await this.promptFrameworkOptions(
+      framework,
+      options
+    );
+
     const config = configSchema.parse({
       output,
       framework,
       typescript,
       a11y,
       trackSource,
+      ...frameworkOptions,
     });
     return new Ok(config);
+  }
+
+  promptFrameworkOptions(
+    framework: string,
+    options: InitOptions
+  ): Promise<Record<string, unknown>> {
+    if (framework === "react") {
+      return this.promptReactOptions(options);
+    }
+    return Promise.resolve({});
+  }
+
+  async promptReactOptions(options: InitOptions) {
+    const forwardRef =
+      options.forwardRef ??
+      (await enhancedConfirm({
+        message: "Use forwardRef for icon components?",
+        initialValue: false,
+      }));
+
+    return { react: { forwardRef } };
   }
 
   validateExtension(config: Config) {

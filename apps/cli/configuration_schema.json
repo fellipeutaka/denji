@@ -1,110 +1,137 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "type": "object",
-  "properties": {
-    "$schema": {
-      "default": "https://denji-docs.vercel.app/configuration_schema.json",
-      "description": "The URL of the JSON Schema for this configuration file (e.g., './node_modules/denji/configuration_schema.json')",
-      "type": "string"
-    },
-    "output": {
-      "type": "string",
-      "description": "The output file path for generated icon components (e.g., './src/icons.tsx')"
-    },
-    "framework": {
-      "type": "string",
-      "enum": ["react"],
-      "description": "The framework to generate icon components for"
-    },
-    "typescript": {
-      "default": true,
-      "description": "Whether to generate TypeScript code",
-      "type": "boolean"
-    },
-    "a11y": {
-      "description": "Accessibility strategy for SVG icons (hidden: aria-hidden, img: role=img with aria-label, title: <title> element, presentation: role=presentation, false: no a11y attrs)",
-      "anyOf": [
-        {
-          "type": "string",
-          "enum": ["hidden", "img", "title", "presentation"]
-        },
-        {
-          "type": "boolean",
-          "const": false
-        }
-      ]
-    },
-    "trackSource": {
-      "default": true,
-      "description": "Add data-icon attribute with Iconify source name (enables update command, debugging, and identifying icon collections)",
-      "type": "boolean"
-    },
-    "hooks": {
-      "description": "Hooks to run at various stages",
+  "allOf": [
+    {
       "type": "object",
       "properties": {
-        "preAdd": {
-          "type": "array",
-          "items": {
-            "type": "string"
-          },
-          "description": "Scripts to run before adding icons"
+        "$schema": {
+          "default": "https://denji-docs.vercel.app/configuration_schema.json",
+          "description": "The URL of the JSON Schema for this configuration file (e.g., './node_modules/denji/configuration_schema.json')",
+          "type": "string"
         },
-        "postAdd": {
-          "type": "array",
-          "items": {
-            "type": "string"
-          },
-          "description": "Scripts to run after adding icons"
+        "output": {
+          "type": "string",
+          "description": "The output file path for generated icon components (e.g., './src/icons.tsx')"
         },
-        "preRemove": {
-          "type": "array",
-          "items": {
-            "type": "string"
-          },
-          "description": "Scripts to run before removing icons"
+        "typescript": {
+          "default": true,
+          "description": "Whether to generate TypeScript code",
+          "type": "boolean"
         },
-        "postRemove": {
-          "type": "array",
-          "items": {
-            "type": "string"
-          },
-          "description": "Scripts to run after removing icons"
+        "a11y": {
+          "description": "Accessibility strategy for SVG icons (hidden: aria-hidden, img: role=img with aria-label, title: <title> element, presentation: role=presentation, false: no a11y attrs)",
+          "anyOf": [
+            {
+              "type": "string",
+              "enum": ["hidden", "img", "title", "presentation"]
+            },
+            {
+              "type": "boolean",
+              "const": false
+            }
+          ]
         },
-        "preClear": {
-          "type": "array",
-          "items": {
-            "type": "string"
-          },
-          "description": "Scripts to run before clearing all icons"
+        "trackSource": {
+          "default": true,
+          "description": "Add data-icon attribute with Iconify source name (enables update command, debugging, and identifying icon collections)",
+          "type": "boolean"
         },
-        "postClear": {
-          "type": "array",
-          "items": {
-            "type": "string"
+        "hooks": {
+          "description": "Hooks to run at various stages",
+          "type": "object",
+          "properties": {
+            "preAdd": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              },
+              "description": "Scripts to run before adding icons"
+            },
+            "postAdd": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              },
+              "description": "Scripts to run after adding icons"
+            },
+            "preRemove": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              },
+              "description": "Scripts to run before removing icons"
+            },
+            "postRemove": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              },
+              "description": "Scripts to run after removing icons"
+            },
+            "preClear": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              },
+              "description": "Scripts to run before clearing all icons"
+            },
+            "postClear": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              },
+              "description": "Scripts to run after clearing all icons"
+            },
+            "preList": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              },
+              "description": "Scripts to run before listing icons"
+            },
+            "postList": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              },
+              "description": "Scripts to run after listing icons"
+            }
           },
-          "description": "Scripts to run after clearing all icons"
-        },
-        "preList": {
-          "type": "array",
-          "items": {
-            "type": "string"
-          },
-          "description": "Scripts to run before listing icons"
-        },
-        "postList": {
-          "type": "array",
-          "items": {
-            "type": "string"
-          },
-          "description": "Scripts to run after listing icons"
+          "additionalProperties": false
         }
       },
-      "additionalProperties": false
+      "required": ["$schema", "output", "typescript", "trackSource"]
+    },
+    {
+      "oneOf": [
+        {
+          "type": "object",
+          "properties": {
+            "framework": {
+              "type": "string",
+              "const": "react",
+              "description": "React framework"
+            },
+            "react": {
+              "type": "object",
+              "properties": {
+                "forwardRef": {
+                  "default": false,
+                  "description": "Wrap icon components with forwardRef",
+                  "type": "boolean"
+                }
+              },
+              "required": ["forwardRef"],
+              "additionalProperties": false,
+              "description": "React-specific configuration options"
+            }
+          },
+          "required": ["framework"]
+        }
+      ]
     }
-  },
-  "required": ["$schema", "output", "framework", "typescript", "trackSource"],
-  "additionalProperties": false,
+  ],
   "title": "Denji Configuration Schema",
-  "description": "Schema for Denji configuration file"
+  "description": "Schema for Denji configuration file",
+  "unevaluatedProperties": false
 }

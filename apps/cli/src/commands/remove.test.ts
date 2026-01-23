@@ -30,6 +30,7 @@ const loadConfigMock = mock((_cwd: string) =>
       framework: "react",
       typescript: true,
       trackSource: true,
+      forwardRef: false,
     })
   )
 );
@@ -100,6 +101,7 @@ describe("RemoveCommand", () => {
         framework: "react",
         typescript: true,
         trackSource: true,
+        forwardRef: false,
       })
     );
     runHooksMock.mockResolvedValue(new Ok(null));
@@ -176,6 +178,7 @@ describe("RemoveCommand", () => {
           framework: "react",
           typescript: true,
           trackSource: true,
+          forwardRef: false,
           hooks: {
             preRemove: ["echo pre"],
           },
@@ -199,6 +202,7 @@ describe("RemoveCommand", () => {
           framework: "react",
           typescript: true,
           trackSource: true,
+          forwardRef: false,
           hooks: {
             postRemove: ["echo post"],
           },
@@ -228,6 +232,7 @@ describe("RemoveCommand", () => {
           framework: "react",
           typescript: true,
           trackSource: true,
+          forwardRef: false,
           hooks: {
             postRemove: ["echo post"],
           },
@@ -366,6 +371,7 @@ describe("RemoveCommand", () => {
           framework: "react",
           typescript: true,
           trackSource: true,
+          forwardRef: false,
           hooks: {
             preRemove: ["exit 1"],
           },
@@ -429,6 +435,7 @@ describe("RemoveCommand", () => {
           framework: "react",
           typescript: true,
           trackSource: true,
+          forwardRef: false,
           hooks: {
             postRemove: ["exit 1"],
           },
@@ -464,6 +471,7 @@ describe("RemoveCommand", () => {
           framework: "react",
           typescript: true,
           trackSource: true,
+          forwardRef: false,
           hooks: {
             postRemove: ["exit 1"],
           },
@@ -584,6 +592,7 @@ describe("RemoveCommand", () => {
           framework: "react",
           typescript: true,
           trackSource: true,
+          forwardRef: false,
         })
       );
 

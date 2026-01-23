@@ -384,6 +384,7 @@ describe("ClearCommand", () => {
           framework: "react",
           typescript: true,
           trackSource: true,
+
           hooks: {
             postClear: ["exit 1"],
           },

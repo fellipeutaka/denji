@@ -112,6 +112,10 @@ export class AddCommand {
     const existingIcons = getExistingIconNames(iconsContent);
     let addedCount = 0;
 
+    // Check if forwardRef is enabled (only for React)
+    const useForwardRef =
+      config.framework === "react" && config.react?.forwardRef === true;
+
     // 8. Process each icon
     for (const icon of icons) {
       const componentName = options.name ?? toComponentName(icon);
@@ -141,7 +145,18 @@ export class AddCommand {
         a11y: a11yOverride ?? config.a11y,
         trackSource: config.trackSource ?? true,
         iconName: icon,
+        forwardRef: useForwardRef,
       });
+
+      // Add forwardRef import if needed (first icon with empty Icons object)
+      if (
+        useForwardRef &&
+        existingIcons.length === 0 &&
+        addedCount === 0 &&
+        !iconsContent.includes('import { forwardRef } from "react"')
+      ) {
+        iconsContent = `import { forwardRef } from "react";\n\n${iconsContent}`;
+      }
 
       // Insert or replace
       if (existingIcons.includes(componentName)) {

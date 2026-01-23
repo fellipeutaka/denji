@@ -77,9 +77,7 @@ function getWriteCall(pattern: string) {
 }
 
 // Helper to parse config from writeFile call
-function getWrittenConfig(
-  pattern: string
-): Record<string, unknown> | undefined {
+function getWrittenConfig(pattern: string): Record<string, any> | undefined {
   const call = getWriteCall(pattern);
   if (!call) {
     return undefined;
@@ -147,6 +145,7 @@ describe("InitCommand", () => {
         typescript: true,
         a11y: "hidden",
         trackSource: true,
+        forwardRef: false,
       };
 
       const result = await command.run(options);
@@ -166,8 +165,9 @@ describe("InitCommand", () => {
         .mockResolvedValueOnce("react")
         .mockResolvedValueOnce("hidden");
       enhancedConfirmMock
-        .mockResolvedValueOnce(true)
-        .mockResolvedValueOnce(true);
+        .mockResolvedValueOnce(true) // typescript
+        .mockResolvedValueOnce(true) // trackSource
+        .mockResolvedValueOnce(false); // forwardRef
 
       const options: InitOptions = {
         cwd: "/test/project",
@@ -178,7 +178,7 @@ describe("InitCommand", () => {
       expect(result.isOk()).toBe(true);
       expect(enhancedTextMock).toHaveBeenCalledTimes(1); // output
       expect(enhancedSelectMock).toHaveBeenCalledTimes(2); // framework, a11y
-      expect(enhancedConfirmMock).toHaveBeenCalledTimes(2); // typescript, trackSource
+      expect(enhancedConfirmMock).toHaveBeenCalledTimes(3); // typescript, trackSource, forwardRef
       expect(writeFileMock).toHaveBeenCalledTimes(2);
     });
 
@@ -350,6 +350,7 @@ describe("InitCommand", () => {
         framework: "react",
         typescript: true,
         a11y: "hidden",
+        forwardRef: false,
       };
 
       await command.run(options);
@@ -711,6 +712,138 @@ export type IconName = keyof typeof Icons;
       expect(config?.$schema).toBe(
         "https://denji-docs.vercel.app/configuration_schema.json"
       );
+    });
+  });
+
+  // ============================================
+  // FORWARDREF TESTS
+  // ============================================
+
+  describe("forwardRef option", () => {
+    it("prompts for forwardRef when React framework is selected", async () => {
+      setupAccessMock(["/test/project"]);
+
+      enhancedTextMock.mockResolvedValue("./src/icons.tsx");
+      enhancedSelectMock
+        .mockResolvedValueOnce("react")
+        .mockResolvedValueOnce("hidden");
+      enhancedConfirmMock
+        .mockResolvedValueOnce(true) // typescript
+        .mockResolvedValueOnce(true) // trackSource
+        .mockResolvedValueOnce(false); // forwardRef
+
+      const options: InitOptions = {
+        cwd: "/test/project",
+      };
+
+      const result = await command.run(options);
+
+      expect(result.isOk()).toBe(true);
+      expect(enhancedConfirmMock).toHaveBeenCalledTimes(3);
+      expect(enhancedConfirmMock).toHaveBeenCalledWith({
+        message: "Use forwardRef for icon components?",
+        initialValue: false,
+      });
+    });
+
+    it("writes forwardRef: true to config when enabled", async () => {
+      setupAccessMock(["/test/project"]);
+
+      const options: InitOptions = {
+        cwd: "/test/project",
+        output: "./src/icons.tsx",
+        framework: "react",
+        typescript: true,
+        a11y: "hidden",
+        trackSource: true,
+        forwardRef: true,
+      };
+
+      await command.run(options);
+
+      const config = getWrittenConfig("denji.json");
+      expect(config?.react?.forwardRef).toBe(true);
+    });
+
+    it("writes forwardRef: false to config when disabled", async () => {
+      setupAccessMock(["/test/project"]);
+
+      const options: InitOptions = {
+        cwd: "/test/project",
+        output: "./src/icons.tsx",
+        framework: "react",
+        typescript: true,
+        a11y: "hidden",
+        trackSource: true,
+        forwardRef: false,
+      };
+
+      await command.run(options);
+
+      const config = getWrittenConfig("denji.json");
+      expect(config?.react?.forwardRef).toBe(false);
+    });
+
+    it("writes forwardRef Icon type in template when forwardRef is true", async () => {
+      setupAccessMock(["/test/project"]);
+
+      const options: InitOptions = {
+        cwd: "/test/project",
+        output: "./src/icons.tsx",
+        framework: "react",
+        typescript: true,
+        a11y: "hidden",
+        forwardRef: true,
+      };
+
+      await command.run(options);
+
+      const iconsCall = getWriteCall("icons.tsx");
+      expect(iconsCall).toBeDefined();
+      expect(iconsCall?.[1]).toContain(
+        'React.ForwardRefExoticComponent<IconProps & React.ComponentRef<"svg">>'
+      );
+    });
+
+    it("writes regular Icon type in template when forwardRef is false", async () => {
+      setupAccessMock(["/test/project"]);
+
+      const options: InitOptions = {
+        cwd: "/test/project",
+        output: "./src/icons.tsx",
+        framework: "react",
+        typescript: true,
+        a11y: "hidden",
+        forwardRef: false,
+      };
+
+      await command.run(options);
+
+      const iconsCall = getWriteCall("icons.tsx");
+      expect(iconsCall).toBeDefined();
+      expect(iconsCall?.[1]).toContain(
+        "(props: IconProps) => React.JSX.Element"
+      );
+      expect(iconsCall?.[1]).not.toContain("ForwardRefExoticComponent");
+    });
+
+    it("does not include forwardRef import in template (empty Icons)", async () => {
+      setupAccessMock(["/test/project"]);
+
+      const options: InitOptions = {
+        cwd: "/test/project",
+        output: "./src/icons.tsx",
+        framework: "react",
+        typescript: true,
+        a11y: "hidden",
+        forwardRef: true,
+      };
+
+      await command.run(options);
+
+      const iconsCall = getWriteCall("icons.tsx");
+      expect(iconsCall).toBeDefined();
+      expect(iconsCall?.[1]).not.toContain("import { forwardRef }");
     });
   });
 });
