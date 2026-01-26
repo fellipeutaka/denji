@@ -1,0 +1,100 @@
+name: "Bug report"
+description: Report a bug in Denji
+title: '[bug]: '
+labels: ['bug']
+body:
+  - type: markdown
+    attributes:
+      value: |
+        ### Thanks for taking the time to report a bug!
+        Please search open and closed issues before submitting, as this bug may have already been reported or fixed.
+
+  - type: markdown
+    attributes:
+      value: |
+        #### Not sure this is a bug?
+        Please open a discussion instead:
+        - https://github.com/fellipeutaka/denji/discussions
+
+  - type: textarea
+    id: bug-description
+    attributes:
+      label: Describe the bug
+      description: |
+        A clear and concise description of what the bug is.
+        If you plan to submit a PR, feel free to explain your approach here.
+      placeholder: What happened? What did you expect to happen instead?
+    validations:
+      required: true
+
+  - type: checkboxes
+    id: affected-areas
+    attributes:
+      label: Affected area(s)
+      description: Which parts of Denji are affected?
+      options:
+        - label: CLI commands
+        - label: Icon generation
+        - label: Framework adapters (React, future frameworks, etc.)
+        - label: Icon registry / Iconify integration
+        - label: Configuration (denji.json)
+        - label: Hooks system
+        - label: Documentation
+        - label: Other / Not sure
+    validations:
+      required: true
+
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: How to reproduce
+      description: Step-by-step instructions to reproduce the issue.
+      placeholder: |
+        1. Run `denji init`
+        2. Add an icon using `denji add lucide:check`
+        3. See error
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected-behavior
+    attributes:
+      label: Expected behavior
+      description: What did you expect Denji to do?
+      placeholder: Describe the expected output or behavior.
+    validations:
+      required: true
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs / Error output
+      description: |
+        Please paste any relevant CLI output, stack traces, or error messages.
+        Avoid screenshots if possible — copy and paste the text instead.
+      render: bash
+
+  - type: textarea
+    id: system-info
+    attributes:
+      label: System info
+      description: Environment details relevant to this bug.
+      render: bash
+      placeholder: |
+        OS:
+        Node/Bun version:
+        Package manager:
+        Denji version:
+    validations:
+      required: true
+
+  - type: checkboxes
+    id: terms
+    attributes:
+      label: Before submitting
+      description: By submitting this issue, you agree to follow our contributing guidelines.
+      options:
+        - label: I've searched the documentation
+          required: true
+        - label: I've searched for existing issues
+          required: true
