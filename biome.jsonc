@@ -7,7 +7,12 @@
         "noParameterProperties": "off"
       },
       "complexity": {
-        "noExcessiveCognitiveComplexity": "off"
+        "noExcessiveCognitiveComplexity": {
+          "level": "error",
+          "options": {
+            "maxAllowedComplexity": 41
+          }
+        }
       }
     }
   },
