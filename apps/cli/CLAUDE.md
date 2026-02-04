@@ -16,9 +16,15 @@ src/frameworks/
   react/
     schema.ts       # Zod Mini schema for react options
     strategy.ts     # FrameworkStrategy implementation
+    templates/
+      icons.eta     # Eta template for icons file
   preact/
     schema.ts
     strategy.ts
+    templates/
+      icons.eta
+src/utils/
+  eta.ts            # createEta() factory for Eta instances
 ```
 
 ### Key Interface
@@ -41,11 +47,12 @@ interface FrameworkStrategy {
 ### Adding a New Framework
 
 1. Create `src/frameworks/<name>/schema.ts` with Zod Mini options schema
-2. Create `src/frameworks/<name>/strategy.ts` implementing `FrameworkStrategy`
-3. Add case to `src/frameworks/factory.ts` switch
-4. Add entry to `src/frameworks/registry.ts`
-5. Add discriminated union variant in `src/schemas/config.ts`
-6. Update `frameworkSchema` enum in `src/schemas/config.ts`
+2. Create `src/frameworks/<name>/templates/icons.eta` with Eta template
+3. Create `src/frameworks/<name>/strategy.ts` implementing `FrameworkStrategy`
+4. Add case to `src/frameworks/factory.ts` switch
+5. Add entry to `src/frameworks/registry.ts`
+6. Add discriminated union variant in `src/schemas/config.ts`
+7. Update `frameworkSchema` enum in `src/schemas/config.ts`
 
 ### Commands
 
@@ -89,14 +96,30 @@ import * as z from "zod/mini";
 | `schema1.or(schema2)` | `union([schema1, schema2])` |
 | `z.object({}).partial()` | `partial(object({}))` |
 
+## Eta Templates
+
+Templates use [Eta](https://eta.js.org) (3.5KB minzipped). Each framework has `.eta` files in `templates/`:
+
+```eta
+<% if (it.typescript) { %>
+export type IconProps = React.ComponentProps<"svg">;
+<% if (it.forwardRef) { %>
+export type Icon = React.ForwardRefExoticComponent<...>;
+<% } else { %>
+export type Icon = (props: IconProps) => React.JSX.Element;
+<% } %>
+...
+<% } else { %>
+export const Icons = {};
+<% } %>
+```
+
+Strategy renders via `eta.render("./icons", { typescript, forwardRef })`.
+
 ## Testing
 
 ```bash
 bun test
 ```
 
-Tests mock fs/config modules. Strategy templates are tested via integration tests.
-
-## Future: Eta Templates (Phase 2)
-
-Plan to migrate string templates to `.eta` files for better maintainability with 8+ frameworks.
+Tests mock fs/config modules. Strategy templates tested via integration tests.
