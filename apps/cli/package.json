@@ -42,6 +42,7 @@
     "@svgr/plugin-jsx": "^8.1.0",
     "@svgr/plugin-svgo": "^8.1.0",
     "commander": "^14.0.3",
+    "eta": "^4.5.0",
     "iconify-icon": "^3.0.2",
     "oxc-parser": "^0.112.0",
     "picocolors": "^1.1.1",

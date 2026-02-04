@@ -1,3 +1,5 @@
+import path from "node:path";
+import { createEta } from "~/utils/eta";
 import { enhancedConfirm } from "~/utils/prompts";
 import type {
   FrameworkStrategy,
@@ -6,30 +8,16 @@ import type {
 } from "../types";
 import { type ReactOptions, reactOptionsSchema } from "./schema";
 
-function getIconType(forwardRef: boolean): string {
-  if (forwardRef) {
-    return 'export type Icon = React.ForwardRefExoticComponent<IconProps & React.ComponentRef<"svg">>;';
-  }
-  return "export type Icon = (props: IconProps) => React.JSX.Element;";
-}
+const eta = createEta(path.join(import.meta.dirname, "templates"));
 
 function getIconsTemplate(config: TemplateConfig): string {
   const opts = config.frameworkOptions as ReactOptions;
   const forwardRef = opts?.forwardRef ?? false;
 
-  if (config.typescript) {
-    const iconType = getIconType(forwardRef);
-    return `export type IconProps = React.ComponentProps<"svg">;
-${iconType}
-
-export const Icons = {} as const satisfies Record<string, Icon>;
-
-export type IconName = keyof typeof Icons;
-`;
-  }
-
-  return `export const Icons = {};
-`;
+  return eta.render("./icons", {
+    typescript: config.typescript,
+    forwardRef,
+  });
 }
 
 export const reactStrategy: FrameworkStrategy = {
