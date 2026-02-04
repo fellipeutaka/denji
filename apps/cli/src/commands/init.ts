@@ -1,6 +1,9 @@
 import path from "node:path";
 import { intro, outro } from "@clack/prompts";
 import { Command } from "commander";
+import { createFrameworkStrategy } from "~/frameworks/factory";
+import { getFrameworkOptions } from "~/frameworks/registry";
+import type { FrameworkStrategy } from "~/frameworks/types";
 import {
   a11ySchema,
   CONFIG_FILE,
@@ -8,7 +11,6 @@ import {
   configSchema,
   frameworkSchema,
 } from "~/schemas/config";
-import { getIconsTemplate } from "~/templates/icons";
 import { access, mkdir, writeFile } from "~/utils/fs";
 import { handleError } from "~/utils/handle-error";
 import { logger } from "~/utils/logger";
@@ -73,10 +75,10 @@ export class InitCommand {
     if (configResult.isErr()) {
       return configResult;
     }
-    const config = configResult.value;
+    const { config, strategy } = configResult.value;
 
-    // 4. Validate output extension
-    const extensionResult = this.validateExtension(config);
+    // 4. Validate output extension using strategy
+    const extensionResult = this.validateExtension(config, strategy);
     if (extensionResult.isErr()) {
       return extensionResult;
     }
@@ -104,8 +106,12 @@ export class InitCommand {
     }
     logger.success(`Created ${CONFIG_FILE}`);
 
-    // 8. Write icons file
-    const iconsContent = getIconsTemplate(config);
+    // 8. Write icons file using strategy template
+    const frameworkOptions = config[strategy.getConfigKey() as keyof Config];
+    const iconsContent = strategy.getIconsTemplate({
+      typescript: config.typescript,
+      frameworkOptions: (frameworkOptions as Record<string, unknown>) ?? {},
+    });
     const writeIconsResult = await writeFile(outputPath, iconsContent);
     if (writeIconsResult.isErr()) {
       return new Err(`Failed to write ${config.output}`);
@@ -127,10 +133,7 @@ export class InitCommand {
       options.framework ??
       (await enhancedSelect({
         message: "Which framework are you using?",
-        options: [
-          { value: "react", label: "React" },
-          { value: "preact", label: "Preact" },
-        ],
+        options: getFrameworkOptions(),
         initialValue: "react",
       }));
 
@@ -141,6 +144,9 @@ export class InitCommand {
       );
     }
     const framework = frameworkResult.data;
+
+    // Load framework strategy
+    const strategy = await createFrameworkStrategy(framework);
 
     const typescript =
       options.typescript ??
@@ -195,11 +201,10 @@ export class InitCommand {
         initialValue: true,
       }));
 
-    // Get framework-specific options
-    const frameworkOptions = await this.promptFrameworkOptions(
-      framework,
-      options
-    );
+    // Get framework-specific options using strategy
+    const frameworkOptions = await strategy.promptOptions({
+      forwardRef: options.forwardRef,
+    });
 
     const config = configSchema.parse({
       output,
@@ -207,73 +212,23 @@ export class InitCommand {
       typescript,
       a11y,
       trackSource,
-      ...frameworkOptions,
+      [strategy.getConfigKey()]: frameworkOptions,
     });
-    return new Ok(config);
+
+    return new Ok({ config, strategy });
   }
 
-  promptFrameworkOptions(
-    framework: string,
-    options: InitOptions
-  ): Promise<Record<string, unknown>> {
-    if (framework === "react") {
-      return this.promptReactOptions(options);
-    }
-    if (framework === "preact") {
-      return this.promptPreactOptions(options);
-    }
-    return Promise.resolve({});
-  }
-
-  async promptReactOptions(options: InitOptions) {
-    const forwardRef =
-      options.forwardRef ??
-      (await enhancedConfirm({
-        message: "Use forwardRef for icon components?",
-        initialValue: false,
-      }));
-
-    return { react: { forwardRef } };
-  }
-
-  async promptPreactOptions(options: InitOptions) {
-    const forwardRef =
-      options.forwardRef ??
-      (await enhancedConfirm({
-        message: "Use forwardRef for icon components?",
-        initialValue: false,
-      }));
-
-    return { preact: { forwardRef } };
-  }
-
-  validateExtension(config: Config) {
+  validateExtension(config: Config, strategy: FrameworkStrategy) {
     const ext = path.extname(config.output);
+    const expectedExt = config.typescript
+      ? strategy.fileExtensions.typescript
+      : strategy.fileExtensions.javascript;
 
-    if (config.framework === "react") {
-      if (config.typescript && ext !== ".tsx") {
-        return new Err(
-          `Invalid extension "${ext}" for React + TypeScript. Use ".tsx"`
-        );
-      }
-      if (!config.typescript && ext !== ".jsx") {
-        return new Err(
-          `Invalid extension "${ext}" for React + JavaScript. Use ".jsx"`
-        );
-      }
-    }
-
-    if (config.framework === "preact") {
-      if (config.typescript && ext !== ".tsx") {
-        return new Err(
-          `Invalid extension "${ext}" for Preact + TypeScript. Use ".tsx"`
-        );
-      }
-      if (!config.typescript && ext !== ".jsx") {
-        return new Err(
-          `Invalid extension "${ext}" for Preact + JavaScript. Use ".jsx"`
-        );
-      }
+    if (ext !== expectedExt) {
+      const lang = config.typescript ? "TypeScript" : "JavaScript";
+      return new Err(
+        `Invalid extension "${ext}" for ${strategy.name} + ${lang}. Use "${expectedExt}"`
+      );
     }
 
     return new Ok(null);

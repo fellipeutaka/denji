@@ -966,7 +966,7 @@ export type IconName = keyof typeof Icons;
       expect(result.isErr()).toBe(true);
       if (result.isErr()) {
         expect(result.error).toContain('Invalid extension ".ts"');
-        expect(result.error).toContain("Preact");
+        expect(result.error).toContain("preact");
       }
     });
 
@@ -986,7 +986,7 @@ export type IconName = keyof typeof Icons;
       expect(result.isErr()).toBe(true);
       if (result.isErr()) {
         expect(result.error).toContain('Invalid extension ".js"');
-        expect(result.error).toContain("Preact");
+        expect(result.error).toContain("preact");
       }
     });
 

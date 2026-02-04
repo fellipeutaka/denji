@@ -1,7 +1,8 @@
 import path from "node:path";
 import { cancel, intro, outro } from "@clack/prompts";
 import { Command } from "commander";
-import { getIconsTemplate } from "~/templates/icons";
+import { createFrameworkStrategy } from "~/frameworks/factory";
+import type { Config } from "~/schemas/config";
 import { loadConfig } from "~/utils/config";
 import { access, readFile, writeFile } from "~/utils/fs";
 import { handleError } from "~/utils/handle-error";
@@ -53,7 +54,10 @@ export class ClearCommand {
     }
     const config = configResult.value;
 
-    // 3. Read icons file
+    // 3. Load framework strategy
+    const strategy = await createFrameworkStrategy(config.framework);
+
+    // 4. Read icons file
     const iconsPath = path.resolve(options.cwd, config.output);
     if (!(await access(iconsPath))) {
       return new Err(
@@ -69,13 +73,13 @@ export class ClearCommand {
     const iconsContent = iconsFileResult.value;
     const existingIcons = getExistingIconNames(iconsContent);
 
-    // 4. Check if there are any icons to remove
+    // 5. Check if there are any icons to remove
     if (existingIcons.length === 0) {
       logger.info("No icons to remove");
       return new Ok(null);
     }
 
-    // 5. Confirm action unless --yes flag is provided
+    // 6. Confirm action unless --yes flag is provided
     if (!options.yes) {
       const shouldContinue = await enhancedConfirm({
         message: `Remove all ${existingIcons.length} icon(s)?`,
@@ -87,19 +91,24 @@ export class ClearCommand {
       }
     }
 
-    // 6. Run preClear hooks
+    // 7. Run preClear hooks
     const preClearResult = await runHooks(config.hooks?.preClear, options.cwd);
     if (preClearResult.isErr()) {
       return preClearResult;
     }
 
-    // 7. Reset to template
-    const writeResult = await writeFile(iconsPath, getIconsTemplate(config));
+    // 8. Reset to template using strategy
+    const frameworkOptions = config[strategy.getConfigKey() as keyof Config];
+    const template = strategy.getIconsTemplate({
+      typescript: config.typescript,
+      frameworkOptions: (frameworkOptions as Record<string, unknown>) ?? {},
+    });
+    const writeResult = await writeFile(iconsPath, template);
     if (writeResult.isErr()) {
       return new Err(`Failed to write icons file: ${config.output}`);
     }
 
-    // 8. Run postClear hooks
+    // 9. Run postClear hooks
     const postClearResult = await runHooks(
       config.hooks?.postClear,
       options.cwd

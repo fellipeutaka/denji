@@ -1,4 +1,6 @@
 import { z } from "zod";
+import { preactOptionsSchema } from "~/frameworks/preact/schema";
+import { reactOptionsSchema } from "~/frameworks/react/schema";
 
 export const a11ySchema = z
   .enum(["hidden", "img", "title", "presentation"])
@@ -66,31 +68,11 @@ const baseConfigSchema = z.object({
     .describe("Hooks to run at various stages"),
 });
 
-// React-specific options
-const reactOptionsSchema = z
-  .object({
-    forwardRef: z
-      .boolean()
-      .default(false)
-      .describe("Wrap icon components with forwardRef"),
-  })
-  .describe("React-specific configuration options");
-
 // React-specific config
 const reactConfigSchema = z.object({
   framework: z.literal("react").describe("React framework"),
   react: reactOptionsSchema.optional(),
 });
-
-// Preact-specific options
-const preactOptionsSchema = z
-  .object({
-    forwardRef: z
-      .boolean()
-      .default(false)
-      .describe("Wrap icon components with forwardRef"),
-  })
-  .describe("Preact-specific configuration options");
 
 // Preact-specific config
 const preactConfigSchema = z.object({

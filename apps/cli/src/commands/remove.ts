@@ -1,7 +1,8 @@
 import path from "node:path";
 import { intro, outro } from "@clack/prompts";
 import { Command } from "commander";
-import { getIconsTemplate } from "~/templates/icons";
+import { createFrameworkStrategy } from "~/frameworks/factory";
+import type { Config } from "~/schemas/config";
 import { loadConfig } from "~/utils/config";
 import { access, readFile, writeFile } from "~/utils/fs";
 import { handleError } from "~/utils/handle-error";
@@ -51,7 +52,10 @@ export class RemoveCommand {
     }
     const config = configResult.value;
 
-    // 3. Read icons file
+    // 3. Load framework strategy
+    const strategy = await createFrameworkStrategy(config.framework);
+
+    // 4. Read icons file
     const iconsPath = path.resolve(options.cwd, config.output);
     if (!(await access(iconsPath))) {
       return new Err(
@@ -67,7 +71,7 @@ export class RemoveCommand {
     let iconsContent = iconsFileResult.value;
     const existingIcons = getExistingIconNames(iconsContent);
 
-    // 4. Validate all icons exist
+    // 5. Validate all icons exist
     const notFound: string[] = [];
     for (const icon of icons) {
       if (!existingIcons.includes(icon)) {
@@ -79,7 +83,7 @@ export class RemoveCommand {
       return new Err(`Icon(s) not found: ${notFound.join(", ")}`);
     }
 
-    // 5. Run preRemove hooks
+    // 6. Run preRemove hooks
     const preRemoveResult = await runHooks(
       config.hooks?.preRemove,
       options.cwd
@@ -88,10 +92,15 @@ export class RemoveCommand {
       return preRemoveResult;
     }
 
-    // 6. Check if removing all icons - reset to template
+    // 7. Check if removing all icons - reset to template
     const remainingCount = existingIcons.length - icons.length;
     if (remainingCount === 0) {
-      const writeResult = await writeFile(iconsPath, getIconsTemplate(config));
+      const frameworkOptions = config[strategy.getConfigKey() as keyof Config];
+      const template = strategy.getIconsTemplate({
+        typescript: config.typescript,
+        frameworkOptions: (frameworkOptions as Record<string, unknown>) ?? {},
+      });
+      const writeResult = await writeFile(iconsPath, template);
       if (writeResult.isErr()) {
         return new Err(`Failed to write icons file: ${config.output}`);
       }
@@ -108,19 +117,19 @@ export class RemoveCommand {
       return new Ok(null);
     }
 
-    // 7. Remove icons one by one
+    // 8. Remove icons one by one
     for (const icon of icons) {
       iconsContent = removeIcon(iconsContent, icon);
       logger.success(`Removed ${icon}`);
     }
 
-    // 8. Write updated file
+    // 9. Write updated file
     const writeResult = await writeFile(iconsPath, iconsContent);
     if (writeResult.isErr()) {
       return new Err(`Failed to write icons file: ${config.output}`);
     }
 
-    // 9. Run postRemove hooks
+    // 10. Run postRemove hooks
     const postRemoveResult = await runHooks(
       config.hooks?.postRemove,
       options.cwd

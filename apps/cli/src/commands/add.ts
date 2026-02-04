@@ -1,7 +1,8 @@
 import path from "node:path";
 import { intro, outro } from "@clack/prompts";
 import { Command } from "commander";
-import { type A11y, a11ySchema } from "~/schemas/config";
+import { createFrameworkStrategy } from "~/frameworks/factory";
+import { type A11y, a11ySchema, type Config } from "~/schemas/config";
 import { loadConfig } from "~/utils/config";
 import { access, readFile, writeFile } from "~/utils/fs";
 import { handleError } from "~/utils/handle-error";
@@ -89,13 +90,16 @@ export class AddCommand {
     }
     const config = configResult.value;
 
-    // 6. Run preAdd hooks
+    // 6. Load framework strategy
+    const strategy = await createFrameworkStrategy(config.framework);
+
+    // 7. Run preAdd hooks
     const preAddResult = await runHooks(config.hooks?.preAdd, options.cwd);
     if (preAddResult.isErr()) {
       return preAddResult;
     }
 
-    // 7. Read icons file
+    // 8. Read icons file
     const iconsPath = path.resolve(options.cwd, config.output);
     if (!(await access(iconsPath))) {
       return new Err(
@@ -112,12 +116,13 @@ export class AddCommand {
     const existingIcons = getExistingIconNames(iconsContent);
     let addedCount = 0;
 
-    // Check if forwardRef is enabled
-    const useForwardRef =
-      (config.framework === "react" && config.react?.forwardRef === true) ||
-      (config.framework === "preact" && config.preact?.forwardRef === true);
+    // Check if forwardRef is enabled using strategy
+    const frameworkOptions = config[strategy.getConfigKey() as keyof Config];
+    const useForwardRef = strategy.isForwardRefEnabled(
+      (frameworkOptions as Record<string, unknown>) ?? {}
+    );
 
-    // 8. Process each icon
+    // 9. Process each icon
     for (const icon of icons) {
       const componentName = options.name ?? toComponentName(icon);
 
@@ -151,8 +156,7 @@ export class AddCommand {
 
       // Add forwardRef import if needed (first icon with empty Icons object)
       if (useForwardRef && existingIcons.length === 0 && addedCount === 0) {
-        const importSource =
-          config.framework === "react" ? "react" : "preact/compat";
+        const importSource = strategy.getForwardRefImportSource();
         if (
           !iconsContent.includes(`import { forwardRef } from "${importSource}"`)
         ) {
@@ -177,7 +181,7 @@ export class AddCommand {
       addedCount++;
     }
 
-    // 9. Write updated file and run postAdd hooks
+    // 10. Write updated file and run postAdd hooks
     if (addedCount > 0) {
       const writeResult = await writeFile(iconsPath, iconsContent);
       if (writeResult.isErr()) {
