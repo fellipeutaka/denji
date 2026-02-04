@@ -26,3 +26,5 @@ export class Err<T, E> implements Result<T, E> {
     return true;
   }
 }
+
+export type ResultType<T, E> = Ok<T, unknown> | Err<unknown, E>;

@@ -1,14 +1,11 @@
 import { Eta } from "eta";
 
 /**
- * Create an Eta instance configured for a specific framework's templates directory.
- *
- * @param templatesDir - Absolute path to the templates directory
+ * Shared Eta instance for template rendering.
+ * Uses cache mode with @ prefix for inline templates.
  */
-export function createEta(templatesDir: string): Eta {
-  return new Eta({
-    views: templatesDir,
-    autoEscape: false,
-    autoTrim: false,
-  });
-}
+export const eta = new Eta({
+  cache: true,
+  autoEscape: false,
+  autoTrim: false,
+});

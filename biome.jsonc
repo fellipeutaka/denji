@@ -18,5 +18,22 @@
   },
   "javascript": {
     "globals": ["Bun"]
-  }
+  },
+  "overrides": [
+    {
+      "includes": [
+        "apps/cli/configuration_schema.json",
+        "apps/docs/public/configuration_schema.json"
+      ],
+      "assist": {
+        "enabled": false
+      },
+      "linter": {
+        "enabled": false
+      },
+      "formatter": {
+        "enabled": false
+      }
+    }
+  ]
 }

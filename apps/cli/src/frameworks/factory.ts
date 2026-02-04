@@ -19,6 +19,10 @@ export async function createFrameworkStrategy(
       const { preactStrategy } = await import("./preact/strategy");
       return preactStrategy;
     }
+    case "solid": {
+      const { solidStrategy } = await import("./solid/strategy");
+      return solidStrategy;
+    }
     default: {
       throw new Error(`Unknown framework: ${name}`);
     }

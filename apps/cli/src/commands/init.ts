@@ -1,9 +1,8 @@
 import path from "node:path";
 import { intro, outro } from "@clack/prompts";
 import { Command } from "commander";
-import { createFrameworkStrategy } from "~/frameworks/factory";
 import { getFrameworkOptions } from "~/frameworks/registry";
-import type { FrameworkStrategy } from "~/frameworks/types";
+import type { FrameworkOptions, FrameworkStrategy } from "~/frameworks/types";
 import {
   a11ySchema,
   CONFIG_FILE,
@@ -11,10 +10,9 @@ import {
   configSchema,
   frameworkSchema,
 } from "~/schemas/config";
-import { access, mkdir, writeFile } from "~/utils/fs";
+import { initDefaults } from "~/services/defaults";
+import type { InitDeps } from "~/services/deps";
 import { handleError } from "~/utils/handle-error";
-import { logger } from "~/utils/logger";
-import { enhancedConfirm, enhancedSelect, enhancedText } from "~/utils/prompts";
 import { Err, Ok } from "~/utils/result";
 
 export interface InitOptions {
@@ -27,46 +25,20 @@ export interface InitOptions {
   forwardRef?: boolean;
 }
 
-export const init = new Command()
-  .name("init")
-  .description("Initialize a new denji project")
-  .option(
-    "-c, --cwd <cwd>",
-    "The working directory. Defaults to the current directory.",
-    process.cwd()
-  )
-  .option("--output <file>", "Output file path for icons")
-  .option("--framework <framework>", "Framework to use")
-  .option("--typescript", "Use TypeScript")
-  .option("--no-typescript", "Use JavaScript")
-  .option("--a11y <strategy>", "Accessibility strategy for SVG icons")
-  .option("--track-source", "Track Iconify source names")
-  .option("--no-track-source", "Don't track Iconify source names")
-  .option("--forward-ref", "Use forwardRef for React icon components")
-  .option("--no-forward-ref", "Don't use forwardRef for React icon components")
-  .action(async (options: InitOptions) => {
-    intro("denji init");
-
-    const command = new InitCommand();
-
-    const result = await command.run(options);
-    if (result.isErr()) {
-      handleError(result.error);
-    }
-
-    outro("Project initialized successfully!");
-  });
-
 export class InitCommand {
+  constructor(private readonly deps: InitDeps) {}
+
   async run(options: InitOptions) {
+    const { fs, logger } = this.deps;
+
     // 1. Validate cwd exists
-    if (!(await access(options.cwd))) {
+    if (!(await fs.access(options.cwd))) {
       return new Err(`Directory does not exist: ${options.cwd}`);
     }
 
     // 2. Check if denji.json already exists
     const configPath = path.join(options.cwd, CONFIG_FILE);
-    if (await access(configPath)) {
+    if (await fs.access(configPath)) {
       return new Err(`${CONFIG_FILE} already exists in ${options.cwd}`);
     }
 
@@ -85,14 +57,14 @@ export class InitCommand {
 
     // 5. Check if output file already exists
     const outputPath = path.resolve(options.cwd, config.output);
-    if (await access(outputPath)) {
+    if (await fs.access(outputPath)) {
       return new Err(`Output file already exists: ${outputPath}`);
     }
 
     // 6. Create parent directory for output if needed
     const outputDir = path.dirname(outputPath);
-    if (!(await access(outputDir))) {
-      const mkdirResult = await mkdir(outputDir, { recursive: true });
+    if (!(await fs.access(outputDir))) {
+      const mkdirResult = await fs.mkdir(outputDir, { recursive: true });
       if (mkdirResult.isErr()) {
         return new Err(`Failed to create directory: ${outputDir}`);
       }
@@ -100,19 +72,21 @@ export class InitCommand {
 
     // 7. Write denji.json
     const configContent = JSON.stringify(config, null, 2);
-    const writeConfigResult = await writeFile(configPath, configContent);
+    const writeConfigResult = await fs.writeFile(configPath, configContent);
     if (writeConfigResult.isErr()) {
       return new Err(`Failed to write ${CONFIG_FILE}`);
     }
     logger.success(`Created ${CONFIG_FILE}`);
 
     // 8. Write icons file using strategy template
-    const frameworkOptions = config[strategy.getConfigKey() as keyof Config];
+    const frameworkOptions =
+      (config[strategy.getConfigKey() as keyof Config] as FrameworkOptions) ??
+      {};
     const iconsContent = strategy.getIconsTemplate({
       typescript: config.typescript,
-      frameworkOptions: (frameworkOptions as Record<string, unknown>) ?? {},
+      frameworkOptions,
     });
-    const writeIconsResult = await writeFile(outputPath, iconsContent);
+    const writeIconsResult = await fs.writeFile(outputPath, iconsContent);
     if (writeIconsResult.isErr()) {
       return new Err(`Failed to write ${config.output}`);
     }
@@ -122,16 +96,18 @@ export class InitCommand {
   }
 
   async resolveConfig(options: InitOptions) {
+    const { prompts, frameworks } = this.deps;
+
     const output =
       options.output ??
-      (await enhancedText({
+      (await prompts.text({
         message: "Where should icons be created?",
         defaultValue: "./src/icons.tsx",
       }));
 
     const frameworkInput =
       options.framework ??
-      (await enhancedSelect({
+      (await prompts.select({
         message: "Which framework are you using?",
         options: getFrameworkOptions(),
         initialValue: "react",
@@ -146,18 +122,18 @@ export class InitCommand {
     const framework = frameworkResult.data;
 
     // Load framework strategy
-    const strategy = await createFrameworkStrategy(framework);
+    const strategy = await frameworks.createStrategy(framework);
 
     const typescript =
       options.typescript ??
-      (await enhancedConfirm({
+      (await prompts.confirm({
         message: "Use TypeScript?",
         initialValue: true,
       }));
 
     const a11yInput =
       options.a11y ??
-      (await enhancedSelect({
+      (await prompts.select({
         message: "Which accessibility strategy should be used?",
         options: [
           {
@@ -195,7 +171,7 @@ export class InitCommand {
 
     const trackSource =
       options.trackSource ??
-      (await enhancedConfirm({
+      (await prompts.confirm({
         message:
           "Track Iconify source names? (for update command, debugging, identifying collections)",
         initialValue: true,
@@ -234,3 +210,37 @@ export class InitCommand {
     return new Ok(null);
   }
 }
+
+export function createInitCommand(): InitCommand {
+  return new InitCommand(initDefaults);
+}
+
+export const init = new Command()
+  .name("init")
+  .description("Initialize a new denji project")
+  .option(
+    "-c, --cwd <cwd>",
+    "The working directory. Defaults to the current directory.",
+    process.cwd()
+  )
+  .option("--output <file>", "Output file path for icons")
+  .option("--framework <framework>", "Framework to use")
+  .option("--typescript", "Use TypeScript")
+  .option("--no-typescript", "Use JavaScript")
+  .option("--a11y <strategy>", "Accessibility strategy for SVG icons")
+  .option("--track-source", "Track Iconify source names")
+  .option("--no-track-source", "Don't track Iconify source names")
+  .option("--forward-ref", "Use forwardRef for React icon components")
+  .option("--no-forward-ref", "Don't use forwardRef for React icon components")
+  .action(async (options: InitOptions) => {
+    intro("denji init");
+
+    const command = createInitCommand();
+
+    const result = await command.run(options);
+    if (result.isErr()) {
+      handleError(result.error);
+    }
+
+    outro("Project initialized successfully!");
+  });

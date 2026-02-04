@@ -1,23 +1,110 @@
-import path from "node:path";
-import { createEta } from "~/utils/eta";
+import { transform } from "@svgr/core";
+import { eta } from "~/utils/eta";
 import { enhancedConfirm } from "~/utils/prompts";
+import {
+  getA11yAttrs,
+  SVG_OPENING_TAG_REGEX,
+  SVG_TAG_REGEX,
+  toReadableName,
+} from "~/utils/svg";
 import type {
   FrameworkStrategy,
   PromptContext,
   TemplateConfig,
+  TransformSvgOptions,
 } from "../types";
 import { type ReactOptions, reactOptionsSchema } from "./schema";
 
-const eta = createEta(path.join(import.meta.dirname, "templates"));
+const ICONS_TEMPLATE = `<% if (it.typescript) { -%>
+export type IconProps = React.ComponentProps<"svg">;
+<% if (it.forwardRef) { -%>
+export type Icon = React.ForwardRefExoticComponent<IconProps & React.ComponentRef<"svg">>;
+<% } else { -%>
+export type Icon = (props: IconProps) => React.JSX.Element;
+<% } -%>
+
+export const Icons = {} as const satisfies Record<string, Icon>;
+
+export type IconName = keyof typeof Icons;
+<% } else { -%>
+export const Icons = {};
+<% } -%>
+`;
+
+eta.loadTemplate("@react/icons", ICONS_TEMPLATE);
 
 function getIconsTemplate(config: TemplateConfig): string {
   const opts = config.frameworkOptions as ReactOptions;
   const forwardRef = opts?.forwardRef ?? false;
 
-  return eta.render("./icons", {
+  return eta.render("@react/icons", {
     typescript: config.typescript,
     forwardRef,
   });
+}
+
+/**
+ * Transform SVG to React component using SVGR
+ * Outputs camelCase attributes for JSX compatibility
+ */
+async function transformSvg(
+  svg: string,
+  options: TransformSvgOptions,
+  frameworkOptions: ReactOptions
+): Promise<string> {
+  const { a11y, trackSource, iconName, componentName } = options;
+  const forwardRef = frameworkOptions?.forwardRef ?? false;
+
+  const svgProps: Record<string, string> = getA11yAttrs(a11y, componentName);
+
+  if (trackSource && iconName) {
+    svgProps["data-icon"] = iconName;
+  }
+
+  const jsCode = await transform(
+    svg,
+    {
+      plugins: ["@svgr/plugin-svgo", "@svgr/plugin-jsx"],
+      svgoConfig: {
+        plugins: [
+          "preset-default",
+          "convertStyleToAttrs",
+          "sortAttrs",
+          "mergePaths",
+        ],
+      },
+      jsxRuntime: "automatic",
+      typescript: false,
+      expandProps: "end",
+      svgProps,
+      titleProp: a11y === "title",
+    },
+    { componentName: "Icon" }
+  );
+
+  // Extract just the SVG JSX from the generated component
+  const svgMatch = jsCode.match(SVG_TAG_REGEX);
+  if (!svgMatch) {
+    throw new Error("Failed to extract SVG from SVGR output");
+  }
+
+  let result = svgMatch[0];
+
+  // For title mode, inject the title element with the readable name
+  if (a11y === "title") {
+    const readableName = toReadableName(componentName);
+    result = result.replace(
+      SVG_OPENING_TAG_REGEX,
+      `<svg$1><title>${readableName}</title>`
+    );
+  }
+
+  if (forwardRef) {
+    result = result.replace(SVG_OPENING_TAG_REGEX, "<svg$1 ref={ref}>");
+    return `${componentName}: forwardRef<SVGSVGElement, IconProps>((props, ref) => (${result}))`;
+  }
+
+  return `${componentName}: (props) => (${result})`;
 }
 
 export const reactStrategy: FrameworkStrategy = {
@@ -63,4 +150,6 @@ export const reactStrategy: FrameworkStrategy = {
   getConfigKey() {
     return "react";
   },
+
+  transformSvg,
 };

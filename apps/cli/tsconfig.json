@@ -1,4 +1,6 @@
 {
+  "include": ["src/**/*", "scripts/**/*"],
+  "exclude": ["experiments/**/*"],
   "compilerOptions": {
     // Environment setup & latest features
     "lib": ["ES2024"],

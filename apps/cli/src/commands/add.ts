@@ -1,23 +1,11 @@
 import path from "node:path";
 import { intro, outro } from "@clack/prompts";
 import { Command } from "commander";
-import { createFrameworkStrategy } from "~/frameworks/factory";
+import type { FrameworkOptions } from "~/frameworks/types";
 import { type A11y, a11ySchema, type Config } from "~/schemas/config";
-import { loadConfig } from "~/utils/config";
-import { access, readFile, writeFile } from "~/utils/fs";
+import { addDefaults } from "~/services/defaults";
+import type { AddDeps } from "~/services/deps";
 import { handleError } from "~/utils/handle-error";
-import { runHooks } from "~/utils/hooks";
-import {
-  fetchIcon,
-  getExistingIconNames,
-  insertIconAlphabetically,
-  replaceIcon,
-  svgToComponent,
-  toComponentName,
-  validateIconName,
-} from "~/utils/icons";
-import { logger } from "~/utils/logger";
-import { enhancedConfirm } from "~/utils/prompts";
 import { Err, Ok } from "~/utils/result";
 
 export interface AddOptions {
@@ -26,34 +14,22 @@ export interface AddOptions {
   a11y?: string | boolean;
 }
 
-export const add = new Command()
-  .name("add")
-  .description("Add icons to your project")
-  .argument("<icons...>", "Icon names (e.g., mdi:home lucide:check)")
-  .option("--name <name>", "Custom component name (single icon only)")
-  .option("--a11y <strategy>", "Accessibility strategy (overrides config)")
-  .option(
-    "-c, --cwd <cwd>",
-    "The working directory. Defaults to the current directory.",
-    process.cwd()
-  )
-  .action(async (icons: string[], options: AddOptions) => {
-    intro("denji add");
-
-    const command = new AddCommand();
-
-    const result = await command.run(icons, options);
-    if (result.isErr()) {
-      handleError(result.error);
-    }
-
-    outro(`Added ${icons.length} icon(s)`);
-  });
-
 export class AddCommand {
+  constructor(private readonly deps: AddDeps) {}
+
   async run(icons: string[], options: AddOptions) {
+    const {
+      fs,
+      config,
+      hooks,
+      icons: iconUtils,
+      prompts,
+      logger,
+      frameworks,
+    } = this.deps;
+
     // 1. Validate cwd exists
-    if (!(await access(options.cwd))) {
+    if (!(await fs.access(options.cwd))) {
       return new Err(`Directory does not exist: ${options.cwd}`);
     }
 
@@ -64,7 +40,7 @@ export class AddCommand {
 
     // 3. Validate all icon names
     for (const icon of icons) {
-      const validation = validateIconName(icon);
+      const validation = iconUtils.validateIconName(icon);
       if (validation.isErr()) {
         return validation;
       }
@@ -84,51 +60,50 @@ export class AddCommand {
     }
 
     // 5. Load config
-    const configResult = await loadConfig(options.cwd);
+    const configResult = await config.loadConfig(options.cwd);
     if (configResult.isErr()) {
       return configResult;
     }
-    const config = configResult.value;
+    const cfg = configResult.value;
 
     // 6. Load framework strategy
-    const strategy = await createFrameworkStrategy(config.framework);
+    const strategy = await frameworks.createStrategy(cfg.framework);
 
     // 7. Run preAdd hooks
-    const preAddResult = await runHooks(config.hooks?.preAdd, options.cwd);
+    const preAddResult = await hooks.runHooks(cfg.hooks?.preAdd, options.cwd);
     if (preAddResult.isErr()) {
       return preAddResult;
     }
 
     // 8. Read icons file
-    const iconsPath = path.resolve(options.cwd, config.output);
-    if (!(await access(iconsPath))) {
+    const iconsPath = path.resolve(options.cwd, cfg.output);
+    if (!(await fs.access(iconsPath))) {
       return new Err(
-        `Icons file not found: ${config.output}. Run "denji init" first.`
+        `Icons file not found: ${cfg.output}. Run "denji init" first.`
       );
     }
 
-    const iconsFileResult = await readFile(iconsPath, "utf-8");
+    const iconsFileResult = await fs.readFile(iconsPath, "utf-8");
     if (iconsFileResult.isErr()) {
-      return new Err(`Failed to read icons file: ${config.output}`);
+      return new Err(`Failed to read icons file: ${cfg.output}`);
     }
 
     let iconsContent = iconsFileResult.value;
-    const existingIcons = getExistingIconNames(iconsContent);
+    const existingIcons = iconUtils.getExistingIconNames(iconsContent);
     let addedCount = 0;
 
-    // Check if forwardRef is enabled using strategy
-    const frameworkOptions = config[strategy.getConfigKey() as keyof Config];
-    const useForwardRef = strategy.isForwardRefEnabled(
-      (frameworkOptions as Record<string, unknown>) ?? {}
-    );
+    // Get framework-specific options
+    const frameworkOptions =
+      (cfg[strategy.getConfigKey() as keyof Config] as FrameworkOptions) ?? {};
+    const useForwardRef = strategy.isForwardRefEnabled(frameworkOptions);
 
     // 9. Process each icon
     for (const icon of icons) {
-      const componentName = options.name ?? toComponentName(icon);
+      const componentName = options.name ?? iconUtils.toComponentName(icon);
 
       // Check if exists
       if (existingIcons.includes(componentName)) {
-        const overwrite = await enhancedConfirm({
+        const overwrite = await prompts.confirm({
           message: `Icon "${componentName}" already exists. Overwrite?`,
           initialValue: false,
         });
@@ -140,19 +115,23 @@ export class AddCommand {
       }
 
       // Fetch icon
-      const svgResult = await fetchIcon(icon);
+      const svgResult = await iconUtils.fetchIcon(icon);
       if (svgResult.isErr()) {
         logger.error(`Failed to fetch ${icon}: ${svgResult.error}`);
         continue;
       }
 
-      // Convert to component
-      const component = await svgToComponent(svgResult.value, componentName, {
-        a11y: a11yOverride ?? config.a11y,
-        trackSource: config.trackSource ?? true,
-        iconName: icon,
-        forwardRef: useForwardRef,
-      });
+      // Convert to component using framework strategy
+      const component = await strategy.transformSvg(
+        svgResult.value,
+        {
+          a11y: a11yOverride ?? cfg.a11y,
+          trackSource: cfg.trackSource ?? true,
+          iconName: icon,
+          componentName,
+        },
+        frameworkOptions
+      );
 
       // Add forwardRef import if needed (first icon with empty Icons object)
       if (useForwardRef && existingIcons.length === 0 && addedCount === 0) {
@@ -166,10 +145,14 @@ export class AddCommand {
 
       // Insert or replace
       if (existingIcons.includes(componentName)) {
-        iconsContent = replaceIcon(iconsContent, componentName, component);
+        iconsContent = iconUtils.replaceIcon(
+          iconsContent,
+          componentName,
+          component
+        );
         logger.success(`Replaced ${componentName}`);
       } else {
-        iconsContent = insertIconAlphabetically(
+        iconsContent = iconUtils.insertIconAlphabetically(
           iconsContent,
           componentName,
           component
@@ -183,12 +166,15 @@ export class AddCommand {
 
     // 10. Write updated file and run postAdd hooks
     if (addedCount > 0) {
-      const writeResult = await writeFile(iconsPath, iconsContent);
+      const writeResult = await fs.writeFile(iconsPath, iconsContent);
       if (writeResult.isErr()) {
-        return new Err(`Failed to write icons file: ${config.output}`);
+        return new Err(`Failed to write icons file: ${cfg.output}`);
       }
 
-      const postAddResult = await runHooks(config.hooks?.postAdd, options.cwd);
+      const postAddResult = await hooks.runHooks(
+        cfg.hooks?.postAdd,
+        options.cwd
+      );
       if (postAddResult.isErr()) {
         return postAddResult;
       }
@@ -197,3 +183,31 @@ export class AddCommand {
     return new Ok(null);
   }
 }
+
+export function createAddCommand(): AddCommand {
+  return new AddCommand(addDefaults);
+}
+
+export const add = new Command()
+  .name("add")
+  .description("Add icons to your project")
+  .argument("<icons...>", "Icon names (e.g., mdi:home lucide:check)")
+  .option("--name <name>", "Custom component name (single icon only)")
+  .option("--a11y <strategy>", "Accessibility strategy (overrides config)")
+  .option(
+    "-c, --cwd <cwd>",
+    "The working directory. Defaults to the current directory.",
+    process.cwd()
+  )
+  .action(async (icons: string[], options: AddOptions) => {
+    intro("denji add");
+
+    const command = createAddCommand();
+
+    const result = await command.run(icons, options);
+    if (result.isErr()) {
+      handleError(result.error);
+    }
+
+    outro(`Added ${icons.length} icon(s)`);
+  });

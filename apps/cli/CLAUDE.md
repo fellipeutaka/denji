@@ -1,6 +1,6 @@
 # Denji CLI
 
-CLI for managing SVG icons in React/Preact projects. Fetches from Iconify, converts to components.
+CLI for managing SVG icons in React/Preact/Solid projects. Fetches from Iconify, converts to components.
 
 ## Architecture
 
@@ -15,16 +15,15 @@ src/frameworks/
   registry.ts       # Framework metadata for prompts
   react/
     schema.ts       # Zod Mini schema for react options
-    strategy.ts     # FrameworkStrategy implementation
-    templates/
-      icons.eta     # Eta template for icons file
+    strategy.ts     # FrameworkStrategy implementation + inline template
   preact/
     schema.ts
     strategy.ts
-    templates/
-      icons.eta
+  solid/
+    schema.ts
+    strategy.ts
 src/utils/
-  eta.ts            # createEta() factory for Eta instances
+  eta.ts            # Shared Eta instance with cache
 ```
 
 ### Key Interface
@@ -47,20 +46,45 @@ interface FrameworkStrategy {
 ### Adding a New Framework
 
 1. Create `src/frameworks/<name>/schema.ts` with Zod Mini options schema
-2. Create `src/frameworks/<name>/templates/icons.eta` with Eta template
-3. Create `src/frameworks/<name>/strategy.ts` implementing `FrameworkStrategy`
-4. Add case to `src/frameworks/factory.ts` switch
-5. Add entry to `src/frameworks/registry.ts`
-6. Add discriminated union variant in `src/schemas/config.ts`
-7. Update `frameworkSchema` enum in `src/schemas/config.ts`
+2. Create `src/frameworks/<name>/strategy.ts` implementing `FrameworkStrategy` with inline template
+3. Add case to `src/frameworks/factory.ts` switch
+4. Add entry to `src/frameworks/registry.ts`
+5. Add discriminated union variant in `src/schemas/config.ts`
+6. Update `frameworkSchema` enum in `src/schemas/config.ts`
 
-### Commands
+### Commands with Dependency Injection
 
-All commands use the factory pattern:
+Commands use constructor-based DIP for testability:
+
+```
+src/services/
+  deps.ts           # Dependency interfaces (FileSystem, ConfigLoader, etc.)
+  defaults.ts       # Production implementations mapping to real utils
+src/commands/
+  __tests__/
+    test-utils.ts   # Mock factories for testing
+  list.ts, add.ts, clear.ts, remove.ts, init.ts
+```
+
+Each command class accepts deps via constructor, with factory function for production:
+
+```typescript
+export class ListCommand {
+  constructor(private readonly deps: ListDeps) {}
+  async run(options: ListOptions) { /* uses this.deps */ }
+}
+
+export function createListCommand(): ListCommand {
+  return new ListCommand(listDefaults);
+}
+```
+
+Commands:
 - `init.ts` - Creates config + icons file using strategy template
 - `add.ts` - Adds icons, uses strategy for forwardRef detection
 - `remove.ts` - Removes icons, resets to strategy template when empty
 - `clear.ts` - Resets to strategy template
+- `list.ts` - Lists existing icons
 
 ### Config Schema
 
@@ -98,23 +122,27 @@ import * as z from "zod/mini";
 
 ## Eta Templates
 
-Templates use [Eta](https://eta.js.org) (3.5KB minzipped). Each framework has `.eta` files in `templates/`:
+Templates use [Eta](https://eta.js.org) (3.5KB minzipped) with **inline templates** via `loadTemplate()`:
 
-```eta
-<% if (it.typescript) { %>
+```typescript
+// In strategy.ts
+import { eta } from "~/utils/eta";
+
+const ICONS_TEMPLATE = `<% if (it.typescript) { -%>
 export type IconProps = React.ComponentProps<"svg">;
-<% if (it.forwardRef) { %>
-export type Icon = React.ForwardRefExoticComponent<...>;
-<% } else { %>
-export type Icon = (props: IconProps) => React.JSX.Element;
-<% } %>
 ...
-<% } else { %>
+<% } else { -%>
 export const Icons = {};
-<% } %>
+<% } -%>
+`;
+
+eta.loadTemplate("@react/icons", ICONS_TEMPLATE);
+
+// Render with:
+eta.render("@react/icons", { typescript, forwardRef });
 ```
 
-Strategy renders via `eta.render("./icons", { typescript, forwardRef })`.
+Templates are embedded in JS code (not separate `.eta` files) to work with bundled builds.
 
 ## Testing
 
@@ -122,4 +150,15 @@ Strategy renders via `eta.render("./icons", { typescript, forwardRef })`.
 bun test
 ```
 
-Tests mock fs/config modules. Strategy templates tested via integration tests.
+Tests use DIP with mock factories from `src/commands/__tests__/test-utils.ts`:
+
+```typescript
+const deps = createListDeps({
+  fs: createMockFs({ readFile: mock(() => Promise.resolve(new Ok("..."))) }),
+  config: withConfig({ output: "./icons.tsx" }),
+});
+const command = new ListCommand(deps);
+const result = await command.run({ cwd: "/test" });
+```
+
+No module-level mocking needed. Strategy templates tested via integration tests.

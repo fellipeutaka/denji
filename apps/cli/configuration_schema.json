@@ -22,7 +22,12 @@
           "anyOf": [
             {
               "type": "string",
-              "enum": ["hidden", "img", "title", "presentation"]
+              "enum": [
+                "hidden",
+                "img",
+                "title",
+                "presentation"
+              ]
             },
             {
               "type": "boolean",
@@ -100,7 +105,12 @@
           "additionalProperties": false
         }
       },
-      "required": ["$schema", "output", "typescript", "trackSource"]
+      "required": [
+        "$schema",
+        "output",
+        "typescript",
+        "trackSource"
+      ]
     },
     {
       "oneOf": [
@@ -121,12 +131,16 @@
                   "type": "boolean"
                 }
               },
-              "required": ["forwardRef"],
+              "required": [
+                "forwardRef"
+              ],
               "additionalProperties": false,
               "description": "React-specific configuration options"
             }
           },
-          "required": ["framework"]
+          "required": [
+            "framework"
+          ]
         },
         {
           "type": "object",
@@ -145,12 +159,35 @@
                   "type": "boolean"
                 }
               },
-              "required": ["forwardRef"],
+              "required": [
+                "forwardRef"
+              ],
               "additionalProperties": false,
               "description": "Preact-specific configuration options"
             }
           },
-          "required": ["framework"]
+          "required": [
+            "framework"
+          ]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "framework": {
+              "type": "string",
+              "const": "solid",
+              "description": "Solid framework"
+            },
+            "solid": {
+              "type": "object",
+              "properties": {},
+              "additionalProperties": false,
+              "description": "Solid-specific configuration options"
+            }
+          },
+          "required": [
+            "framework"
+          ]
         }
       ]
     }

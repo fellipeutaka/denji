@@ -23,8 +23,8 @@ export async function enhancedConfirm(
   return result;
 }
 
-type Primitive = Readonly<string | boolean | number>;
-type Option<Value> = Value extends Primitive
+export type Primitive = Readonly<string | boolean | number>;
+export type Option<Value> = Value extends Primitive
   ? {
       value: Value;
       label?: string;
@@ -35,7 +35,7 @@ type Option<Value> = Value extends Primitive
       label: string;
       hint?: string;
     };
-interface SelectOptions<Options extends Option<Value>[], Value> {
+export interface SelectOptions<Options extends Option<Value>[], Value> {
   message: string;
   options: Options;
   initialValue?: Options[number]["value"];
@@ -57,7 +57,7 @@ export async function enhancedSelect<
   return result;
 }
 
-interface MultiSelectOptions<Value> {
+export interface MultiSelectOptions<Value> {
   message: string;
   options: Option<Value>[];
   initialValues?: Value[];

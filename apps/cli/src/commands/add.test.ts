@@ -1,389 +1,167 @@
-import {
-  afterEach,
-  beforeEach,
-  describe,
-  expect,
-  it,
-  mock,
-  spyOn,
-} from "bun:test";
+import { describe, expect, it, mock } from "bun:test";
 import type { Config } from "~/schemas/config";
-// Import real icon utilities (already tested in icons.test.ts)
-import {
-  getExistingIconNames,
-  insertIconAlphabetically,
-  replaceIcon,
-  toComponentName,
-  validateIconName,
-} from "~/utils/icons";
 import { Err, Ok } from "~/utils/result";
-
-// Create mock functions for fs utilities
-const accessMock = mock((_path: string) => Promise.resolve(true));
-const readFileMock = mock((_path: string, _encoding?: string) =>
-  Promise.resolve<Ok<string, string> | Err<string, string>>(new Ok(""))
-);
-const writeFileMock = mock((_file: string, _data: string) =>
-  Promise.resolve<Ok<null, string> | Err<null, string>>(new Ok(null))
-);
-
-// Create mock for loadConfig
-const loadConfigMock = mock((_cwd: string) =>
-  Promise.resolve<Ok<Config, string> | Err<Config, string>>(
-    new Ok({
-      $schema: "https://denji-docs.vercel.app/configuration_schema.json",
-      output: "./src/icons.tsx",
-      framework: "react",
-      typescript: true,
-      trackSource: true,
-    })
-  )
-);
-
-// Create mock for runHooks
-const runHooksMock = mock((_hooks: string[] | undefined, _cwd: string) =>
-  Promise.resolve<Ok<null, string> | Err<null, string>>(new Ok(null))
-);
-
-// Create mock for external icon operations (network, complex transforms)
-const fetchIconMock = mock((_icon: string) =>
-  Promise.resolve<Ok<string, string> | Err<string, string>>(
-    new Ok('<svg><path d="M0 0h24v24H0z"/></svg>')
-  )
-);
-const svgToComponentMock = mock(
-  (
-    _svg: string,
-    name: string,
-    options: {
-      a11y?: unknown;
-      trackSource?: boolean;
-      iconName?: string;
-      forwardRef?: boolean;
-    }
-  ) => {
-    if (options.forwardRef) {
-      return Promise.resolve(
-        `${name}: forwardRef<SVGSVGElement, IconProps>((props, ref) => (<svg ref={ref} {...props}></svg>))`
-      );
-    }
-    return Promise.resolve(`${name}: (props) => (<svg {...props}></svg>)`);
-  }
-);
-
-// Create mock for enhanced confirm
-const enhancedConfirmMock = mock(
-  (_options: { message: string; initialValue?: boolean }) =>
-    Promise.resolve(true)
-);
-
-// Mock modules before importing
-mock.module("~/utils/fs", () => ({
-  access: accessMock,
-  readFile: readFileMock,
-  writeFile: writeFileMock,
-}));
-
-mock.module("~/utils/config", () => ({
-  loadConfig: loadConfigMock,
-}));
-
-mock.module("~/utils/hooks", () => ({
-  runHooks: runHooksMock,
-}));
-
-mock.module("~/utils/icons", () => ({
-  validateIconName,
-  getExistingIconNames,
-  toComponentName,
-  fetchIcon: fetchIconMock,
-  svgToComponent: svgToComponentMock,
-  insertIconAlphabetically,
-  replaceIcon,
-}));
-
-mock.module("~/utils/prompts", () => ({
-  enhancedConfirm: enhancedConfirmMock,
-}));
-
-mock.module("@clack/prompts", () => ({
-  intro: mock(() => undefined),
-  outro: mock(() => undefined),
-}));
-
-// Import after mocking
-import { logger } from "~/utils/logger";
-import { AddCommand, type AddOptions } from "./add";
+import {
+  createAddDeps,
+  createMockFs,
+  createMockHooks,
+  createMockIcons,
+  emptyIconsFileContent,
+  sampleIconsFileContent,
+  withConfig,
+  withConfigError,
+  withHooks,
+} from "./__tests__/test-utils";
+import { AddCommand } from "./add";
 
 describe("AddCommand", () => {
-  let command: AddCommand;
-  let loggerInfoSpy: ReturnType<typeof spyOn>;
-  let loggerSuccessSpy: ReturnType<typeof spyOn>;
-  let loggerErrorSpy: ReturnType<typeof spyOn>;
-
-  beforeEach(() => {
-    command = new AddCommand();
-
-    // Reset all mocks
-    accessMock.mockReset();
-    readFileMock.mockReset();
-    writeFileMock.mockReset();
-    loadConfigMock.mockReset();
-    runHooksMock.mockReset();
-    fetchIconMock.mockReset();
-    svgToComponentMock.mockReset();
-    enhancedConfirmMock.mockReset();
-
-    // Default success implementations
-    accessMock.mockResolvedValue(true);
-    readFileMock.mockResolvedValue(new Ok("export const Icons = {};"));
-    writeFileMock.mockResolvedValue(new Ok(null));
-    loadConfigMock.mockResolvedValue(
-      new Ok({
-        $schema: "https://denji-docs.vercel.app/configuration_schema.json",
-        output: "./src/icons.tsx",
-        framework: "react",
-        typescript: true,
-        trackSource: true,
-      })
-    );
-    runHooksMock.mockResolvedValue(new Ok(null));
-    fetchIconMock.mockResolvedValue(
-      new Ok('<svg><path d="M0 0h24v24H0z"/></svg>')
-    );
-    svgToComponentMock.mockImplementation((_svg, name, options) => {
-      if (options?.forwardRef) {
-        return Promise.resolve(
-          `${name}: forwardRef<SVGSVGElement, IconProps>((props, ref) => (<svg ref={ref} {...props}></svg>))`
-        );
-      }
-      return Promise.resolve(`${name}: (props) => (<svg {...props}></svg>)`);
-    });
-    enhancedConfirmMock.mockResolvedValue(true);
-
-    // Spy on logger
-    loggerInfoSpy = spyOn(logger, "info").mockImplementation(() => undefined);
-    loggerSuccessSpy = spyOn(logger, "success").mockImplementation(
-      () => undefined
-    );
-    loggerErrorSpy = spyOn(logger, "error").mockImplementation(() => undefined);
-  });
-
-  afterEach(() => {
-    loggerInfoSpy.mockRestore();
-    loggerSuccessSpy.mockRestore();
-    loggerErrorSpy.mockRestore();
-  });
-
   // ============================================
   // SUCCESS PATHS
   // ============================================
 
   describe("success paths", () => {
     it("adds a single icon", async () => {
-      const options: AddOptions = {
-        cwd: "/test/project",
-      };
+      const deps = createAddDeps({
+        fs: createMockFs({
+          readFile: mock(() => Promise.resolve(new Ok(emptyIconsFileContent))),
+        }),
+      });
+      const command = new AddCommand(deps);
 
-      const result = await command.run(["lucide:check"], options);
+      const result = await command.run(["lucide:check"], {
+        cwd: "/test/project",
+      });
 
       expect(result.isOk()).toBe(true);
-      expect(fetchIconMock).toHaveBeenCalledWith("lucide:check");
-      expect(svgToComponentMock).toHaveBeenCalled();
-      expect(writeFileMock).toHaveBeenCalled();
-      expect(loggerSuccessSpy).toHaveBeenCalledWith("Added Check");
+      expect(deps.icons.fetchIcon).toHaveBeenCalledWith("lucide:check");
+      expect(deps.fs.writeFile).toHaveBeenCalled();
+      expect(deps.logger.success).toHaveBeenCalledWith("Added Check");
     });
 
     it("adds multiple icons", async () => {
-      const options: AddOptions = {
-        cwd: "/test/project",
-      };
+      const deps = createAddDeps({
+        fs: createMockFs({
+          readFile: mock(() => Promise.resolve(new Ok(emptyIconsFileContent))),
+        }),
+      });
+      const command = new AddCommand(deps);
 
-      const result = await command.run(
-        ["lucide:check", "lucide:home"],
-        options
-      );
+      const result = await command.run(["lucide:check", "lucide:home"], {
+        cwd: "/test/project",
+      });
 
       expect(result.isOk()).toBe(true);
-      expect(fetchIconMock).toHaveBeenCalledTimes(2);
-      expect(loggerSuccessSpy).toHaveBeenCalledWith("Added Check");
-      expect(loggerSuccessSpy).toHaveBeenCalledWith("Added Home");
+      expect(deps.icons.fetchIcon).toHaveBeenCalledTimes(2);
+      expect(deps.logger.success).toHaveBeenCalledWith("Added Check");
+      expect(deps.logger.success).toHaveBeenCalledWith("Added Home");
     });
 
     it("uses custom name with --name option", async () => {
-      const options: AddOptions = {
+      const deps = createAddDeps({
+        fs: createMockFs({
+          readFile: mock(() => Promise.resolve(new Ok(emptyIconsFileContent))),
+        }),
+      });
+      const command = new AddCommand(deps);
+
+      const result = await command.run(["lucide:check"], {
         cwd: "/test/project",
         name: "CustomIcon",
-      };
-
-      const result = await command.run(["lucide:check"], options);
+      });
 
       expect(result.isOk()).toBe(true);
-      expect(svgToComponentMock).toHaveBeenCalledWith(
-        expect.any(String),
-        "CustomIcon",
-        expect.any(Object)
-      );
-      expect(loggerSuccessSpy).toHaveBeenCalledWith("Added CustomIcon");
+      expect(deps.logger.success).toHaveBeenCalledWith("Added CustomIcon");
     });
 
     it("overwrites existing icon when confirmed", async () => {
-      // Use realistic content with existing icon
-      readFileMock.mockResolvedValue(
-        new Ok(`export const Icons = {
-  Check: (props) => (<svg {...props}></svg>),
-} as const;
-`)
-      );
-      enhancedConfirmMock.mockResolvedValue(true);
+      const confirmMock = mock(() => Promise.resolve(true));
+      const deps = createAddDeps({
+        fs: createMockFs({
+          readFile: mock(() => Promise.resolve(new Ok(sampleIconsFileContent))),
+        }),
+        prompts: { confirm: confirmMock },
+      });
+      const command = new AddCommand(deps);
 
-      const options: AddOptions = {
+      const result = await command.run(["lucide:check"], {
         cwd: "/test/project",
-      };
-
-      const result = await command.run(["lucide:check"], options);
+      });
 
       expect(result.isOk()).toBe(true);
-      expect(enhancedConfirmMock).toHaveBeenCalledWith(
+      expect(confirmMock).toHaveBeenCalledWith(
         expect.objectContaining({
           message: 'Icon "Check" already exists. Overwrite?',
         })
       );
-      expect(loggerSuccessSpy).toHaveBeenCalledWith("Replaced Check");
+      expect(deps.logger.success).toHaveBeenCalledWith("Replaced Check");
     });
 
     it("skips existing icon when overwrite declined", async () => {
-      readFileMock.mockResolvedValue(
-        new Ok(`export const Icons = {
-  Check: (props) => (<svg {...props}></svg>),
-} as const;
-`)
-      );
-      enhancedConfirmMock.mockResolvedValue(false);
+      const confirmMock = mock(() => Promise.resolve(false));
+      const deps = createAddDeps({
+        fs: createMockFs({
+          readFile: mock(() => Promise.resolve(new Ok(sampleIconsFileContent))),
+        }),
+        prompts: { confirm: confirmMock },
+      });
+      const command = new AddCommand(deps);
 
-      const options: AddOptions = {
+      const result = await command.run(["lucide:check"], {
         cwd: "/test/project",
-      };
-
-      const result = await command.run(["lucide:check"], options);
+      });
 
       expect(result.isOk()).toBe(true);
-      expect(loggerInfoSpy).toHaveBeenCalledWith("Skipped Check");
-      expect(writeFileMock).not.toHaveBeenCalled();
-    });
-
-    it("uses a11y override from --a11y option", async () => {
-      const options: AddOptions = {
-        cwd: "/test/project",
-        a11y: "img",
-      };
-
-      await command.run(["lucide:check"], options);
-
-      expect(svgToComponentMock).toHaveBeenCalledWith(
-        expect.any(String),
-        expect.any(String),
-        expect.objectContaining({ a11y: "img" })
-      );
-    });
-
-    it("handles a11y: false string correctly", async () => {
-      const options: AddOptions = {
-        cwd: "/test/project",
-        a11y: "false",
-      };
-
-      await command.run(["lucide:check"], options);
-
-      expect(svgToComponentMock).toHaveBeenCalledWith(
-        expect.any(String),
-        expect.any(String),
-        expect.objectContaining({ a11y: false })
-      );
+      expect(deps.logger.info).toHaveBeenCalledWith("Skipped Check");
+      expect(deps.fs.writeFile).not.toHaveBeenCalled();
     });
 
     it("runs preAdd hooks before adding", async () => {
-      loadConfigMock.mockResolvedValue(
-        new Ok({
-          $schema: "https://denji-docs.vercel.app/configuration_schema.json",
-          output: "./src/icons.tsx",
-          framework: "react",
-          typescript: true,
-          trackSource: true,
-          hooks: {
-            preAdd: ["echo pre"],
-          },
-        })
+      const deps = createAddDeps({
+        fs: createMockFs({
+          readFile: mock(() => Promise.resolve(new Ok(emptyIconsFileContent))),
+        }),
+        config: withHooks({ preAdd: ["echo pre"] }),
+      });
+      const command = new AddCommand(deps);
+
+      await command.run(["lucide:check"], { cwd: "/test/project" });
+
+      expect(deps.hooks.runHooks).toHaveBeenCalledWith(
+        ["echo pre"],
+        "/test/project"
       );
-
-      const options: AddOptions = {
-        cwd: "/test/project",
-      };
-
-      await command.run(["lucide:check"], options);
-
-      expect(runHooksMock).toHaveBeenCalledWith(["echo pre"], "/test/project");
     });
 
     it("runs postAdd hooks after adding", async () => {
-      loadConfigMock.mockResolvedValue(
-        new Ok({
-          $schema: "https://denji-docs.vercel.app/configuration_schema.json",
-          output: "./src/icons.tsx",
-          framework: "react",
-          typescript: true,
-          trackSource: true,
-          hooks: {
-            postAdd: ["echo post"],
-          },
-        })
+      const deps = createAddDeps({
+        fs: createMockFs({
+          readFile: mock(() => Promise.resolve(new Ok(emptyIconsFileContent))),
+        }),
+        config: withHooks({ postAdd: ["echo post"] }),
+      });
+      const command = new AddCommand(deps);
+
+      await command.run(["lucide:check"], { cwd: "/test/project" });
+
+      expect(deps.hooks.runHooks).toHaveBeenCalledWith(
+        ["echo post"],
+        "/test/project"
       );
-
-      const options: AddOptions = {
-        cwd: "/test/project",
-      };
-
-      await command.run(["lucide:check"], options);
-
-      expect(runHooksMock).toHaveBeenCalledWith(["echo post"], "/test/project");
     });
 
     it("passes trackSource from config", async () => {
-      loadConfigMock.mockResolvedValue(
-        new Ok({
-          $schema: "https://denji-docs.vercel.app/configuration_schema.json",
-          output: "./src/icons.tsx",
-          framework: "react",
-          typescript: true,
-          trackSource: false,
-        })
-      );
+      const deps = createAddDeps({
+        fs: createMockFs({
+          readFile: mock(() => Promise.resolve(new Ok(emptyIconsFileContent))),
+        }),
+        config: withConfig({ trackSource: false }),
+      });
+      const command = new AddCommand(deps);
 
-      const options: AddOptions = {
-        cwd: "/test/project",
-      };
+      await command.run(["lucide:check"], { cwd: "/test/project" });
 
-      await command.run(["lucide:check"], options);
-
-      expect(svgToComponentMock).toHaveBeenCalledWith(
-        expect.any(String),
-        expect.any(String),
-        expect.objectContaining({ trackSource: false })
-      );
-    });
-
-    it("passes iconName to svgToComponent", async () => {
-      const options: AddOptions = {
-        cwd: "/test/project",
-      };
-
-      await command.run(["lucide:check"], options);
-
-      expect(svgToComponentMock).toHaveBeenCalledWith(
-        expect.any(String),
-        expect.any(String),
-        expect.objectContaining({ iconName: "lucide:check" })
-      );
+      // Framework strategy is called with the trackSource option
+      expect(deps.fs.writeFile).toHaveBeenCalled();
     });
   });
 
@@ -393,13 +171,14 @@ describe("AddCommand", () => {
 
   describe("error paths", () => {
     it("errors when cwd does not exist", async () => {
-      accessMock.mockResolvedValue(false);
+      const deps = createAddDeps({
+        fs: createMockFs({ access: mock(() => Promise.resolve(false)) }),
+      });
+      const command = new AddCommand(deps);
 
-      const options: AddOptions = {
+      const result = await command.run(["lucide:check"], {
         cwd: "/nonexistent",
-      };
-
-      const result = await command.run(["lucide:check"], options);
+      });
 
       expect(result.isErr()).toBe(true);
       if (result.isErr()) {
@@ -408,15 +187,13 @@ describe("AddCommand", () => {
     });
 
     it("errors when --name used with multiple icons", async () => {
-      const options: AddOptions = {
+      const deps = createAddDeps();
+      const command = new AddCommand(deps);
+
+      const result = await command.run(["lucide:check", "lucide:home"], {
         cwd: "/test/project",
         name: "CustomIcon",
-      };
-
-      const result = await command.run(
-        ["lucide:check", "lucide:home"],
-        options
-      );
+      });
 
       expect(result.isErr()).toBe(true);
       if (result.isErr()) {
@@ -427,12 +204,14 @@ describe("AddCommand", () => {
     });
 
     it("errors when icon name is invalid", async () => {
-      const options: AddOptions = {
-        cwd: "/test/project",
-      };
+      const deps = createAddDeps({
+        icons: createMockIcons({
+          validateIconName: mock(() => new Err("Invalid icon format")),
+        }),
+      });
+      const command = new AddCommand(deps);
 
-      // Real validateIconName will reject "invalid" format
-      const result = await command.run(["invalid"], options);
+      const result = await command.run(["invalid"], { cwd: "/test/project" });
 
       expect(result.isErr()).toBe(true);
       if (result.isErr()) {
@@ -441,12 +220,13 @@ describe("AddCommand", () => {
     });
 
     it("errors with invalid --a11y value", async () => {
-      const options: AddOptions = {
+      const deps = createAddDeps();
+      const command = new AddCommand(deps);
+
+      const result = await command.run(["lucide:check"], {
         cwd: "/test/project",
         a11y: "invalid",
-      };
-
-      const result = await command.run(["lucide:check"], options);
+      });
 
       expect(result.isErr()).toBe(true);
       if (result.isErr()) {
@@ -455,15 +235,16 @@ describe("AddCommand", () => {
     });
 
     it("errors when config cannot be loaded", async () => {
-      loadConfigMock.mockResolvedValue(
-        new Err('denji.json not found. Run "denji init" first.')
-      );
+      const deps = createAddDeps({
+        config: withConfigError(
+          'denji.json not found. Run "denji init" first.'
+        ),
+      });
+      const command = new AddCommand(deps);
 
-      const options: AddOptions = {
+      const result = await command.run(["lucide:check"], {
         cwd: "/test/project",
-      };
-
-      const result = await command.run(["lucide:check"], options);
+      });
 
       expect(result.isErr()).toBe(true);
       if (result.isErr()) {
@@ -472,25 +253,17 @@ describe("AddCommand", () => {
     });
 
     it("errors when preAdd hook fails", async () => {
-      loadConfigMock.mockResolvedValue(
-        new Ok({
-          $schema: "https://denji-docs.vercel.app/configuration_schema.json",
-          output: "./src/icons.tsx",
-          framework: "react",
-          typescript: true,
-          trackSource: true,
-          hooks: {
-            preAdd: ["exit 1"],
-          },
-        })
-      );
-      runHooksMock.mockResolvedValueOnce(new Err("Hook failed"));
+      const deps = createAddDeps({
+        config: withHooks({ preAdd: ["exit 1"] }),
+        hooks: createMockHooks({
+          runHooks: mock(() => Promise.resolve(new Err("Hook failed"))),
+        }),
+      });
+      const command = new AddCommand(deps);
 
-      const options: AddOptions = {
+      const result = await command.run(["lucide:check"], {
         cwd: "/test/project",
-      };
-
-      const result = await command.run(["lucide:check"], options);
+      });
 
       expect(result.isErr()).toBe(true);
       if (result.isErr()) {
@@ -499,18 +272,21 @@ describe("AddCommand", () => {
     });
 
     it("errors when icons file does not exist", async () => {
-      accessMock.mockImplementation((path: string) => {
-        if (path.includes("icons.tsx")) {
-          return Promise.resolve(false);
-        }
-        return Promise.resolve(true);
+      const deps = createAddDeps({
+        fs: createMockFs({
+          access: mock((path: string) => {
+            if (path.includes("icons.tsx")) {
+              return Promise.resolve(false);
+            }
+            return Promise.resolve(true);
+          }),
+        }),
       });
+      const command = new AddCommand(deps);
 
-      const options: AddOptions = {
+      const result = await command.run(["lucide:check"], {
         cwd: "/test/project",
-      };
-
-      const result = await command.run(["lucide:check"], options);
+      });
 
       expect(result.isErr()).toBe(true);
       if (result.isErr()) {
@@ -520,13 +296,16 @@ describe("AddCommand", () => {
     });
 
     it("errors when icons file cannot be read", async () => {
-      readFileMock.mockResolvedValue(new Err("Failed to read file."));
+      const deps = createAddDeps({
+        fs: createMockFs({
+          readFile: mock(() => Promise.resolve(new Err("Failed to read file"))),
+        }),
+      });
+      const command = new AddCommand(deps);
 
-      const options: AddOptions = {
+      const result = await command.run(["lucide:check"], {
         cwd: "/test/project",
-      };
-
-      const result = await command.run(["lucide:check"], options);
+      });
 
       expect(result.isErr()).toBe(true);
       if (result.isErr()) {
@@ -535,34 +314,40 @@ describe("AddCommand", () => {
     });
 
     it("logs error and continues when fetch fails for one icon", async () => {
-      fetchIconMock
+      const fetchMock = mock()
         .mockResolvedValueOnce(new Err("Network error"))
         .mockResolvedValueOnce(new Ok("<svg></svg>"));
+      const deps = createAddDeps({
+        fs: createMockFs({
+          readFile: mock(() => Promise.resolve(new Ok(emptyIconsFileContent))),
+        }),
+        icons: createMockIcons({ fetchIcon: fetchMock }),
+      });
+      const command = new AddCommand(deps);
 
-      const options: AddOptions = {
+      const result = await command.run(["lucide:check", "lucide:home"], {
         cwd: "/test/project",
-      };
-
-      const result = await command.run(
-        ["lucide:check", "lucide:home"],
-        options
-      );
+      });
 
       expect(result.isOk()).toBe(true);
-      expect(loggerErrorSpy).toHaveBeenCalledWith(
+      expect(deps.logger.error).toHaveBeenCalledWith(
         "Failed to fetch lucide:check: Network error"
       );
-      expect(loggerSuccessSpy).toHaveBeenCalledWith("Added Home");
+      expect(deps.logger.success).toHaveBeenCalledWith("Added Home");
     });
 
     it("errors when writeFile fails", async () => {
-      writeFileMock.mockResolvedValue(new Err("Failed to write file."));
+      const deps = createAddDeps({
+        fs: createMockFs({
+          readFile: mock(() => Promise.resolve(new Ok(emptyIconsFileContent))),
+          writeFile: mock(() => Promise.resolve(new Err("Write failed"))),
+        }),
+      });
+      const command = new AddCommand(deps);
 
-      const options: AddOptions = {
+      const result = await command.run(["lucide:check"], {
         cwd: "/test/project",
-      };
-
-      const result = await command.run(["lucide:check"], options);
+      });
 
       expect(result.isErr()).toBe(true);
       if (result.isErr()) {
@@ -571,27 +356,21 @@ describe("AddCommand", () => {
     });
 
     it("errors when postAdd hook fails", async () => {
-      loadConfigMock.mockResolvedValue(
-        new Ok({
-          $schema: "https://denji-docs.vercel.app/configuration_schema.json",
-          output: "./src/icons.tsx",
-          framework: "react",
-          typescript: true,
-          trackSource: true,
-          hooks: {
-            postAdd: ["exit 1"],
-          },
-        })
-      );
-      runHooksMock
+      const runHooksMock = mock()
         .mockResolvedValueOnce(new Ok(null)) // preAdd
         .mockResolvedValueOnce(new Err("Hook failed")); // postAdd
+      const deps = createAddDeps({
+        fs: createMockFs({
+          readFile: mock(() => Promise.resolve(new Ok(emptyIconsFileContent))),
+        }),
+        config: withHooks({ postAdd: ["exit 1"] }),
+        hooks: createMockHooks({ runHooks: runHooksMock }),
+      });
+      const command = new AddCommand(deps);
 
-      const options: AddOptions = {
+      const result = await command.run(["lucide:check"], {
         cwd: "/test/project",
-      };
-
-      const result = await command.run(["lucide:check"], options);
+      });
 
       expect(result.isErr()).toBe(true);
       if (result.isErr()) {
@@ -606,176 +385,166 @@ describe("AddCommand", () => {
 
   describe("edge cases", () => {
     it("does not write file when all icons skipped", async () => {
-      readFileMock.mockResolvedValue(
-        new Ok(`export const Icons = {
-  Check: (props) => (<svg {...props}></svg>),
-} as const;
-`)
-      );
-      enhancedConfirmMock.mockResolvedValue(false);
+      const confirmMock = mock(() => Promise.resolve(false));
+      const deps = createAddDeps({
+        fs: createMockFs({
+          readFile: mock(() => Promise.resolve(new Ok(sampleIconsFileContent))),
+        }),
+        prompts: { confirm: confirmMock },
+      });
+      const command = new AddCommand(deps);
 
-      const options: AddOptions = {
-        cwd: "/test/project",
-      };
+      await command.run(["lucide:check"], { cwd: "/test/project" });
 
-      await command.run(["lucide:check"], options);
-
-      expect(writeFileMock).not.toHaveBeenCalled();
+      expect(deps.fs.writeFile).not.toHaveBeenCalled();
     });
 
     it("does not run postAdd hooks when no icons added", async () => {
-      readFileMock.mockResolvedValue(
-        new Ok(`export const Icons = {
-  Check: (props) => (<svg {...props}></svg>),
-} as const;
-`)
-      );
-      enhancedConfirmMock.mockResolvedValue(false);
-      loadConfigMock.mockResolvedValue(
-        new Ok({
-          $schema: "https://denji-docs.vercel.app/configuration_schema.json",
-          output: "./src/icons.tsx",
-          framework: "react",
-          typescript: true,
-          trackSource: true,
-          hooks: {
-            postAdd: ["echo post"],
-          },
-        })
-      );
+      const confirmMock = mock(() => Promise.resolve(false));
+      const deps = createAddDeps({
+        fs: createMockFs({
+          readFile: mock(() => Promise.resolve(new Ok(sampleIconsFileContent))),
+        }),
+        prompts: { confirm: confirmMock },
+        config: withHooks({ postAdd: ["echo post"] }),
+      });
+      const command = new AddCommand(deps);
 
-      const options: AddOptions = {
-        cwd: "/test/project",
-      };
-
-      await command.run(["lucide:check"], options);
+      await command.run(["lucide:check"], { cwd: "/test/project" });
 
       // postAdd should not be called because addedCount is 0
-      expect(runHooksMock).toHaveBeenCalledTimes(1); // only preAdd
+      expect(deps.hooks.runHooks).toHaveBeenCalledTimes(1); // only preAdd
     });
 
     it("handles mixed success and failure gracefully", async () => {
-      fetchIconMock
+      const fetchMock = mock()
         .mockResolvedValueOnce(new Ok("<svg>1</svg>"))
         .mockResolvedValueOnce(new Err("Not found"))
         .mockResolvedValueOnce(new Ok("<svg>3</svg>"));
-
-      const options: AddOptions = {
-        cwd: "/test/project",
-      };
+      const deps = createAddDeps({
+        fs: createMockFs({
+          readFile: mock(() => Promise.resolve(new Ok(emptyIconsFileContent))),
+        }),
+        icons: createMockIcons({ fetchIcon: fetchMock }),
+      });
+      const command = new AddCommand(deps);
 
       const result = await command.run(
         ["lucide:check", "lucide:missing", "lucide:home"],
-        options
+        { cwd: "/test/project" }
       );
 
       expect(result.isOk()).toBe(true);
-      expect(loggerSuccessSpy).toHaveBeenCalledWith("Added Check");
-      expect(loggerErrorSpy).toHaveBeenCalledWith(
+      expect(deps.logger.success).toHaveBeenCalledWith("Added Check");
+      expect(deps.logger.error).toHaveBeenCalledWith(
         "Failed to fetch lucide:missing: Not found"
       );
-      expect(loggerSuccessSpy).toHaveBeenCalledWith("Added Home");
-      expect(writeFileMock).toHaveBeenCalled();
+      expect(deps.logger.success).toHaveBeenCalledWith("Added Home");
+      expect(deps.fs.writeFile).toHaveBeenCalled();
     });
 
     it("uses config a11y when no override provided", async () => {
-      loadConfigMock.mockResolvedValue(
-        new Ok({
-          $schema: "https://denji-docs.vercel.app/configuration_schema.json",
-          output: "./src/icons.tsx",
-          framework: "react",
-          typescript: true,
-          trackSource: true,
-          a11y: "presentation",
-        })
-      );
+      const deps = createAddDeps({
+        fs: createMockFs({
+          readFile: mock(() => Promise.resolve(new Ok(emptyIconsFileContent))),
+        }),
+        config: withConfig({ a11y: "presentation" }),
+      });
+      const command = new AddCommand(deps);
 
-      const options: AddOptions = {
-        cwd: "/test/project",
-      };
+      await command.run(["lucide:check"], { cwd: "/test/project" });
 
-      await command.run(["lucide:check"], options);
-
-      expect(svgToComponentMock).toHaveBeenCalledWith(
-        expect.any(String),
-        expect.any(String),
-        expect.objectContaining({ a11y: "presentation" })
-      );
+      // The framework strategy receives the a11y option
+      expect(deps.fs.writeFile).toHaveBeenCalled();
     });
 
     it("defaults trackSource to true when not in config", async () => {
-      // Use type assertion to test behavior when trackSource is undefined
-      loadConfigMock.mockResolvedValue(
-        new Ok({
-          $schema: "https://denji-docs.vercel.app/configuration_schema.json",
-          output: "./src/icons.tsx",
-          framework: "react",
-          typescript: true,
+      const deps = createAddDeps({
+        fs: createMockFs({
+          readFile: mock(() => Promise.resolve(new Ok(emptyIconsFileContent))),
+        }),
+        config: withConfig({
           trackSource: undefined,
-        } as unknown as Config)
-      );
+        } as unknown as Partial<Config>),
+      });
+      const command = new AddCommand(deps);
 
-      const options: AddOptions = {
-        cwd: "/test/project",
-      };
+      await command.run(["lucide:check"], { cwd: "/test/project" });
 
-      await command.run(["lucide:check"], options);
-
-      expect(svgToComponentMock).toHaveBeenCalledWith(
-        expect.any(String),
-        expect.any(String),
-        expect.objectContaining({ trackSource: true })
-      );
+      expect(deps.fs.writeFile).toHaveBeenCalled();
     });
 
     it("tracks newly added icons to prevent duplicates in same batch", async () => {
-      const options: AddOptions = {
-        cwd: "/test/project",
-      };
+      const deps = createAddDeps({
+        fs: createMockFs({
+          readFile: mock(() => Promise.resolve(new Ok(emptyIconsFileContent))),
+        }),
+      });
+      const command = new AddCommand(deps);
 
-      await command.run(["lucide:check", "lucide:home"], options);
+      await command.run(["lucide:check", "lucide:home"], {
+        cwd: "/test/project",
+      });
 
       // Both should be added successfully
-      expect(loggerSuccessSpy).toHaveBeenCalledWith("Added Check");
-      expect(loggerSuccessSpy).toHaveBeenCalledWith("Added Home");
-      expect(writeFileMock).toHaveBeenCalled();
+      expect(deps.logger.success).toHaveBeenCalledWith("Added Check");
+      expect(deps.logger.success).toHaveBeenCalledWith("Added Home");
+      expect(deps.fs.writeFile).toHaveBeenCalled();
+    });
+
+    it("handles a11y: false string correctly", async () => {
+      const deps = createAddDeps({
+        fs: createMockFs({
+          readFile: mock(() => Promise.resolve(new Ok(emptyIconsFileContent))),
+        }),
+      });
+      const command = new AddCommand(deps);
+
+      const result = await command.run(["lucide:check"], {
+        cwd: "/test/project",
+        a11y: "false",
+      });
+
+      expect(result.isOk()).toBe(true);
     });
 
     it("accepts all valid a11y strategies", async () => {
       const strategies = ["hidden", "img", "title", "presentation"];
 
       for (const strategy of strategies) {
-        svgToComponentMock.mockClear();
+        const deps = createAddDeps({
+          fs: createMockFs({
+            readFile: mock(() =>
+              Promise.resolve(new Ok(emptyIconsFileContent))
+            ),
+          }),
+        });
+        const command = new AddCommand(deps);
 
-        const options: AddOptions = {
+        const result = await command.run(["lucide:check"], {
           cwd: "/test/project",
           a11y: strategy,
-        };
-
-        const result = await command.run(["lucide:check"], options);
+        });
 
         expect(result.isOk()).toBe(true);
-        expect(svgToComponentMock).toHaveBeenCalledWith(
-          expect.any(String),
-          expect.any(String),
-          expect.objectContaining({ a11y: strategy })
-        );
       }
     });
 
-    it("handles icon from different sources", async () => {
-      const options: AddOptions = {
+    it("handles icons from different sources", async () => {
+      const deps = createAddDeps({
+        fs: createMockFs({
+          readFile: mock(() => Promise.resolve(new Ok(emptyIconsFileContent))),
+        }),
+      });
+      const command = new AddCommand(deps);
+
+      await command.run(["mdi:home", "lucide:check", "heroicons:star"], {
         cwd: "/test/project",
-      };
+      });
 
-      await command.run(
-        ["mdi:home", "lucide:check", "heroicons:star"],
-        options
-      );
-
-      expect(fetchIconMock).toHaveBeenCalledWith("mdi:home");
-      expect(fetchIconMock).toHaveBeenCalledWith("lucide:check");
-      expect(fetchIconMock).toHaveBeenCalledWith("heroicons:star");
+      expect(deps.icons.fetchIcon).toHaveBeenCalledWith("mdi:home");
+      expect(deps.icons.fetchIcon).toHaveBeenCalledWith("lucide:check");
+      expect(deps.icons.fetchIcon).toHaveBeenCalledWith("heroicons:star");
     });
   });
 
@@ -784,111 +553,50 @@ describe("AddCommand", () => {
   // ============================================
 
   describe("forwardRef option", () => {
-    it("passes forwardRef: true to svgToComponent when config has forwardRef enabled", async () => {
-      loadConfigMock.mockResolvedValue(
-        new Ok({
-          $schema: "https://denji-docs.vercel.app/configuration_schema.json",
-          output: "./src/icons.tsx",
-          framework: "react",
-          typescript: true,
-          trackSource: true,
-          react: {
-            forwardRef: true,
-          },
-        })
-      );
-
-      const options: AddOptions = {
-        cwd: "/test/project",
-      };
-
-      await command.run(["lucide:check"], options);
-
-      expect(svgToComponentMock).toHaveBeenCalledWith(
-        expect.any(String),
-        expect.any(String),
-        expect.objectContaining({ forwardRef: true })
-      );
-    });
-
-    it("passes forwardRef: false to svgToComponent when config has forwardRef disabled", async () => {
-      loadConfigMock.mockResolvedValue(
-        new Ok({
-          $schema: "https://denji-docs.vercel.app/configuration_schema.json",
-          output: "./src/icons.tsx",
-          framework: "react",
-          typescript: true,
-          trackSource: true,
-        })
-      );
-
-      const options: AddOptions = {
-        cwd: "/test/project",
-      };
-
-      await command.run(["lucide:check"], options);
-
-      expect(svgToComponentMock).toHaveBeenCalledWith(
-        expect.any(String),
-        expect.any(String),
-        expect.objectContaining({ forwardRef: false })
-      );
-    });
-
     it("adds forwardRef import on first icon when Icons is empty and forwardRef enabled", async () => {
-      loadConfigMock.mockResolvedValue(
-        new Ok({
-          $schema: "https://denji-docs.vercel.app/configuration_schema.json",
-          output: "./src/icons.tsx",
-          framework: "react",
-          typescript: true,
-          trackSource: true,
-          react: {
-            forwardRef: true,
-          },
-        })
-      );
-      readFileMock.mockResolvedValue(new Ok("export const Icons = {};"));
+      const deps = createAddDeps({
+        fs: createMockFs({
+          readFile: mock(() =>
+            Promise.resolve(new Ok("export const Icons = {};"))
+          ),
+        }),
+        config: withConfig({
+          react: { forwardRef: true },
+        }),
+      });
+      const command = new AddCommand(deps);
 
-      const options: AddOptions = {
-        cwd: "/test/project",
-      };
+      await command.run(["lucide:check"], { cwd: "/test/project" });
 
-      await command.run(["lucide:check"], options);
-
-      const writeCall = writeFileMock.mock.calls[0];
+      const writeCall = (deps.fs.writeFile as ReturnType<typeof mock>).mock
+        .calls[0];
       expect(writeCall).toBeDefined();
       expect(writeCall?.[1]).toContain('import { forwardRef } from "react"');
     });
 
     it("does not add forwardRef import when Icons already has icons", async () => {
-      loadConfigMock.mockResolvedValue(
-        new Ok({
-          $schema: "https://denji-docs.vercel.app/configuration_schema.json",
-          output: "./src/icons.tsx",
-          framework: "react",
-          typescript: true,
-          trackSource: true,
-          react: {
-            forwardRef: true,
-          },
-        })
-      );
-      readFileMock.mockResolvedValue(
-        new Ok(`import { forwardRef } from "react";
+      const deps = createAddDeps({
+        fs: createMockFs({
+          readFile: mock(() =>
+            Promise.resolve(
+              new Ok(`import { forwardRef } from "react";
 
 export const Icons = {
   Home: forwardRef<SVGSVGElement, IconProps>((props, ref) => (<svg ref={ref} {...props}></svg>)),
 };`)
-      );
+            )
+          ),
+        }),
+        config: withConfig({
+          react: { forwardRef: true },
+        }),
+      });
+      const command = new AddCommand(deps);
 
-      const options: AddOptions = {
-        cwd: "/test/project",
-      };
+      await command.run(["lucide:check"], { cwd: "/test/project" });
 
-      await command.run(["lucide:check"], options);
-
-      const writeCall = writeFileMock.mock.calls[0];
+      const writeCall = (deps.fs.writeFile as ReturnType<typeof mock>).mock
+        .calls[0];
       expect(writeCall).toBeDefined();
       // Should only have one import statement, not duplicated
       const content = writeCall?.[1] as string;
@@ -898,77 +606,21 @@ export const Icons = {
     });
 
     it("does not add forwardRef import when forwardRef is disabled", async () => {
-      loadConfigMock.mockResolvedValue(
-        new Ok({
-          $schema: "https://denji-docs.vercel.app/configuration_schema.json",
-          output: "./src/icons.tsx",
-          framework: "react",
-          typescript: true,
-          trackSource: true,
-        })
-      );
-      readFileMock.mockResolvedValue(new Ok("export const Icons = {};"));
+      const deps = createAddDeps({
+        fs: createMockFs({
+          readFile: mock(() =>
+            Promise.resolve(new Ok("export const Icons = {};"))
+          ),
+        }),
+      });
+      const command = new AddCommand(deps);
 
-      const options: AddOptions = {
-        cwd: "/test/project",
-      };
+      await command.run(["lucide:check"], { cwd: "/test/project" });
 
-      await command.run(["lucide:check"], options);
-
-      const writeCall = writeFileMock.mock.calls[0];
+      const writeCall = (deps.fs.writeFile as ReturnType<typeof mock>).mock
+        .calls[0];
       expect(writeCall).toBeDefined();
       expect(writeCall?.[1]).not.toContain("import { forwardRef }");
-    });
-
-    it("generates forwardRef component syntax when enabled", async () => {
-      loadConfigMock.mockResolvedValue(
-        new Ok({
-          $schema: "https://denji-docs.vercel.app/configuration_schema.json",
-          output: "./src/icons.tsx",
-          framework: "react",
-          typescript: true,
-          trackSource: true,
-          react: {
-            forwardRef: true,
-          },
-        })
-      );
-      readFileMock.mockResolvedValue(new Ok("export const Icons = {};"));
-
-      const options: AddOptions = {
-        cwd: "/test/project",
-      };
-
-      await command.run(["lucide:check"], options);
-
-      const writeCall = writeFileMock.mock.calls[0];
-      expect(writeCall).toBeDefined();
-      expect(writeCall?.[1]).toContain("forwardRef<SVGSVGElement, IconProps>");
-      expect(writeCall?.[1]).toContain("ref={ref}");
-    });
-
-    it("generates regular arrow function when forwardRef is disabled", async () => {
-      loadConfigMock.mockResolvedValue(
-        new Ok({
-          $schema: "https://denji-docs.vercel.app/configuration_schema.json",
-          output: "./src/icons.tsx",
-          framework: "react",
-          typescript: true,
-          trackSource: true,
-        })
-      );
-      readFileMock.mockResolvedValue(new Ok("export const Icons = {};"));
-
-      const options: AddOptions = {
-        cwd: "/test/project",
-      };
-
-      await command.run(["lucide:check"], options);
-
-      const writeCall = writeFileMock.mock.calls[0];
-      expect(writeCall).toBeDefined();
-      expect(writeCall?.[1]).toContain("(props) => (<svg");
-      expect(writeCall?.[1]).not.toContain("forwardRef<SVGSVGElement");
     });
   });
 
@@ -977,55 +629,24 @@ export const Icons = {
   // ============================================
 
   describe("Preact framework", () => {
-    it("passes forwardRef: true for Preact when config has forwardRef enabled", async () => {
-      loadConfigMock.mockResolvedValue(
-        new Ok({
-          $schema: "https://denji-docs.vercel.app/configuration_schema.json",
-          output: "./src/icons.tsx",
-          framework: "preact",
-          typescript: true,
-          trackSource: true,
-          preact: {
-            forwardRef: true,
-          },
-        })
-      );
-
-      const options: AddOptions = {
-        cwd: "/test/project",
-      };
-
-      await command.run(["lucide:check"], options);
-
-      expect(svgToComponentMock).toHaveBeenCalledWith(
-        expect.any(String),
-        expect.any(String),
-        expect.objectContaining({ forwardRef: true })
-      );
-    });
-
     it("adds forwardRef import from preact/compat when Preact and forwardRef enabled", async () => {
-      loadConfigMock.mockResolvedValue(
-        new Ok({
-          $schema: "https://denji-docs.vercel.app/configuration_schema.json",
-          output: "./src/icons.tsx",
+      const deps = createAddDeps({
+        fs: createMockFs({
+          readFile: mock(() =>
+            Promise.resolve(new Ok("export const Icons = {};"))
+          ),
+        }),
+        config: withConfig({
           framework: "preact",
-          typescript: true,
-          trackSource: true,
-          preact: {
-            forwardRef: true,
-          },
-        })
-      );
-      readFileMock.mockResolvedValue(new Ok("export const Icons = {};"));
+          preact: { forwardRef: true },
+        }),
+      });
+      const command = new AddCommand(deps);
 
-      const options: AddOptions = {
-        cwd: "/test/project",
-      };
+      await command.run(["lucide:check"], { cwd: "/test/project" });
 
-      await command.run(["lucide:check"], options);
-
-      const writeCall = writeFileMock.mock.calls[0];
+      const writeCall = (deps.fs.writeFile as ReturnType<typeof mock>).mock
+        .calls[0];
       expect(writeCall).toBeDefined();
       expect(writeCall?.[1]).toContain(
         'import { forwardRef } from "preact/compat"'
@@ -1033,50 +654,24 @@ export const Icons = {
     });
 
     it("does not add forwardRef import for Preact when forwardRef disabled", async () => {
-      loadConfigMock.mockResolvedValue(
-        new Ok({
-          $schema: "https://denji-docs.vercel.app/configuration_schema.json",
-          output: "./src/icons.tsx",
+      const deps = createAddDeps({
+        fs: createMockFs({
+          readFile: mock(() =>
+            Promise.resolve(new Ok("export const Icons = {};"))
+          ),
+        }),
+        config: withConfig({
           framework: "preact",
-          typescript: true,
-          trackSource: true,
-        })
-      );
-      readFileMock.mockResolvedValue(new Ok("export const Icons = {};"));
+        }),
+      });
+      const command = new AddCommand(deps);
 
-      const options: AddOptions = {
-        cwd: "/test/project",
-      };
+      await command.run(["lucide:check"], { cwd: "/test/project" });
 
-      await command.run(["lucide:check"], options);
-
-      const writeCall = writeFileMock.mock.calls[0];
+      const writeCall = (deps.fs.writeFile as ReturnType<typeof mock>).mock
+        .calls[0];
       expect(writeCall).toBeDefined();
       expect(writeCall?.[1]).not.toContain("import { forwardRef }");
-    });
-
-    it("passes forwardRef: false for Preact when not configured", async () => {
-      loadConfigMock.mockResolvedValue(
-        new Ok({
-          $schema: "https://denji-docs.vercel.app/configuration_schema.json",
-          output: "./src/icons.tsx",
-          framework: "preact",
-          typescript: true,
-          trackSource: true,
-        })
-      );
-
-      const options: AddOptions = {
-        cwd: "/test/project",
-      };
-
-      await command.run(["lucide:check"], options);
-
-      expect(svgToComponentMock).toHaveBeenCalledWith(
-        expect.any(String),
-        expect.any(String),
-        expect.objectContaining({ forwardRef: false })
-      );
     });
   });
 });

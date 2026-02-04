@@ -7,63 +7,18 @@ import {
   mock,
   spyOn,
 } from "bun:test";
+import type { InitDeps, Prompter } from "~/services/deps";
 import { Err, Ok } from "~/utils/result";
-
-// Create mock functions for fs utilities
-const accessMock = mock((_path: string) => Promise.resolve(true));
-const mkdirMock = mock((_path: string, _options?: { recursive?: boolean }) =>
-  Promise.resolve<Ok<null, string> | Err<null, string>>(new Ok(null))
-);
-const writeFileMock = mock((_file: string, _data: string) =>
-  Promise.resolve<Ok<null, string> | Err<null, string>>(new Ok(null))
-);
-
-// Create mock functions for prompts
-const enhancedTextMock = mock(
-  (_options: { message: string; defaultValue?: string }) =>
-    Promise.resolve<string | symbol>("./src/icons.tsx")
-);
-const enhancedSelectMock = mock(
-  (_options: {
-    message: string;
-    options: Array<{ value: unknown; label: string; hint?: string }>;
-    initialValue?: unknown;
-  }) => Promise.resolve<string | boolean | symbol>("react")
-);
-const enhancedConfirmMock = mock(
-  (_options: { message: string; initialValue?: boolean }) =>
-    Promise.resolve<boolean | symbol>(true)
-);
-const cancelMock = mock((_message?: string) => undefined);
-const isCancelMock = mock((_value: unknown) => false);
-
-// Mock modules before importing
-mock.module("~/utils/fs", () => ({
-  access: accessMock,
-  mkdir: mkdirMock,
-  writeFile: writeFileMock,
-}));
-
-mock.module("~/utils/prompts", () => ({
-  enhancedText: enhancedTextMock,
-  enhancedSelect: enhancedSelectMock,
-  enhancedConfirm: enhancedConfirmMock,
-}));
-
-mock.module("@clack/prompts", () => ({
-  intro: mock(() => undefined),
-  outro: mock(() => undefined),
-  cancel: cancelMock,
-  isCancel: isCancelMock,
-}));
-
-// Import after mocking
-import { logger } from "~/utils/logger";
-import { InitCommand, type InitOptions } from "./init";
+import {
+  createInitDeps,
+  createMockFs,
+  createMockPrompter,
+} from "./__tests__/test-utils";
+import { InitCommand } from "./init";
 
 // Helper to setup access mock behavior
-function setupAccessMock(existingPaths: string[]) {
-  accessMock.mockImplementation((path: string) => {
+function createAccessMock(existingPaths: string[]) {
+  return mock((path: string) => {
     return Promise.resolve(
       existingPaths.some((p) => path.endsWith(p) || path === p)
     );
@@ -71,14 +26,20 @@ function setupAccessMock(existingPaths: string[]) {
 }
 
 // Helper to get writeFile call by path pattern
-function getWriteCall(pattern: string) {
-  const calls = writeFileMock.mock.calls;
-  return calls.find((c) => c[0].includes(pattern));
+function getWriteCall(
+  writeFileMock: InitDeps["fs"]["writeFile"],
+  pattern: string
+) {
+  const calls = (writeFileMock as ReturnType<typeof mock>).mock.calls;
+  return calls.find((c) => (c as [string, string])[0].includes(pattern));
 }
 
 // Helper to parse config from writeFile call
-function getWrittenConfig(pattern: string): Record<string, any> | undefined {
-  const call = getWriteCall(pattern);
+function getWrittenConfig(
+  writeFileMock: InitDeps["fs"]["writeFile"],
+  pattern: string
+): Record<string, unknown> | undefined {
+  const call = getWriteCall(writeFileMock, pattern);
   if (!call) {
     return undefined;
   }
@@ -86,47 +47,15 @@ function getWrittenConfig(pattern: string): Record<string, any> | undefined {
 }
 
 describe("InitCommand", () => {
-  let command: InitCommand;
-  let loggerSuccessSpy: ReturnType<typeof spyOn>;
-  let loggerErrorSpy: ReturnType<typeof spyOn>;
   let processExitSpy: ReturnType<typeof spyOn>;
 
   beforeEach(() => {
-    command = new InitCommand();
-
-    // Reset all mocks
-    accessMock.mockReset();
-    mkdirMock.mockReset();
-    writeFileMock.mockReset();
-    enhancedTextMock.mockReset();
-    enhancedSelectMock.mockReset();
-    enhancedConfirmMock.mockReset();
-    cancelMock.mockReset();
-    isCancelMock.mockReset();
-
-    // Default success implementations
-    mkdirMock.mockResolvedValue(new Ok(null));
-    writeFileMock.mockResolvedValue(new Ok(null));
-    isCancelMock.mockReturnValue(false);
-    enhancedTextMock.mockResolvedValue("./src/icons.tsx");
-    enhancedSelectMock.mockResolvedValue("react");
-    enhancedConfirmMock.mockResolvedValue(true);
-
-    // Spy on logger
-    loggerSuccessSpy = spyOn(logger, "success").mockImplementation(
-      () => undefined
-    );
-    loggerErrorSpy = spyOn(logger, "error").mockImplementation(() => undefined);
-
-    // Mock process.exit for prompt cancellation tests
     processExitSpy = spyOn(process, "exit").mockImplementation((code) => {
       throw new Error(`process.exit(${code})`);
     });
   });
 
   afterEach(() => {
-    loggerSuccessSpy.mockRestore();
-    loggerErrorSpy.mockRestore();
     processExitSpy.mockRestore();
   });
 
@@ -136,9 +65,12 @@ describe("InitCommand", () => {
 
   describe("success paths", () => {
     it("initializes with all options without prompts", async () => {
-      setupAccessMock(["/test/project"]);
+      const deps = createInitDeps({
+        fs: createMockFs({ access: createAccessMock(["/test/project"]) }),
+      });
+      const command = new InitCommand(deps);
 
-      const options: InitOptions = {
+      const result = await command.run({
         cwd: "/test/project",
         output: "./src/icons.tsx",
         framework: "react",
@@ -146,92 +78,99 @@ describe("InitCommand", () => {
         a11y: "hidden",
         trackSource: true,
         forwardRef: false,
-      };
-
-      const result = await command.run(options);
+      });
 
       expect(result.isOk()).toBe(true);
-      expect(enhancedTextMock).not.toHaveBeenCalled();
-      expect(enhancedSelectMock).not.toHaveBeenCalled();
-      expect(enhancedConfirmMock).not.toHaveBeenCalled();
-      expect(writeFileMock).toHaveBeenCalledTimes(2);
+      expect(deps.prompts.text).not.toHaveBeenCalled();
+      expect(deps.prompts.select).not.toHaveBeenCalled();
+      expect(deps.prompts.confirm).not.toHaveBeenCalled();
+      expect(deps.fs.writeFile).toHaveBeenCalledTimes(2);
     });
 
     it("prompts for missing values", async () => {
-      setupAccessMock(["/test/project"]);
-
-      enhancedTextMock.mockResolvedValue("./src/icons.tsx");
-      enhancedSelectMock
+      const selectMock = mock()
         .mockResolvedValueOnce("react")
-        .mockResolvedValueOnce("hidden");
-      enhancedConfirmMock
+        .mockResolvedValueOnce("hidden") as Prompter["select"];
+      const confirmMock = mock<typeof deps.prompts.confirm>()
         .mockResolvedValueOnce(true) // typescript
-        .mockResolvedValueOnce(true) // trackSource
-        .mockResolvedValueOnce(false); // forwardRef
+        .mockResolvedValueOnce(true); // trackSource
+      // Note: forwardRef is handled by strategy.promptOptions (mocked in createMockFrameworks)
+      const deps = createInitDeps({
+        fs: createMockFs({ access: createAccessMock(["/test/project"]) }),
+        prompts: createMockPrompter({
+          text: mock(() => Promise.resolve("./src/icons.tsx")),
+          select: selectMock,
+          confirm: confirmMock,
+        }),
+      });
+      const command = new InitCommand(deps);
 
-      const options: InitOptions = {
-        cwd: "/test/project",
-      };
-
-      const result = await command.run(options);
+      const result = await command.run({ cwd: "/test/project" });
 
       expect(result.isOk()).toBe(true);
-      expect(enhancedTextMock).toHaveBeenCalledTimes(1); // output
-      expect(enhancedSelectMock).toHaveBeenCalledTimes(2); // framework, a11y
-      expect(enhancedConfirmMock).toHaveBeenCalledTimes(3); // typescript, trackSource, forwardRef
-      expect(writeFileMock).toHaveBeenCalledTimes(2);
+      expect(deps.prompts.text).toHaveBeenCalledTimes(1); // output
+      expect(deps.prompts.select).toHaveBeenCalledTimes(2); // framework, a11y
+      expect(deps.prompts.confirm).toHaveBeenCalledTimes(2); // typescript, trackSource
+      expect(deps.fs.writeFile).toHaveBeenCalledTimes(2);
     });
 
     it("accepts .tsx extension for React + TypeScript", async () => {
-      setupAccessMock(["/test/project"]);
+      const deps = createInitDeps({
+        fs: createMockFs({ access: createAccessMock(["/test/project"]) }),
+      });
+      const command = new InitCommand(deps);
 
-      const options: InitOptions = {
+      const result = await command.run({
         cwd: "/test/project",
         output: "./src/icons.tsx",
         framework: "react",
         typescript: true,
         a11y: "hidden",
-      };
-
-      const result = await command.run(options);
+      });
 
       expect(result.isOk()).toBe(true);
-      expect(writeFileMock).toHaveBeenCalledTimes(2);
-      expect(loggerSuccessSpy).toHaveBeenCalledWith("Created ./src/icons.tsx");
+      expect(deps.fs.writeFile).toHaveBeenCalledTimes(2);
+      expect(deps.logger.success).toHaveBeenCalledWith(
+        "Created ./src/icons.tsx"
+      );
     });
 
     it("accepts .jsx extension for React + JavaScript", async () => {
-      setupAccessMock(["/test/project"]);
+      const deps = createInitDeps({
+        fs: createMockFs({ access: createAccessMock(["/test/project"]) }),
+      });
+      const command = new InitCommand(deps);
 
-      const options: InitOptions = {
+      const result = await command.run({
         cwd: "/test/project",
         output: "./src/icons.jsx",
         framework: "react",
         typescript: false,
         a11y: "hidden",
-      };
-
-      const result = await command.run(options);
+      });
 
       expect(result.isOk()).toBe(true);
-      expect(writeFileMock).toHaveBeenCalledTimes(2);
-      expect(loggerSuccessSpy).toHaveBeenCalledWith("Created ./src/icons.jsx");
+      expect(deps.fs.writeFile).toHaveBeenCalledTimes(2);
+      expect(deps.logger.success).toHaveBeenCalledWith(
+        "Created ./src/icons.jsx"
+      );
     });
 
     it("creates parent directories when needed", async () => {
-      setupAccessMock(["/test/project"]);
+      const deps = createInitDeps({
+        fs: createMockFs({ access: createAccessMock(["/test/project"]) }),
+      });
+      const command = new InitCommand(deps);
 
-      const options: InitOptions = {
+      await command.run({
         cwd: "/test/project",
         output: "./src/components/ui/icons.tsx",
         framework: "react",
         typescript: true,
         a11y: "hidden",
-      };
+      });
 
-      await command.run(options);
-
-      expect(mkdirMock).toHaveBeenCalledWith(
+      expect(deps.fs.mkdir).toHaveBeenCalledWith(
         expect.stringContaining("src/components/ui"),
         { recursive: true }
       );
@@ -243,96 +182,100 @@ describe("InitCommand", () => {
       "title",
       "presentation",
     ])("accepts a11y strategy: %s", async (strategy) => {
-      setupAccessMock(["/test/project"]);
+      const deps = createInitDeps({
+        fs: createMockFs({ access: createAccessMock(["/test/project"]) }),
+      });
+      const command = new InitCommand(deps);
 
-      const options: InitOptions = {
+      const result = await command.run({
         cwd: "/test/project",
         output: "./src/icons.tsx",
         framework: "react",
         typescript: true,
         a11y: strategy,
-      };
-
-      const result = await command.run(options);
+      });
 
       expect(result.isOk()).toBe(true);
-      const config = getWrittenConfig("denji.json");
+      const config = getWrittenConfig(deps.fs.writeFile, "denji.json");
       expect(config?.a11y).toBe(strategy);
     });
 
     it("accepts a11y strategy: false via prompt", async () => {
-      setupAccessMock(["/test/project"]);
-
-      enhancedSelectMock
+      const selectMock = mock()
         .mockResolvedValueOnce("react")
-        .mockResolvedValueOnce(false);
-      enhancedConfirmMock
-        .mockResolvedValueOnce(true)
-        .mockResolvedValueOnce(true);
+        .mockResolvedValueOnce(false) as Prompter["select"];
+      const deps = createInitDeps({
+        fs: createMockFs({ access: createAccessMock(["/test/project"]) }),
+        prompts: createMockPrompter({
+          select: selectMock,
+        }),
+      });
+      const command = new InitCommand(deps);
 
-      const options: InitOptions = {
+      const result = await command.run({
         cwd: "/test/project",
         output: "./src/icons.tsx",
-      };
-
-      const result = await command.run(options);
+      });
 
       expect(result.isOk()).toBe(true);
-      const config = getWrittenConfig("denji.json");
+      const config = getWrittenConfig(deps.fs.writeFile, "denji.json");
       expect(config?.a11y).toBe(false);
     });
 
     it("writes trackSource true", async () => {
-      setupAccessMock(["/test/project"]);
+      const deps = createInitDeps({
+        fs: createMockFs({ access: createAccessMock(["/test/project"]) }),
+      });
+      const command = new InitCommand(deps);
 
-      const options: InitOptions = {
+      await command.run({
         cwd: "/test/project",
         output: "./src/icons.tsx",
         framework: "react",
         typescript: true,
         a11y: "hidden",
         trackSource: true,
-      };
+      });
 
-      await command.run(options);
-
-      const config = getWrittenConfig("denji.json");
+      const config = getWrittenConfig(deps.fs.writeFile, "denji.json");
       expect(config?.trackSource).toBe(true);
     });
 
     it("writes trackSource false", async () => {
-      setupAccessMock(["/test/project"]);
+      const deps = createInitDeps({
+        fs: createMockFs({ access: createAccessMock(["/test/project"]) }),
+      });
+      const command = new InitCommand(deps);
 
-      const options: InitOptions = {
+      await command.run({
         cwd: "/test/project",
         output: "./src/icons.tsx",
         framework: "react",
         typescript: true,
         a11y: "hidden",
         trackSource: false,
-      };
+      });
 
-      await command.run(options);
-
-      const config = getWrittenConfig("denji.json");
+      const config = getWrittenConfig(deps.fs.writeFile, "denji.json");
       expect(config?.trackSource).toBe(false);
     });
 
     it("writes correct denji.json content", async () => {
-      setupAccessMock(["/test/project"]);
+      const deps = createInitDeps({
+        fs: createMockFs({ access: createAccessMock(["/test/project"]) }),
+      });
+      const command = new InitCommand(deps);
 
-      const options: InitOptions = {
+      await command.run({
         cwd: "/test/project",
         output: "./src/icons.tsx",
         framework: "react",
         typescript: true,
         a11y: "hidden",
         trackSource: true,
-      };
+      });
 
-      await command.run(options);
-
-      const config = getWrittenConfig("denji.json");
+      const config = getWrittenConfig(deps.fs.writeFile, "denji.json");
       expect(config).toBeDefined();
       expect(config?.output).toBe("./src/icons.tsx");
       expect(config?.framework).toBe("react");
@@ -342,65 +285,70 @@ describe("InitCommand", () => {
     });
 
     it("writes TypeScript icons template for react + typescript", async () => {
-      setupAccessMock(["/test/project"]);
+      const deps = createInitDeps({
+        fs: createMockFs({ access: createAccessMock(["/test/project"]) }),
+      });
+      const command = new InitCommand(deps);
 
-      const options: InitOptions = {
+      await command.run({
         cwd: "/test/project",
         output: "./src/icons.tsx",
         framework: "react",
         typescript: true,
         a11y: "hidden",
         forwardRef: false,
-      };
+      });
 
-      await command.run(options);
-
-      const iconsCall = getWriteCall("icons.tsx");
+      const iconsCall = getWriteCall(deps.fs.writeFile, "icons.tsx");
       expect(iconsCall).toBeDefined();
-      expect(
-        iconsCall?.[1]
-      ).toBe(`export type IconProps = React.ComponentProps<"svg">;
+      expect(iconsCall?.[1]).toBe(
+        `export type IconProps = React.ComponentProps<"svg">;
 export type Icon = (props: IconProps) => React.JSX.Element;
 
 export const Icons = {} as const satisfies Record<string, Icon>;
 
 export type IconName = keyof typeof Icons;
-`);
+`
+      );
     });
 
     it("writes JavaScript icons template for react + javascript", async () => {
-      setupAccessMock(["/test/project"]);
+      const deps = createInitDeps({
+        fs: createMockFs({ access: createAccessMock(["/test/project"]) }),
+      });
+      const command = new InitCommand(deps);
 
-      const options: InitOptions = {
+      await command.run({
         cwd: "/test/project",
         output: "./src/icons.jsx",
         framework: "react",
         typescript: false,
         a11y: "hidden",
-      };
+      });
 
-      await command.run(options);
-
-      const iconsCall = getWriteCall("icons.jsx");
+      const iconsCall = getWriteCall(deps.fs.writeFile, "icons.jsx");
       expect(iconsCall).toBeDefined();
       expect(iconsCall?.[1]).toBe("export const Icons = {};\n");
     });
 
     it("logs success messages for created files", async () => {
-      setupAccessMock(["/test/project"]);
+      const deps = createInitDeps({
+        fs: createMockFs({ access: createAccessMock(["/test/project"]) }),
+      });
+      const command = new InitCommand(deps);
 
-      const options: InitOptions = {
+      await command.run({
         cwd: "/test/project",
         output: "./src/icons.tsx",
         framework: "react",
         typescript: true,
         a11y: "hidden",
-      };
+      });
 
-      await command.run(options);
-
-      expect(loggerSuccessSpy).toHaveBeenCalledWith("Created denji.json");
-      expect(loggerSuccessSpy).toHaveBeenCalledWith("Created ./src/icons.tsx");
+      expect(deps.logger.success).toHaveBeenCalledWith("Created denji.json");
+      expect(deps.logger.success).toHaveBeenCalledWith(
+        "Created ./src/icons.tsx"
+      );
     });
   });
 
@@ -410,17 +358,18 @@ export type IconName = keyof typeof Icons;
 
   describe("error paths", () => {
     it("errors when cwd does not exist", async () => {
-      setupAccessMock([]);
+      const deps = createInitDeps({
+        fs: createMockFs({ access: createAccessMock([]) }),
+      });
+      const command = new InitCommand(deps);
 
-      const options: InitOptions = {
+      const result = await command.run({
         cwd: "/nonexistent",
         output: "./src/icons.tsx",
         framework: "react",
         typescript: true,
         a11y: "hidden",
-      };
-
-      const result = await command.run(options);
+      });
 
       expect(result.isErr()).toBe(true);
       if (result.isErr()) {
@@ -429,17 +378,20 @@ export type IconName = keyof typeof Icons;
     });
 
     it("errors when denji.json already exists", async () => {
-      setupAccessMock(["/test/project", "denji.json"]);
+      const deps = createInitDeps({
+        fs: createMockFs({
+          access: createAccessMock(["/test/project", "denji.json"]),
+        }),
+      });
+      const command = new InitCommand(deps);
 
-      const options: InitOptions = {
+      const result = await command.run({
         cwd: "/test/project",
         output: "./src/icons.tsx",
         framework: "react",
         typescript: true,
         a11y: "hidden",
-      };
-
-      const result = await command.run(options);
+      });
 
       expect(result.isErr()).toBe(true);
       if (result.isErr()) {
@@ -448,17 +400,20 @@ export type IconName = keyof typeof Icons;
     });
 
     it("errors when output file already exists", async () => {
-      setupAccessMock(["/test/project", "icons.tsx"]);
+      const deps = createInitDeps({
+        fs: createMockFs({
+          access: createAccessMock(["/test/project", "icons.tsx"]),
+        }),
+      });
+      const command = new InitCommand(deps);
 
-      const options: InitOptions = {
+      const result = await command.run({
         cwd: "/test/project",
         output: "./src/icons.tsx",
         framework: "react",
         typescript: true,
         a11y: "hidden",
-      };
-
-      const result = await command.run(options);
+      });
 
       expect(result.isErr()).toBe(true);
       if (result.isErr()) {
@@ -467,17 +422,18 @@ export type IconName = keyof typeof Icons;
     });
 
     it("errors when extension is .ts for React + TypeScript", async () => {
-      setupAccessMock(["/test/project"]);
+      const deps = createInitDeps({
+        fs: createMockFs({ access: createAccessMock(["/test/project"]) }),
+      });
+      const command = new InitCommand(deps);
 
-      const options: InitOptions = {
+      const result = await command.run({
         cwd: "/test/project",
         output: "./src/icons.ts",
         framework: "react",
         typescript: true,
         a11y: "hidden",
-      };
-
-      const result = await command.run(options);
+      });
 
       expect(result.isErr()).toBe(true);
       if (result.isErr()) {
@@ -486,17 +442,18 @@ export type IconName = keyof typeof Icons;
     });
 
     it("errors when extension is .js for React + JavaScript", async () => {
-      setupAccessMock(["/test/project"]);
+      const deps = createInitDeps({
+        fs: createMockFs({ access: createAccessMock(["/test/project"]) }),
+      });
+      const command = new InitCommand(deps);
 
-      const options: InitOptions = {
+      const result = await command.run({
         cwd: "/test/project",
         output: "./src/icons.js",
         framework: "react",
         typescript: false,
         a11y: "hidden",
-      };
-
-      const result = await command.run(options);
+      });
 
       expect(result.isErr()).toBe(true);
       if (result.isErr()) {
@@ -505,17 +462,18 @@ export type IconName = keyof typeof Icons;
     });
 
     it("errors when extension is .tsx for React + JavaScript", async () => {
-      setupAccessMock(["/test/project"]);
+      const deps = createInitDeps({
+        fs: createMockFs({ access: createAccessMock(["/test/project"]) }),
+      });
+      const command = new InitCommand(deps);
 
-      const options: InitOptions = {
+      const result = await command.run({
         cwd: "/test/project",
         output: "./src/icons.tsx",
         framework: "react",
         typescript: false,
         a11y: "hidden",
-      };
-
-      const result = await command.run(options);
+      });
 
       expect(result.isErr()).toBe(true);
       if (result.isErr()) {
@@ -524,17 +482,18 @@ export type IconName = keyof typeof Icons;
     });
 
     it("errors with invalid framework value", async () => {
-      setupAccessMock(["/test/project"]);
+      const deps = createInitDeps({
+        fs: createMockFs({ access: createAccessMock(["/test/project"]) }),
+      });
+      const command = new InitCommand(deps);
 
-      const options: InitOptions = {
+      const result = await command.run({
         cwd: "/test/project",
         output: "./src/icons.tsx",
         framework: "vue",
         typescript: true,
         a11y: "hidden",
-      };
-
-      const result = await command.run(options);
+      });
 
       expect(result.isErr()).toBe(true);
       if (result.isErr()) {
@@ -543,17 +502,18 @@ export type IconName = keyof typeof Icons;
     });
 
     it("errors with invalid a11y value", async () => {
-      setupAccessMock(["/test/project"]);
+      const deps = createInitDeps({
+        fs: createMockFs({ access: createAccessMock(["/test/project"]) }),
+      });
+      const command = new InitCommand(deps);
 
-      const options: InitOptions = {
+      const result = await command.run({
         cwd: "/test/project",
         output: "./src/icons.tsx",
         framework: "react",
         typescript: true,
         a11y: "invalid",
-      };
-
-      const result = await command.run(options);
+      });
 
       expect(result.isErr()).toBe(true);
       if (result.isErr()) {
@@ -562,18 +522,23 @@ export type IconName = keyof typeof Icons;
     });
 
     it("errors when mkdir fails", async () => {
-      setupAccessMock(["/test/project"]);
-      mkdirMock.mockResolvedValue(new Err("Failed to create directory."));
+      const deps = createInitDeps({
+        fs: createMockFs({
+          access: createAccessMock(["/test/project"]),
+          mkdir: mock(() =>
+            Promise.resolve(new Err("Failed to create directory."))
+          ),
+        }),
+      });
+      const command = new InitCommand(deps);
 
-      const options: InitOptions = {
+      const result = await command.run({
         cwd: "/test/project",
         output: "./src/icons.tsx",
         framework: "react",
         typescript: true,
         a11y: "hidden",
-      };
-
-      const result = await command.run(options);
+      });
 
       expect(result.isErr()).toBe(true);
       if (result.isErr()) {
@@ -582,18 +547,23 @@ export type IconName = keyof typeof Icons;
     });
 
     it("errors when writeFile fails for config", async () => {
-      setupAccessMock(["/test/project", "src"]);
-      writeFileMock.mockResolvedValueOnce(new Err("Failed to write file."));
+      const deps = createInitDeps({
+        fs: createMockFs({
+          access: createAccessMock(["/test/project", "src"]),
+          writeFile: mock(() =>
+            Promise.resolve(new Err("Failed to write file."))
+          ),
+        }),
+      });
+      const command = new InitCommand(deps);
 
-      const options: InitOptions = {
+      const result = await command.run({
         cwd: "/test/project",
         output: "./src/icons.tsx",
         framework: "react",
         typescript: true,
         a11y: "hidden",
-      };
-
-      const result = await command.run(options);
+      });
 
       expect(result.isErr()).toBe(true);
       if (result.isErr()) {
@@ -602,20 +572,24 @@ export type IconName = keyof typeof Icons;
     });
 
     it("errors when writeFile fails for icons", async () => {
-      setupAccessMock(["/test/project", "src"]);
-      writeFileMock
+      const writeFileMock = mock<typeof deps.fs.writeFile>()
         .mockResolvedValueOnce(new Ok(null))
         .mockResolvedValueOnce(new Err("Failed to write file."));
+      const deps = createInitDeps({
+        fs: createMockFs({
+          access: createAccessMock(["/test/project", "src"]),
+          writeFile: writeFileMock,
+        }),
+      });
+      const command = new InitCommand(deps);
 
-      const options: InitOptions = {
+      const result = await command.run({
         cwd: "/test/project",
         output: "./src/icons.tsx",
         framework: "react",
         typescript: true,
         a11y: "hidden",
-      };
-
-      const result = await command.run(options);
+      });
 
       expect(result.isErr()).toBe(true);
       if (result.isErr()) {
@@ -630,85 +604,77 @@ export type IconName = keyof typeof Icons;
 
   describe("edge cases", () => {
     it("handles custom output path", async () => {
-      setupAccessMock(["/test/project"]);
+      const deps = createInitDeps({
+        fs: createMockFs({ access: createAccessMock(["/test/project"]) }),
+      });
+      const command = new InitCommand(deps);
 
-      const options: InitOptions = {
+      await command.run({
         cwd: "/test/project",
         output: "./lib/components/icons.tsx",
         framework: "react",
         typescript: true,
         a11y: "hidden",
-      };
+      });
 
-      await command.run(options);
-
-      const config = getWrittenConfig("denji.json");
+      const config = getWrittenConfig(deps.fs.writeFile, "denji.json");
       expect(config?.output).toBe("./lib/components/icons.tsx");
     });
 
     it("handles nested output path", async () => {
-      setupAccessMock(["/test/project"]);
+      const deps = createInitDeps({
+        fs: createMockFs({ access: createAccessMock(["/test/project"]) }),
+      });
+      const command = new InitCommand(deps);
 
-      const options: InitOptions = {
+      await command.run({
         cwd: "/test/project",
         output: "./src/components/ui/icons/index.tsx",
         framework: "react",
         typescript: true,
         a11y: "hidden",
-      };
+      });
 
-      await command.run(options);
-
-      expect(mkdirMock).toHaveBeenCalledWith(
+      expect(deps.fs.mkdir).toHaveBeenCalledWith(
         expect.stringContaining("src/components/ui/icons"),
         { recursive: true }
       );
     });
 
     it("skips mkdir when output dir already exists", async () => {
-      setupAccessMock(["/test/project", "src"]);
+      const deps = createInitDeps({
+        fs: createMockFs({
+          access: createAccessMock(["/test/project", "src"]),
+        }),
+      });
+      const command = new InitCommand(deps);
 
-      const options: InitOptions = {
+      await command.run({
         cwd: "/test/project",
         output: "./src/icons.tsx",
         framework: "react",
         typescript: true,
         a11y: "hidden",
-      };
-
-      await command.run(options);
-
-      expect(mkdirMock).not.toHaveBeenCalled();
-    });
-
-    it("exits gracefully when user cancels prompt", () => {
-      setupAccessMock(["/test/project"]);
-      // enhancedText calls process.exit(0) when cancelled
-      enhancedTextMock.mockImplementation(() => {
-        process.exit(0);
       });
 
-      const options: InitOptions = {
-        cwd: "/test/project",
-      };
-
-      expect(command.run(options)).rejects.toThrow("process.exit(0)");
+      expect(deps.fs.mkdir).not.toHaveBeenCalled();
     });
 
     it("includes $schema default value in config", async () => {
-      setupAccessMock(["/test/project"]);
+      const deps = createInitDeps({
+        fs: createMockFs({ access: createAccessMock(["/test/project"]) }),
+      });
+      const command = new InitCommand(deps);
 
-      const options: InitOptions = {
+      await command.run({
         cwd: "/test/project",
         output: "./src/icons.tsx",
         framework: "react",
         typescript: true,
         a11y: "hidden",
-      };
+      });
 
-      await command.run(options);
-
-      const config = getWrittenConfig("denji.json");
+      const config = getWrittenConfig(deps.fs.writeFile, "denji.json");
       expect(config?.$schema).toBe(
         "https://denji-docs.vercel.app/configuration_schema.json"
       );
@@ -720,36 +686,35 @@ export type IconName = keyof typeof Icons;
   // ============================================
 
   describe("forwardRef option", () => {
-    it("prompts for forwardRef when React framework is selected", async () => {
-      setupAccessMock(["/test/project"]);
+    it("uses forwardRef from context when provided", async () => {
+      // Note: forwardRef prompting is handled by strategy.promptOptions
+      // When forwardRef is passed in options, it's used directly
+      const deps = createInitDeps({
+        fs: createMockFs({ access: createAccessMock(["/test/project"]) }),
+      });
+      const command = new InitCommand(deps);
 
-      enhancedTextMock.mockResolvedValue("./src/icons.tsx");
-      enhancedSelectMock
-        .mockResolvedValueOnce("react")
-        .mockResolvedValueOnce("hidden");
-      enhancedConfirmMock
-        .mockResolvedValueOnce(true) // typescript
-        .mockResolvedValueOnce(true) // trackSource
-        .mockResolvedValueOnce(false); // forwardRef
-
-      const options: InitOptions = {
+      const result = await command.run({
         cwd: "/test/project",
-      };
-
-      const result = await command.run(options);
+        output: "./src/icons.tsx",
+        framework: "react",
+        typescript: true,
+        a11y: "hidden",
+        forwardRef: true,
+      });
 
       expect(result.isOk()).toBe(true);
-      expect(enhancedConfirmMock).toHaveBeenCalledTimes(3);
-      expect(enhancedConfirmMock).toHaveBeenCalledWith({
-        message: "Use forwardRef for icon components?",
-        initialValue: false,
-      });
+      const config = getWrittenConfig(deps.fs.writeFile, "denji.json");
+      expect((config?.react as Record<string, unknown>)?.forwardRef).toBe(true);
     });
 
     it("writes forwardRef: true to config when enabled", async () => {
-      setupAccessMock(["/test/project"]);
+      const deps = createInitDeps({
+        fs: createMockFs({ access: createAccessMock(["/test/project"]) }),
+      });
+      const command = new InitCommand(deps);
 
-      const options: InitOptions = {
+      await command.run({
         cwd: "/test/project",
         output: "./src/icons.tsx",
         framework: "react",
@@ -757,18 +722,19 @@ export type IconName = keyof typeof Icons;
         a11y: "hidden",
         trackSource: true,
         forwardRef: true,
-      };
+      });
 
-      await command.run(options);
-
-      const config = getWrittenConfig("denji.json");
-      expect(config?.react?.forwardRef).toBe(true);
+      const config = getWrittenConfig(deps.fs.writeFile, "denji.json");
+      expect((config?.react as Record<string, unknown>)?.forwardRef).toBe(true);
     });
 
     it("writes forwardRef: false to config when disabled", async () => {
-      setupAccessMock(["/test/project"]);
+      const deps = createInitDeps({
+        fs: createMockFs({ access: createAccessMock(["/test/project"]) }),
+      });
+      const command = new InitCommand(deps);
 
-      const options: InitOptions = {
+      await command.run({
         cwd: "/test/project",
         output: "./src/icons.tsx",
         framework: "react",
@@ -776,29 +742,30 @@ export type IconName = keyof typeof Icons;
         a11y: "hidden",
         trackSource: true,
         forwardRef: false,
-      };
+      });
 
-      await command.run(options);
-
-      const config = getWrittenConfig("denji.json");
-      expect(config?.react?.forwardRef).toBe(false);
+      const config = getWrittenConfig(deps.fs.writeFile, "denji.json");
+      expect((config?.react as Record<string, unknown>)?.forwardRef).toBe(
+        false
+      );
     });
 
     it("writes forwardRef Icon type in template when forwardRef is true", async () => {
-      setupAccessMock(["/test/project"]);
+      const deps = createInitDeps({
+        fs: createMockFs({ access: createAccessMock(["/test/project"]) }),
+      });
+      const command = new InitCommand(deps);
 
-      const options: InitOptions = {
+      await command.run({
         cwd: "/test/project",
         output: "./src/icons.tsx",
         framework: "react",
         typescript: true,
         a11y: "hidden",
         forwardRef: true,
-      };
+      });
 
-      await command.run(options);
-
-      const iconsCall = getWriteCall("icons.tsx");
+      const iconsCall = getWriteCall(deps.fs.writeFile, "icons.tsx");
       expect(iconsCall).toBeDefined();
       expect(iconsCall?.[1]).toContain(
         'React.ForwardRefExoticComponent<IconProps & React.ComponentRef<"svg">>'
@@ -806,44 +773,26 @@ export type IconName = keyof typeof Icons;
     });
 
     it("writes regular Icon type in template when forwardRef is false", async () => {
-      setupAccessMock(["/test/project"]);
+      const deps = createInitDeps({
+        fs: createMockFs({ access: createAccessMock(["/test/project"]) }),
+      });
+      const command = new InitCommand(deps);
 
-      const options: InitOptions = {
+      await command.run({
         cwd: "/test/project",
         output: "./src/icons.tsx",
         framework: "react",
         typescript: true,
         a11y: "hidden",
         forwardRef: false,
-      };
+      });
 
-      await command.run(options);
-
-      const iconsCall = getWriteCall("icons.tsx");
+      const iconsCall = getWriteCall(deps.fs.writeFile, "icons.tsx");
       expect(iconsCall).toBeDefined();
       expect(iconsCall?.[1]).toContain(
         "(props: IconProps) => React.JSX.Element"
       );
       expect(iconsCall?.[1]).not.toContain("ForwardRefExoticComponent");
-    });
-
-    it("does not include forwardRef import in template (empty Icons)", async () => {
-      setupAccessMock(["/test/project"]);
-
-      const options: InitOptions = {
-        cwd: "/test/project",
-        output: "./src/icons.tsx",
-        framework: "react",
-        typescript: true,
-        a11y: "hidden",
-        forwardRef: true,
-      };
-
-      await command.run(options);
-
-      const iconsCall = getWriteCall("icons.tsx");
-      expect(iconsCall).toBeDefined();
-      expect(iconsCall?.[1]).not.toContain("import { forwardRef }");
     });
   });
 
@@ -853,39 +802,41 @@ export type IconName = keyof typeof Icons;
 
   describe("Preact framework", () => {
     it("accepts Preact as framework option", async () => {
-      setupAccessMock(["/test/project"]);
+      const deps = createInitDeps({
+        fs: createMockFs({ access: createAccessMock(["/test/project"]) }),
+      });
+      const command = new InitCommand(deps);
 
-      const options: InitOptions = {
+      const result = await command.run({
         cwd: "/test/project",
         output: "./src/icons.tsx",
         framework: "preact",
         typescript: true,
         a11y: "hidden",
         forwardRef: false,
-      };
-
-      const result = await command.run(options);
+      });
 
       expect(result.isOk()).toBe(true);
-      const config = getWrittenConfig("denji.json");
+      const config = getWrittenConfig(deps.fs.writeFile, "denji.json");
       expect(config?.framework).toBe("preact");
     });
 
     it("writes Preact TypeScript template", async () => {
-      setupAccessMock(["/test/project"]);
+      const deps = createInitDeps({
+        fs: createMockFs({ access: createAccessMock(["/test/project"]) }),
+      });
+      const command = new InitCommand(deps);
 
-      const options: InitOptions = {
+      await command.run({
         cwd: "/test/project",
         output: "./src/icons.tsx",
         framework: "preact",
         typescript: true,
         a11y: "hidden",
         forwardRef: false,
-      };
+      });
 
-      await command.run(options);
-
-      const iconsCall = getWriteCall("icons.tsx");
+      const iconsCall = getWriteCall(deps.fs.writeFile, "icons.tsx");
       expect(iconsCall).toBeDefined();
       expect(iconsCall?.[1]).toContain(
         'import type * as preact from "preact/compat"'
@@ -895,73 +846,79 @@ export type IconName = keyof typeof Icons;
     });
 
     it("writes Preact JavaScript template", async () => {
-      setupAccessMock(["/test/project"]);
+      const deps = createInitDeps({
+        fs: createMockFs({ access: createAccessMock(["/test/project"]) }),
+      });
+      const command = new InitCommand(deps);
 
-      const options: InitOptions = {
+      await command.run({
         cwd: "/test/project",
         output: "./src/icons.jsx",
         framework: "preact",
         typescript: false,
         a11y: "hidden",
-      };
+      });
 
-      await command.run(options);
-
-      const iconsCall = getWriteCall("icons.jsx");
+      const iconsCall = getWriteCall(deps.fs.writeFile, "icons.jsx");
       expect(iconsCall).toBeDefined();
       expect(iconsCall?.[1]).toBe("export const Icons = {};\n");
     });
 
     it("writes Preact forwardRef type when enabled", async () => {
-      setupAccessMock(["/test/project"]);
+      const deps = createInitDeps({
+        fs: createMockFs({ access: createAccessMock(["/test/project"]) }),
+      });
+      const command = new InitCommand(deps);
 
-      const options: InitOptions = {
+      await command.run({
         cwd: "/test/project",
         output: "./src/icons.tsx",
         framework: "preact",
         typescript: true,
         a11y: "hidden",
         forwardRef: true,
-      };
+      });
 
-      await command.run(options);
-
-      const iconsCall = getWriteCall("icons.tsx");
+      const iconsCall = getWriteCall(deps.fs.writeFile, "icons.tsx");
       expect(iconsCall).toBeDefined();
       expect(iconsCall?.[1]).toContain("preact.ForwardRefExoticComponent");
       expect(iconsCall?.[1]).toContain("preact.RefAttributes<SVGSVGElement>");
     });
 
     it("writes Preact config with forwardRef option", async () => {
-      setupAccessMock(["/test/project"]);
+      const deps = createInitDeps({
+        fs: createMockFs({ access: createAccessMock(["/test/project"]) }),
+      });
+      const command = new InitCommand(deps);
 
-      const options: InitOptions = {
+      await command.run({
         cwd: "/test/project",
         output: "./src/icons.tsx",
         framework: "preact",
         typescript: true,
         a11y: "hidden",
         forwardRef: true,
-      };
+      });
 
-      await command.run(options);
-
-      const config = getWrittenConfig("denji.json");
-      expect(config?.preact?.forwardRef).toBe(true);
+      const config = getWrittenConfig(deps.fs.writeFile, "denji.json");
+      expect((config?.preact as Record<string, unknown>)?.forwardRef).toBe(
+        true
+      );
     });
 
     it("validates .tsx extension for Preact + TypeScript", async () => {
-      setupAccessMock(["/test/project"]);
+      const deps = createInitDeps({
+        fs: createMockFs({ access: createAccessMock(["/test/project"]) }),
+      });
+      const command = new InitCommand(deps);
 
-      const options: InitOptions = {
+      const result = await command.run({
         cwd: "/test/project",
         output: "./src/icons.ts",
         framework: "preact",
         typescript: true,
         a11y: "hidden",
-      };
-
-      const result = await command.run(options);
+      });
 
       expect(result.isErr()).toBe(true);
       if (result.isErr()) {
@@ -971,48 +928,24 @@ export type IconName = keyof typeof Icons;
     });
 
     it("validates .jsx extension for Preact + JavaScript", async () => {
-      setupAccessMock(["/test/project"]);
+      const deps = createInitDeps({
+        fs: createMockFs({ access: createAccessMock(["/test/project"]) }),
+      });
+      const command = new InitCommand(deps);
 
-      const options: InitOptions = {
+      const result = await command.run({
         cwd: "/test/project",
         output: "./src/icons.js",
         framework: "preact",
         typescript: false,
         a11y: "hidden",
-      };
-
-      const result = await command.run(options);
+      });
 
       expect(result.isErr()).toBe(true);
       if (result.isErr()) {
         expect(result.error).toContain('Invalid extension ".js"');
         expect(result.error).toContain("preact");
       }
-    });
-
-    it("prompts for forwardRef when Preact framework is selected", async () => {
-      setupAccessMock(["/test/project"]);
-
-      enhancedTextMock.mockResolvedValue("./src/icons.tsx");
-      enhancedSelectMock
-        .mockResolvedValueOnce("preact")
-        .mockResolvedValueOnce("hidden");
-      enhancedConfirmMock
-        .mockResolvedValueOnce(true) // typescript
-        .mockResolvedValueOnce(true) // trackSource
-        .mockResolvedValueOnce(false); // forwardRef
-
-      const options: InitOptions = {
-        cwd: "/test/project",
-      };
-
-      const result = await command.run(options);
-
-      expect(result.isOk()).toBe(true);
-      expect(enhancedConfirmMock).toHaveBeenCalledWith({
-        message: "Use forwardRef for icon components?",
-        initialValue: false,
-      });
     });
   });
 });

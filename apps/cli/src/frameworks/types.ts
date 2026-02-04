@@ -7,7 +7,22 @@ import type { A11y } from "~/schemas/config";
 export type FrameworkOptions = Record<string, unknown>;
 
 /**
+ * Options for transforming SVG to component
+ */
+export interface TransformSvgOptions {
+  /** Accessibility strategy */
+  a11y?: A11y;
+  /** Add data-icon attribute with source name */
+  trackSource?: boolean;
+  /** Original icon name (e.g., "mdi:home") */
+  iconName: string;
+  /** Component name (e.g., "Home") */
+  componentName: string;
+}
+
+/**
  * Options for generating an icon component
+ * @deprecated Use TransformSvgOptions instead
  */
 export interface ComponentOptions {
   a11y?: A11y;
@@ -86,4 +101,18 @@ export interface FrameworkStrategy {
    * Get the config key for framework options (e.g., "react" or "preact")
    */
   getConfigKey(): string;
+
+  /**
+   * Transform raw SVG string into framework-specific component code
+   *
+   * Each framework handles:
+   * - Attribute casing (camelCase for React/Preact, kebab-case for others)
+   * - Component wrapping (forwardRef, defineComponent, etc.)
+   * - Props spreading syntax
+   */
+  transformSvg(
+    svg: string,
+    options: TransformSvgOptions,
+    frameworkOptions: FrameworkOptions
+  ): Promise<string>;
 }

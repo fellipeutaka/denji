@@ -1,6 +1,4 @@
-import { transform } from "@svgr/core";
 import { parseSync } from "oxc-parser";
-import type { A11y } from "~/schemas/config";
 import { Err, Ok } from "~/utils/result";
 
 // ============================================================================
@@ -91,101 +89,6 @@ export async function fetchIcon(iconName: string) {
   } catch {
     return new Err(`Icon "${iconName}" not found`);
   }
-}
-
-// ============================================================================
-// SVG to Component (using @svgr/core)
-// ============================================================================
-
-const SVG_TAG_REGEX = /<svg[\s\S]*<\/svg>/;
-const SVG_OPENING_TAG_REGEX = /<svg([^>]*)>/;
-
-function toReadableName(componentName: string): string {
-  return componentName.replace(/([a-z])([A-Z])/g, "$1 $2");
-}
-
-function getA11yProps(
-  a11y: A11y | undefined,
-  componentName: string
-): Record<string, string> {
-  switch (a11y) {
-    case "hidden":
-      return { "aria-hidden": "true" };
-    case "img":
-      return { role: "img", "aria-label": toReadableName(componentName) };
-    case "presentation":
-      return { role: "presentation" };
-    default:
-      return {};
-  }
-}
-
-interface SvgToComponentOptions {
-  a11y?: A11y;
-  trackSource?: boolean;
-  iconName?: string;
-  forwardRef?: boolean;
-}
-
-export async function svgToComponent(
-  svg: string,
-  name: string,
-  options: SvgToComponentOptions = {}
-) {
-  const { a11y, trackSource, iconName, forwardRef } = options;
-  const svgProps: Record<string, string> = getA11yProps(a11y, name);
-
-  if (trackSource && iconName) {
-    svgProps["data-icon"] = iconName;
-  }
-
-  const jsCode = await transform(
-    svg,
-    {
-      plugins: ["@svgr/plugin-svgo", "@svgr/plugin-jsx"],
-      svgoConfig: {
-        plugins: [
-          "preset-default",
-          "convertStyleToAttrs",
-          "sortAttrs",
-          "mergePaths",
-        ],
-      },
-      jsxRuntime: "automatic",
-      typescript: false,
-      expandProps: "end",
-      svgProps,
-      titleProp: a11y === "title",
-    },
-    { componentName: "Icon" }
-  );
-
-  // Extract just the SVG JSX from the generated component
-  // SVGR generates: const Icon = (props) => <svg ...>...</svg>;
-  // We need: Name: (props) => (<svg ...>...</svg>)
-  const svgMatch = jsCode.match(SVG_TAG_REGEX);
-  if (!svgMatch) {
-    throw new Error("Failed to extract SVG from SVGR output");
-  }
-
-  let result = svgMatch[0];
-
-  // For title mode, inject the title element with the readable name
-  if (a11y === "title") {
-    const readableName = toReadableName(name);
-    result = result.replace(
-      SVG_OPENING_TAG_REGEX,
-      `<svg$1><title>${readableName}</title>`
-    );
-  }
-
-  if (forwardRef) {
-    // Add ref={ref} to the svg element
-    result = result.replace(SVG_OPENING_TAG_REGEX, "<svg$1 ref={ref}>");
-    return `${name}: forwardRef<SVGSVGElement, IconProps>((props, ref) => (${result}))`;
-  }
-
-  return `${name}: (props) => (${result})`;
 }
 
 // ============================================================================
