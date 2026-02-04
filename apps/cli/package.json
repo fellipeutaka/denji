@@ -37,19 +37,18 @@
     "lint:doctor": "ultracite doctor"
   },
   "dependencies": {
-    "@clack/prompts": "^0.11.0",
+    "@clack/prompts": "^1.0.0",
     "@svgr/core": "^8.1.0",
     "@svgr/plugin-jsx": "^8.1.0",
     "@svgr/plugin-svgo": "^8.1.0",
-    "commander": "^14.0.2",
+    "commander": "^14.0.3",
     "iconify-icon": "^3.0.2",
-    "oxc-parser": "^0.108.0",
+    "oxc-parser": "^0.112.0",
     "picocolors": "^1.1.1",
-    "zod": "^4.3.5"
+    "zod": "^4.3.6"
   },
   "devDependencies": {
     "@iconify/types": "^2.0.0",
-    "@types/react": "^19.2.8",
-    "tsdown": "^0.20.0-beta.1"
+    "tsdown": "^0.20.1"
   }
 }
