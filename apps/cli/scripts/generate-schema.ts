@@ -1,10 +1,10 @@
 /** biome-ignore-all lint/performance/noDelete: For this script it's fine */
 import path from "node:path";
-import { z } from "zod";
+import { toJSONSchema } from "zod/mini";
 import { CONFIG_SCHEMA_FILE, configSchema } from "~/schemas/config";
 import { writeFile } from "~/utils/fs";
 
-const jsonSchema = z.toJSONSchema(configSchema, {
+const jsonSchema = toJSONSchema(configSchema, {
   override: ({ jsonSchema }) => {
     // Fix intersection schemas: use unevaluatedProperties instead of additionalProperties
     if (!jsonSchema.allOf) {

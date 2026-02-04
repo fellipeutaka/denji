@@ -19,7 +19,6 @@
           "type": "boolean"
         },
         "a11y": {
-          "description": "Accessibility strategy for SVG icons (hidden: aria-hidden, img: role=img with aria-label, title: <title> element, presentation: role=presentation, false: no a11y attrs)",
           "anyOf": [
             {
               "type": "string",
@@ -29,7 +28,8 @@
               "type": "boolean",
               "const": false
             }
-          ]
+          ],
+          "description": "Accessibility strategy for SVG icons (hidden: aria-hidden, img: role=img with aria-label, title: <title> element, presentation: role=presentation, false: no a11y attrs)"
         },
         "trackSource": {
           "default": true,

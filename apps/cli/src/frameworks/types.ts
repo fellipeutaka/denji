@@ -1,4 +1,4 @@
-import type { ZodSchema } from "zod";
+import type { ZodMiniType } from "zod/mini";
 import type { A11y } from "~/schemas/config";
 
 /**
@@ -52,7 +52,7 @@ export interface FrameworkStrategy {
   };
 
   /** Zod schema for framework-specific options */
-  optionsSchema: ZodSchema;
+  optionsSchema: ZodMiniType;
 
   /** Whether this framework supports ref forwarding */
   supportsRef: boolean;

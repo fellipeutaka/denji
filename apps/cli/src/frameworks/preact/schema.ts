@@ -1,12 +1,15 @@
-import { z } from "zod";
+import {
+  _default,
+  boolean,
+  describe,
+  type infer as Infer,
+  object,
+} from "zod/mini";
 
-export const preactOptionsSchema = z
-  .object({
-    forwardRef: z
-      .boolean()
-      .default(false)
-      .describe("Wrap icon components with forwardRef"),
-  })
-  .describe("Preact-specific configuration options");
+export const preactOptionsSchema = object({
+  forwardRef: _default(boolean(), false).check(
+    describe("Wrap icon components with forwardRef")
+  ),
+}).check(describe("Preact-specific configuration options"));
 
-export type PreactOptions = z.infer<typeof preactOptionsSchema>;
+export type PreactOptions = Infer<typeof preactOptionsSchema>;

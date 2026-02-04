@@ -1,102 +1,120 @@
-import { z } from "zod";
+import {
+  _default,
+  array,
+  boolean,
+  describe,
+  discriminatedUnion,
+  type infer as Infer,
+  intersection,
+  literal,
+  meta,
+  object,
+  optional,
+  partial,
+  string,
+  union,
+  enum as zodEnum,
+} from "zod/mini";
 import { preactOptionsSchema } from "~/frameworks/preact/schema";
 import { reactOptionsSchema } from "~/frameworks/react/schema";
 
-export const a11ySchema = z
-  .enum(["hidden", "img", "title", "presentation"])
-  .or(z.literal(false));
-export type A11y = z.infer<typeof a11ySchema>;
+export const a11ySchema = union([
+  zodEnum(["hidden", "img", "title", "presentation"]),
+  literal(false),
+]).check(
+  describe(
+    "Accessibility strategy for SVG icons (hidden: aria-hidden, img: role=img with aria-label, title: <title> element, presentation: role=presentation, false: no a11y attrs)"
+  )
+);
+export type A11y = Infer<typeof a11ySchema>;
 
 // Base config (shared across all frameworks)
-const baseConfigSchema = z.object({
-  $schema: z
-    .string()
-    .optional()
-    .default("https://denji-docs.vercel.app/configuration_schema.json")
-    .describe(
+const baseConfigSchema = object({
+  $schema: _default(
+    optional(string()),
+    "https://denji-docs.vercel.app/configuration_schema.json"
+  ).check(
+    describe(
       "The URL of the JSON Schema for this configuration file (e.g., './node_modules/denji/configuration_schema.json')"
-    ),
-  output: z
-    .string()
-    .describe(
+    )
+  ),
+  output: string().check(
+    describe(
       "The output file path for generated icon components (e.g., './src/icons.tsx')"
-    ),
-  typescript: z
-    .boolean()
-    .default(true)
-    .describe("Whether to generate TypeScript code"),
-  a11y: a11ySchema
-    .optional()
-    .describe(
-      "Accessibility strategy for SVG icons (hidden: aria-hidden, img: role=img with aria-label, title: <title> element, presentation: role=presentation, false: no a11y attrs)"
-    ),
-  trackSource: z
-    .boolean()
-    .default(true)
-    .describe(
+    )
+  ),
+  typescript: _default(boolean(), true).check(
+    describe("Whether to generate TypeScript code")
+  ),
+  a11y: optional(a11ySchema),
+  trackSource: _default(boolean(), true).check(
+    describe(
       "Add data-icon attribute with Iconify source name (enables update command, debugging, and identifying icon collections)"
-    ),
-  hooks: z
-    .object({
-      preAdd: z
-        .array(z.string())
-        .describe("Scripts to run before adding icons"),
-      postAdd: z
-        .array(z.string())
-        .describe("Scripts to run after adding icons"),
-      preRemove: z
-        .array(z.string())
-        .describe("Scripts to run before removing icons"),
-      postRemove: z
-        .array(z.string())
-        .describe("Scripts to run after removing icons"),
-      preClear: z
-        .array(z.string())
-        .describe("Scripts to run before clearing all icons"),
-      postClear: z
-        .array(z.string())
-        .describe("Scripts to run after clearing all icons"),
-      preList: z
-        .array(z.string())
-        .describe("Scripts to run before listing icons"),
-      postList: z
-        .array(z.string())
-        .describe("Scripts to run after listing icons"),
-    })
-    .partial()
-    .optional()
-    .describe("Hooks to run at various stages"),
+    )
+  ),
+  hooks: optional(
+    partial(
+      object({
+        preAdd: array(string()).check(
+          describe("Scripts to run before adding icons")
+        ),
+        postAdd: array(string()).check(
+          describe("Scripts to run after adding icons")
+        ),
+        preRemove: array(string()).check(
+          describe("Scripts to run before removing icons")
+        ),
+        postRemove: array(string()).check(
+          describe("Scripts to run after removing icons")
+        ),
+        preClear: array(string()).check(
+          describe("Scripts to run before clearing all icons")
+        ),
+        postClear: array(string()).check(
+          describe("Scripts to run after clearing all icons")
+        ),
+        preList: array(string()).check(
+          describe("Scripts to run before listing icons")
+        ),
+        postList: array(string()).check(
+          describe("Scripts to run after listing icons")
+        ),
+      })
+    )
+  ).check(describe("Hooks to run at various stages")),
 });
 
 // React-specific config
-const reactConfigSchema = z.object({
-  framework: z.literal("react").describe("React framework"),
-  react: reactOptionsSchema.optional(),
+const reactConfigSchema = object({
+  framework: literal("react").check(describe("React framework")),
+  react: optional(reactOptionsSchema),
 });
 
 // Preact-specific config
-const preactConfigSchema = z.object({
-  framework: z.literal("preact").describe("Preact framework"),
-  preact: preactOptionsSchema.optional(),
+const preactConfigSchema = object({
+  framework: literal("preact").check(describe("Preact framework")),
+  preact: optional(preactOptionsSchema),
 });
 
 // Framework discriminated union (add vue, solid, etc. later)
-const frameworkConfigSchema = z.discriminatedUnion("framework", [
+const frameworkConfigSchema = discriminatedUnion("framework", [
   reactConfigSchema,
   preactConfigSchema,
 ]);
 
 // Final config = base + framework-specific
-export const configSchema = baseConfigSchema.and(frameworkConfigSchema).meta({
-  title: "Denji Configuration Schema",
-  description: "Schema for Denji configuration file",
-});
+export const configSchema = intersection(
+  baseConfigSchema,
+  frameworkConfigSchema
+)
+  .check(meta({ title: "Denji Configuration Schema" }))
+  .check(describe("Schema for Denji configuration file"));
 
-export type Config = z.infer<typeof configSchema>;
+export type Config = Infer<typeof configSchema>;
 
 // Export framework schema for validation in init command
-export const frameworkSchema = z.enum(["react", "preact"]);
-export type Framework = z.infer<typeof frameworkSchema>;
+export const frameworkSchema = zodEnum(["react", "preact"]);
+export type Framework = Infer<typeof frameworkSchema>;
 
 export const CONFIG_FILE = "denji.json";
 export const CONFIG_SCHEMA_FILE = "configuration_schema.json";
