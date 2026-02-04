@@ -127,6 +127,30 @@
             }
           },
           "required": ["framework"]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "framework": {
+              "type": "string",
+              "const": "preact",
+              "description": "Preact framework"
+            },
+            "preact": {
+              "type": "object",
+              "properties": {
+                "forwardRef": {
+                  "default": false,
+                  "description": "Wrap icon components with forwardRef",
+                  "type": "boolean"
+                }
+              },
+              "required": ["forwardRef"],
+              "additionalProperties": false,
+              "description": "Preact-specific configuration options"
+            }
+          },
+          "required": ["framework"]
         }
       ]
     }

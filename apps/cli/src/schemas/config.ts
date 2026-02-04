@@ -82,9 +82,26 @@ const reactConfigSchema = z.object({
   react: reactOptionsSchema.optional(),
 });
 
+// Preact-specific options
+const preactOptionsSchema = z
+  .object({
+    forwardRef: z
+      .boolean()
+      .default(false)
+      .describe("Wrap icon components with forwardRef"),
+  })
+  .describe("Preact-specific configuration options");
+
+// Preact-specific config
+const preactConfigSchema = z.object({
+  framework: z.literal("preact").describe("Preact framework"),
+  preact: preactOptionsSchema.optional(),
+});
+
 // Framework discriminated union (add vue, solid, etc. later)
 const frameworkConfigSchema = z.discriminatedUnion("framework", [
   reactConfigSchema,
+  preactConfigSchema,
 ]);
 
 // Final config = base + framework-specific
@@ -96,7 +113,7 @@ export const configSchema = baseConfigSchema.and(frameworkConfigSchema).meta({
 export type Config = z.infer<typeof configSchema>;
 
 // Export framework schema for validation in init command
-export const frameworkSchema = z.enum(["react"]);
+export const frameworkSchema = z.enum(["react", "preact"]);
 export type Framework = z.infer<typeof frameworkSchema>;
 
 export const CONFIG_FILE = "denji.json";

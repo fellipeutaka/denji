@@ -127,13 +127,18 @@ export class InitCommand {
       options.framework ??
       (await enhancedSelect({
         message: "Which framework are you using?",
-        options: [{ value: "react", label: "React" }],
+        options: [
+          { value: "react", label: "React" },
+          { value: "preact", label: "Preact" },
+        ],
         initialValue: "react",
       }));
 
     const frameworkResult = frameworkSchema.safeParse(frameworkInput);
     if (!frameworkResult.success) {
-      return new Err(`Invalid framework: ${frameworkInput}. Use: react`);
+      return new Err(
+        `Invalid framework: ${frameworkInput}. Use: react, preact`
+      );
     }
     const framework = frameworkResult.data;
 
@@ -214,6 +219,9 @@ export class InitCommand {
     if (framework === "react") {
       return this.promptReactOptions(options);
     }
+    if (framework === "preact") {
+      return this.promptPreactOptions(options);
+    }
     return Promise.resolve({});
   }
 
@@ -228,6 +236,17 @@ export class InitCommand {
     return { react: { forwardRef } };
   }
 
+  async promptPreactOptions(options: InitOptions) {
+    const forwardRef =
+      options.forwardRef ??
+      (await enhancedConfirm({
+        message: "Use forwardRef for icon components?",
+        initialValue: false,
+      }));
+
+    return { preact: { forwardRef } };
+  }
+
   validateExtension(config: Config) {
     const ext = path.extname(config.output);
 
@@ -240,6 +259,19 @@ export class InitCommand {
       if (!config.typescript && ext !== ".jsx") {
         return new Err(
           `Invalid extension "${ext}" for React + JavaScript. Use ".jsx"`
+        );
+      }
+    }
+
+    if (config.framework === "preact") {
+      if (config.typescript && ext !== ".tsx") {
+        return new Err(
+          `Invalid extension "${ext}" for Preact + TypeScript. Use ".tsx"`
+        );
+      }
+      if (!config.typescript && ext !== ".jsx") {
+        return new Err(
+          `Invalid extension "${ext}" for Preact + JavaScript. Use ".jsx"`
         );
       }
     }

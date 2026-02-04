@@ -1,6 +1,6 @@
 # Denji
 
-CLI tool for managing SVG icons in React projects. Fetches icons from Iconify, converts to optimized React components, and maintains a centralized icons file.
+CLI tool for managing SVG icons in React and Preact projects. Fetches icons from Iconify, converts to optimized components, and maintains a centralized icons file.
 
 ## Installation
 
@@ -49,10 +49,26 @@ Create `denji.json`:
 | Option | Type | Default | Description |
 |--------|------|---------|-------------|
 | `output` | `string` | - | Output file path (e.g., `./src/icons.tsx`) |
-| `framework` | `"react"` | - | Target framework |
+| `framework` | `"react"` \| `"preact"` | - | Target framework |
 | `typescript` | `boolean` | `true` | Generate TypeScript |
 | `a11y` | `"hidden"` \| `"img"` \| `"title"` \| `"presentation"` \| `false` | - | SVG accessibility strategy |
 | `hooks` | `object` | - | Lifecycle hooks |
+| `react` | `object` | - | React-specific options |
+| `preact` | `object` | - | Preact-specific options |
+
+### Framework-Specific Options
+
+#### React
+
+| Option | Type | Default | Description |
+|--------|------|---------|-------------|
+| `react.forwardRef` | `boolean` | `false` | Wrap icons with `forwardRef` |
+
+#### Preact
+
+| Option | Type | Default | Description |
+|--------|------|---------|-------------|
+| `preact.forwardRef` | `boolean` | `false` | Wrap icons with `forwardRef` (uses `preact/compat`) |
 
 ### Accessibility Options
 

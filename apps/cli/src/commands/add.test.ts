@@ -971,4 +971,112 @@ export const Icons = {
       expect(writeCall?.[1]).not.toContain("forwardRef<SVGSVGElement");
     });
   });
+
+  // ============================================
+  // PREACT FRAMEWORK TESTS
+  // ============================================
+
+  describe("Preact framework", () => {
+    it("passes forwardRef: true for Preact when config has forwardRef enabled", async () => {
+      loadConfigMock.mockResolvedValue(
+        new Ok({
+          $schema: "https://denji-docs.vercel.app/configuration_schema.json",
+          output: "./src/icons.tsx",
+          framework: "preact",
+          typescript: true,
+          trackSource: true,
+          preact: {
+            forwardRef: true,
+          },
+        })
+      );
+
+      const options: AddOptions = {
+        cwd: "/test/project",
+      };
+
+      await command.run(["lucide:check"], options);
+
+      expect(svgToComponentMock).toHaveBeenCalledWith(
+        expect.any(String),
+        expect.any(String),
+        expect.objectContaining({ forwardRef: true })
+      );
+    });
+
+    it("adds forwardRef import from preact/compat when Preact and forwardRef enabled", async () => {
+      loadConfigMock.mockResolvedValue(
+        new Ok({
+          $schema: "https://denji-docs.vercel.app/configuration_schema.json",
+          output: "./src/icons.tsx",
+          framework: "preact",
+          typescript: true,
+          trackSource: true,
+          preact: {
+            forwardRef: true,
+          },
+        })
+      );
+      readFileMock.mockResolvedValue(new Ok("export const Icons = {};"));
+
+      const options: AddOptions = {
+        cwd: "/test/project",
+      };
+
+      await command.run(["lucide:check"], options);
+
+      const writeCall = writeFileMock.mock.calls[0];
+      expect(writeCall).toBeDefined();
+      expect(writeCall?.[1]).toContain(
+        'import { forwardRef } from "preact/compat"'
+      );
+    });
+
+    it("does not add forwardRef import for Preact when forwardRef disabled", async () => {
+      loadConfigMock.mockResolvedValue(
+        new Ok({
+          $schema: "https://denji-docs.vercel.app/configuration_schema.json",
+          output: "./src/icons.tsx",
+          framework: "preact",
+          typescript: true,
+          trackSource: true,
+        })
+      );
+      readFileMock.mockResolvedValue(new Ok("export const Icons = {};"));
+
+      const options: AddOptions = {
+        cwd: "/test/project",
+      };
+
+      await command.run(["lucide:check"], options);
+
+      const writeCall = writeFileMock.mock.calls[0];
+      expect(writeCall).toBeDefined();
+      expect(writeCall?.[1]).not.toContain("import { forwardRef }");
+    });
+
+    it("passes forwardRef: false for Preact when not configured", async () => {
+      loadConfigMock.mockResolvedValue(
+        new Ok({
+          $schema: "https://denji-docs.vercel.app/configuration_schema.json",
+          output: "./src/icons.tsx",
+          framework: "preact",
+          typescript: true,
+          trackSource: true,
+        })
+      );
+
+      const options: AddOptions = {
+        cwd: "/test/project",
+      };
+
+      await command.run(["lucide:check"], options);
+
+      expect(svgToComponentMock).toHaveBeenCalledWith(
+        expect.any(String),
+        expect.any(String),
+        expect.objectContaining({ forwardRef: false })
+      );
+    });
+  });
 });

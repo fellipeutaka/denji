@@ -846,4 +846,173 @@ export type IconName = keyof typeof Icons;
       expect(iconsCall?.[1]).not.toContain("import { forwardRef }");
     });
   });
+
+  // ============================================
+  // PREACT FRAMEWORK TESTS
+  // ============================================
+
+  describe("Preact framework", () => {
+    it("accepts Preact as framework option", async () => {
+      setupAccessMock(["/test/project"]);
+
+      const options: InitOptions = {
+        cwd: "/test/project",
+        output: "./src/icons.tsx",
+        framework: "preact",
+        typescript: true,
+        a11y: "hidden",
+        forwardRef: false,
+      };
+
+      const result = await command.run(options);
+
+      expect(result.isOk()).toBe(true);
+      const config = getWrittenConfig("denji.json");
+      expect(config?.framework).toBe("preact");
+    });
+
+    it("writes Preact TypeScript template", async () => {
+      setupAccessMock(["/test/project"]);
+
+      const options: InitOptions = {
+        cwd: "/test/project",
+        output: "./src/icons.tsx",
+        framework: "preact",
+        typescript: true,
+        a11y: "hidden",
+        forwardRef: false,
+      };
+
+      await command.run(options);
+
+      const iconsCall = getWriteCall("icons.tsx");
+      expect(iconsCall).toBeDefined();
+      expect(iconsCall?.[1]).toContain(
+        'import type * as preact from "preact/compat"'
+      );
+      expect(iconsCall?.[1]).toContain("preact.ComponentProps");
+      expect(iconsCall?.[1]).toContain("preact.JSX.Element");
+    });
+
+    it("writes Preact JavaScript template", async () => {
+      setupAccessMock(["/test/project"]);
+
+      const options: InitOptions = {
+        cwd: "/test/project",
+        output: "./src/icons.jsx",
+        framework: "preact",
+        typescript: false,
+        a11y: "hidden",
+      };
+
+      await command.run(options);
+
+      const iconsCall = getWriteCall("icons.jsx");
+      expect(iconsCall).toBeDefined();
+      expect(iconsCall?.[1]).toBe("export const Icons = {};\n");
+    });
+
+    it("writes Preact forwardRef type when enabled", async () => {
+      setupAccessMock(["/test/project"]);
+
+      const options: InitOptions = {
+        cwd: "/test/project",
+        output: "./src/icons.tsx",
+        framework: "preact",
+        typescript: true,
+        a11y: "hidden",
+        forwardRef: true,
+      };
+
+      await command.run(options);
+
+      const iconsCall = getWriteCall("icons.tsx");
+      expect(iconsCall).toBeDefined();
+      expect(iconsCall?.[1]).toContain("preact.ForwardRefExoticComponent");
+      expect(iconsCall?.[1]).toContain("preact.RefAttributes<SVGSVGElement>");
+    });
+
+    it("writes Preact config with forwardRef option", async () => {
+      setupAccessMock(["/test/project"]);
+
+      const options: InitOptions = {
+        cwd: "/test/project",
+        output: "./src/icons.tsx",
+        framework: "preact",
+        typescript: true,
+        a11y: "hidden",
+        forwardRef: true,
+      };
+
+      await command.run(options);
+
+      const config = getWrittenConfig("denji.json");
+      expect(config?.preact?.forwardRef).toBe(true);
+    });
+
+    it("validates .tsx extension for Preact + TypeScript", async () => {
+      setupAccessMock(["/test/project"]);
+
+      const options: InitOptions = {
+        cwd: "/test/project",
+        output: "./src/icons.ts",
+        framework: "preact",
+        typescript: true,
+        a11y: "hidden",
+      };
+
+      const result = await command.run(options);
+
+      expect(result.isErr()).toBe(true);
+      if (result.isErr()) {
+        expect(result.error).toContain('Invalid extension ".ts"');
+        expect(result.error).toContain("Preact");
+      }
+    });
+
+    it("validates .jsx extension for Preact + JavaScript", async () => {
+      setupAccessMock(["/test/project"]);
+
+      const options: InitOptions = {
+        cwd: "/test/project",
+        output: "./src/icons.js",
+        framework: "preact",
+        typescript: false,
+        a11y: "hidden",
+      };
+
+      const result = await command.run(options);
+
+      expect(result.isErr()).toBe(true);
+      if (result.isErr()) {
+        expect(result.error).toContain('Invalid extension ".js"');
+        expect(result.error).toContain("Preact");
+      }
+    });
+
+    it("prompts for forwardRef when Preact framework is selected", async () => {
+      setupAccessMock(["/test/project"]);
+
+      enhancedTextMock.mockResolvedValue("./src/icons.tsx");
+      enhancedSelectMock
+        .mockResolvedValueOnce("preact")
+        .mockResolvedValueOnce("hidden");
+      enhancedConfirmMock
+        .mockResolvedValueOnce(true) // typescript
+        .mockResolvedValueOnce(true) // trackSource
+        .mockResolvedValueOnce(false); // forwardRef
+
+      const options: InitOptions = {
+        cwd: "/test/project",
+      };
+
+      const result = await command.run(options);
+
+      expect(result.isOk()).toBe(true);
+      expect(enhancedConfirmMock).toHaveBeenCalledWith({
+        message: "Use forwardRef for icon components?",
+        initialValue: false,
+      });
+    });
+  });
 });
