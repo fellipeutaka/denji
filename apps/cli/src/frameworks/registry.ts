@@ -18,6 +18,7 @@ export const frameworkRegistry: FrameworkMeta[] = [
   { value: "react", label: "React" },
   { value: "preact", label: "Preact" },
   { value: "solid", label: "Solid" },
+  { value: "vue", label: "Vue" },
 ];
 
 /**

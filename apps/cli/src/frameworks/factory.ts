@@ -23,6 +23,10 @@ export async function createFrameworkStrategy(
       const { solidStrategy } = await import("./solid/strategy");
       return solidStrategy;
     }
+    case "vue": {
+      const { vueStrategy } = await import("./vue/strategy");
+      return vueStrategy;
+    }
     default: {
       throw new Error(`Unknown framework: ${name}`);
     }

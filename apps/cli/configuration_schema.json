@@ -188,6 +188,37 @@
           "required": [
             "framework"
           ]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "framework": {
+              "type": "string",
+              "const": "vue",
+              "description": "Vue framework"
+            },
+            "vue": {
+              "type": "object",
+              "properties": {
+                "syntax": {
+                  "default": "h",
+                  "description": "Component syntax: 'h' for render function (future: 'sfc' for .vue files)",
+                  "type": "string",
+                  "enum": [
+                    "h"
+                  ]
+                }
+              },
+              "required": [
+                "syntax"
+              ],
+              "additionalProperties": false,
+              "description": "Vue-specific configuration options"
+            }
+          },
+          "required": [
+            "framework"
+          ]
         }
       ]
     }

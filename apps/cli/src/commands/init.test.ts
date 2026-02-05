@@ -490,7 +490,7 @@ export type IconName = keyof typeof Icons;
       const result = await command.run({
         cwd: "/test/project",
         output: "./src/icons.tsx",
-        framework: "vue",
+        framework: "angular",
         typescript: true,
         a11y: "hidden",
       });

@@ -18,6 +18,7 @@ import {
 import { preactOptionsSchema } from "~/frameworks/preact/schema";
 import { reactOptionsSchema } from "~/frameworks/react/schema";
 import { solidOptionsSchema } from "~/frameworks/solid/schema";
+import { vueOptionsSchema } from "~/frameworks/vue/schema";
 
 export const a11ySchema = union([
   zodEnum(["hidden", "img", "title", "presentation"]),
@@ -103,11 +104,18 @@ const solidConfigSchema = object({
   solid: optional(solidOptionsSchema),
 });
 
+// Vue-specific config
+const vueConfigSchema = object({
+  framework: literal("vue").check(describe("Vue framework")),
+  vue: optional(vueOptionsSchema),
+});
+
 // Framework discriminated union
 const frameworkConfigSchema = discriminatedUnion("framework", [
   reactConfigSchema,
   preactConfigSchema,
   solidConfigSchema,
+  vueConfigSchema,
 ]);
 
 // Final config = base + framework-specific
@@ -121,7 +129,7 @@ export const configSchema = intersection(
 export type Config = Infer<typeof configSchema>;
 
 // Export framework schema for validation in init command
-export const frameworkSchema = zodEnum(["react", "preact", "solid"]);
+export const frameworkSchema = zodEnum(["react", "preact", "solid", "vue"]);
 export type Framework = Infer<typeof frameworkSchema>;
 
 export const CONFIG_FILE = "denji.json";
