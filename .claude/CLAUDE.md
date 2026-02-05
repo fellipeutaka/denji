@@ -5,6 +5,7 @@
 Before ANY commit:
 1. `bun run lint:fix` passes
 2. `bun run type-check` passes
+3. `CLAUDECODE=1 bun test` passes
 
 lefthook pre-commit hooks enforce this.
 
