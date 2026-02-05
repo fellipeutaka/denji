@@ -2,7 +2,7 @@
 
 CLI tool for managing SVG icons in frontend projects. Fetches icons from Iconify, converts to optimized components, and maintains a centralized icons file.
 
-Supports **React**, **Preact**, and **Solid**.
+Supports **React**, **Preact**, **Solid**, and **Vue**.
 
 ## Documentation
 
@@ -55,7 +55,7 @@ Create `denji.json`:
 | Option | Type | Default | Description |
 |--------|------|---------|-------------|
 | `output` | `string` | - | Output file path (e.g., `./src/icons.tsx`) |
-| `framework` | `"react"` \| `"preact"` \| `"solid"` | - | Target framework |
+| `framework` | `"react"` \| `"preact"` \| `"solid"` \| `"vue"` | - | Target framework |
 | `typescript` | `boolean` | `true` | Generate TypeScript |
 | `a11y` | `"hidden"` \| `"img"` \| `"title"` \| `"presentation"` \| `false` | - | SVG accessibility strategy |
 | `hooks` | `object` | - | Lifecycle hooks |
@@ -147,6 +147,32 @@ function App() {
 ```
 
 > Note: Solid uses `class` instead of `className`. Refs are passed as regular props - no `forwardRef` needed.
+
+### Vue
+
+```bash
+denji init --framework vue
+```
+
+```json
+{
+  "framework": "vue"
+}
+```
+
+**Usage:**
+
+```vue
+<script setup lang="ts">
+import { Icons } from "./icons";
+</script>
+
+<template>
+  <Icons.Check class="size-4 text-green-500" />
+</template>
+```
+
+> Note: Vue icons use `h()` render functions as `FunctionalComponent` types. Uses `class` instead of `className`.
 
 ## Accessibility
 

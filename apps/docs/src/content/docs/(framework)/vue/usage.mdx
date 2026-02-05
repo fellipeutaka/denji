@@ -1,0 +1,278 @@
+---
+title: Usage
+description: Usage examples and patterns for Vue
+---
+
+import { Callout } from "fumadocs-ui/components/callout";
+
+Learn how to use Denji icons in your Vue components.
+
+## Basic Usage
+
+Import and use icons in Vue templates:
+
+```vue
+<script setup lang="ts">
+import { Icons } from "./icons";
+</script>
+
+<template>
+  <div>
+    <Icons.Check class="size-4" />
+  </div>
+</template>
+```
+
+<Callout type="info">
+Vue uses `class` instead of `className` for CSS classes.
+</Callout>
+
+## Styling
+
+### With Tailwind
+
+```vue
+<template>
+  <Icons.Check class="size-6 text-green-500" />
+  <Icons.X class="size-4 text-red-500" />
+</template>
+```
+
+### With CSS
+
+```vue
+<template>
+  <Icons.Check class="icon" />
+</template>
+
+<style>
+.icon {
+  width: 1rem;
+  height: 1rem;
+  color: currentColor;
+}
+</style>
+```
+
+### Inline Styles
+
+```vue
+<template>
+  <Icons.Check 
+    :style="{ 
+      width: '24px', 
+      height: '24px', 
+      color: 'green' 
+    }" 
+  />
+</template>
+```
+
+## Accessibility
+
+Icons inherit a11y strategy from config, but can be customized per use:
+
+### Decorative Icons
+
+For icons that are purely decorative:
+
+```vue
+<template>
+  <button>
+    <Icons.Check aria-hidden="true" />
+    Save Changes
+  </button>
+</template>
+```
+
+### Semantic Icons
+
+For icons with meaning:
+
+```vue
+<template>
+  <Icons.Check 
+    role="img" 
+    aria-label="Success" 
+  />
+</template>
+```
+
+### With Text Alternative
+
+```vue
+<template>
+  <button aria-label="Close dialog">
+    <Icons.X aria-hidden="true" />
+  </button>
+</template>
+```
+
+<Callout type="info">
+Configure default a11y in `denji.json` or per icon with `--a11y` flag.
+</Callout>
+
+## Common Patterns
+
+### Button Icons
+
+```vue
+<script setup lang="ts">
+import { Icons } from "./icons";
+</script>
+
+<template>
+  <button class="flex items-center gap-2">
+    <Icons.Check class="size-4" />
+    <span>Save</span>
+  </button>
+</template>
+```
+
+### Icon-Only Button
+
+```vue
+<template>
+  <button 
+    aria-label="Close"
+    class="p-2 rounded hover:bg-gray-100"
+  >
+    <Icons.X class="size-5" aria-hidden="true" />
+  </button>
+</template>
+```
+
+### Status Icons
+
+```vue
+<script setup lang="ts">
+import { computed } from "vue";
+import { Icons, type IconProps } from "./icons";
+
+const statusConfig = {
+  success: { icon: Icons.Check, color: "text-green-500" },
+  error: { icon: Icons.X, color: "text-red-500" },
+  warning: { icon: Icons.AlertTriangle, color: "text-yellow-500" },
+} as const;
+
+interface Props extends IconProps {
+  type: keyof typeof statusConfig;
+}
+
+const props = defineProps<Props>();
+
+const config = computed(() => {
+  const cfg = statusConfig[props.type];
+  if (!cfg) {
+    throw new Error(`Invalid status type: "${props.type}".`);
+  }
+  return cfg;
+});
+</script>
+
+<template>
+  <component 
+    :is="config.icon" 
+    :class="[config.color, 'size-5']" 
+  />
+</template>
+```
+
+### Loading Spinner
+
+```vue
+<template>
+  <Icons.Loader 
+    class="size-6 animate-spin"
+    aria-label="Loading"
+  />
+</template>
+```
+
+### Dynamic Icons
+
+<Callout type="warn">
+Dynamic icon patterns should only be used when icon names come from external sources (CMS, database, API). For static use cases, prefer direct imports like `<Icons.Check />` - this enables better tree-shaking and smaller bundles.
+</Callout>
+
+```vue
+<script setup lang="ts">
+import { computed } from "vue";
+import { Icons, type IconName, type IconProps } from "./icons";
+
+interface Props extends IconProps {
+  name: IconName;
+}
+
+const props = defineProps<Props>();
+
+const IconComponent = computed(() => {
+  const icon = Icons[props.name];
+  if (!icon) {
+    throw new Error(`Icon with name "${props.name}" does not exist.`);
+  }
+  return icon;
+});
+</script>
+
+<template>
+  <component :is="IconComponent" v-bind="$attrs" />
+</template>
+
+<!-- Usage -->
+<!-- <DynamicIcon name="Check" class="size-4" /> -->
+```
+
+### Animations
+
+```vue
+<template>
+  <Icons.Check 
+    class="size-6 animate-bounce text-green-500"
+  />
+</template>
+```
+
+With custom animation:
+
+```vue
+<template>
+  <Icons.Loader class="size-6 spin" />
+</template>
+
+<style>
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.spin {
+  animation: spin 1s linear infinite;
+}
+</style>
+```
+
+## TypeScript
+
+Icons are fully typed. Import the types you need:
+
+```ts
+import type { IconProps, Icon, IconName } from "./icons";
+
+// All available types:
+// IconProps = SVGAttributes
+// Icon = FunctionalComponent<IconProps>
+// IconName = keyof typeof Icons
+
+// Example usage
+const iconName: IconName = "Check"; // ✅ Type-safe
+const invalidIcon: IconName = "NonExistent"; // ❌ Type error
+```
+
+## Tips
+
+1. **Tree Shaking**: Only imported icons are bundled
+2. **Naming**: Use descriptive names with `--name` flag
+3. **Organization**: Group related icons in separate files if needed
+4. **Performance**: Icons are lightweight `h()` function components
+5. **Consistency**: Use same icon library for cohesive design
+6. **No forwardRef**: Vue passes props directly - no ref forwarding pattern needed

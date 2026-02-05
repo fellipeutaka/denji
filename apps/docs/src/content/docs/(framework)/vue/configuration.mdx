@@ -1,0 +1,186 @@
+---
+title: Configuration
+description: Configure Denji options and hooks for Vue
+---
+
+import { Callout } from "fumadocs-ui/components/callout";
+
+Configuration is stored in `denji.json` at your project root.
+
+## Example Config
+
+```json
+{
+  "$schema": "./node_modules/denji/configuration_schema.json",
+  "output": "./src/icons.ts",
+  "framework": "vue",
+  "typescript": true,
+  "a11y": "hidden",
+  "trackSource": true,
+  "hooks": {
+    "postAdd": ["npx biome check --write ./src/icons.ts"]
+  }
+}
+```
+
+## Options
+
+### output
+
+**Type:** `string`  
+**Required:** Yes
+
+Output file path for generated icons.
+
+```json
+{
+  "output": "./src/icons.ts"
+}
+```
+
+### framework
+
+**Type:** `"react" | "preact" | "solid" | "vue"`  
+**Required:** Yes
+
+Target framework for generated components.
+
+```json
+{
+  "framework": "vue"
+}
+```
+
+### typescript
+
+**Type:** `boolean`  
+**Default:** `true`
+
+Generate TypeScript or JavaScript output.
+
+```json
+{
+  "typescript": true
+}
+```
+
+### a11y
+
+**Type:** `"hidden" | "img" | "title" | "presentation" | false`  
+**Default:** `undefined`
+
+SVG accessibility strategy:
+
+#### `hidden`
+Adds `aria-hidden="true"` - for decorative icons that should be hidden from screen readers.
+
+```ts
+h("svg", { "aria-hidden": "true" }, [...])
+```
+
+#### `img`
+Adds `role="img"` with `aria-label` - for icons with semantic meaning.
+
+```ts
+h("svg", { role: "img", "aria-label": "Check" }, [...])
+```
+
+#### `title`
+Adds `<title>` element inside SVG - provides accessible name.
+
+```ts
+h("svg", {}, [h("title", {}, "Check"), ...])
+```
+
+#### `presentation`
+Adds `role="presentation"` - marks icon as presentational.
+
+```ts
+h("svg", { role: "presentation" }, [...])
+```
+
+#### `false`
+No accessibility attributes added.
+
+<Callout type="info">
+You can override a11y per icon using the `--a11y` flag:
+
+```bash
+denji add lucide:check --a11y img
+```
+</Callout>
+
+### trackSource
+
+**Type:** `boolean`  
+**Default:** `true`
+
+Add `data-icon` attribute with the original Iconify source name. Useful for debugging, identifying icon collections, and enabling future `update` command.
+
+```json
+{
+  "trackSource": true
+}
+```
+
+When enabled, icons include the source attribute:
+
+```ts
+h("svg", { "data-icon": "lucide:check" }, [...])
+```
+
+### hooks
+
+**Type:** `object`  
+**Default:** `{}`
+
+Lifecycle hooks to run shell commands at specific points:
+
+```json
+{
+  "hooks": {
+    "preAdd": ["echo 'Adding icons...'"],
+    "postAdd": ["npx biome check --write ./src/icons.ts"],
+    "preRemove": [],
+    "postRemove": ["echo 'Removed icons'"],
+    "preClear": [],
+    "postClear": [],
+    "preList": [],
+    "postList": []
+  }
+}
+```
+
+Available hooks:
+- `preAdd` - Before adding icons
+- `postAdd` - After adding icons
+- `preRemove` - Before removing icons
+- `postRemove` - After removing icons
+- `preClear` - Before clearing all icons
+- `postClear` - After clearing all icons
+- `preList` - Before listing icons
+- `postList` - After listing icons
+
+Common use cases:
+- Format code after adding icons
+- Run type checking
+- Update icon registry
+- Trigger builds
+
+## Schema Validation
+
+The config includes JSON schema for editor validation and auto-completion:
+
+```json
+{
+  "$schema": "./node_modules/denji/configuration_schema.json"
+}
+```
+
+This enables IntelliSense in VS Code and other editors.
+
+## Vue-Specific Notes
+
+<Callout type="info">
+Vue icons use `h()` render functions as `FunctionalComponent` types. No `forwardRef` needed - props are spread directly.
+</Callout>

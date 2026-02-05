@@ -1,0 +1,15 @@
+{
+  "root": true,
+  "title": "Vue",
+  "description": "Vue framework docs",
+  "icon": "Vue",
+  "pages": [
+    "index",
+    "installation",
+    "configuration",
+    "usage",
+    "commands",
+    "integrations",
+    "troubleshooting"
+  ]
+}

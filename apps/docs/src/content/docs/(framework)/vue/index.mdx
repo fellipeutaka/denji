@@ -43,7 +43,7 @@ npm i -D denji
 ### Initialize project
 
 ```bash
-denji init
+denji init --framework vue
 ```
 
 Creates `denji.json` config and icons template file.
@@ -66,12 +66,14 @@ Fetches icons from Iconify and adds to your project.
 
 ### Use in your app
 
-```tsx
+```vue
+<script setup lang="ts">
 import { Icons } from "./icons";
+</script>
 
-function App() {
-  return <Icons.Check className="size-4" />;
-}
+<template>
+  <Icons.Check class="size-4" />
+</template>
 ```
 
 </Step>
@@ -80,7 +82,7 @@ function App() {
 ## Next Steps
 
 <Cards>
-  {getPageTreePeers(source.getPageTree(), "/docs/preact").map((peer) => (
+  {getPageTreePeers(source.getPageTree(), "/docs/vue").map((peer) => (
     <Card key={peer.url} title={peer.name} href={peer.url}>
       {peer.description}
     </Card>

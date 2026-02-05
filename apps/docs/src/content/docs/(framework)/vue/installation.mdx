@@ -1,0 +1,55 @@
+---
+title: Installation
+description: Install and set up Denji in your Vue project
+---
+
+## Install Package
+
+Install Denji as a dev dependency:
+
+```npm
+npm install -D denji
+```
+
+## Initialize Project
+
+Run the init command to set up config and template:
+
+```bash
+denji init --framework vue
+```
+
+This creates:
+- `denji.json` - Configuration file
+- `src/icons.ts` - Icons template file (or your custom output path)
+
+### Custom Initialization
+
+You can customize initialization with flags:
+
+```bash
+denji init --framework vue --output ./src/components/icons.ts --a11y hidden
+```
+
+Available options:
+- `--output <path>` - Output file path
+- `--framework vue` - Target framework
+- `--typescript` - Enable TypeScript (default: true)
+- `--a11y <strategy>` - Accessibility strategy
+
+## Verify Installation
+
+Check that Denji is installed correctly:
+
+```bash
+denji --version
+```
+
+You should see the installed version number.
+
+## Next Steps
+
+<Cards>
+  <Card title="Configuration" href="/docs/vue/configuration" description="Configure Denji options" />
+  <Card title="Add Icons" href="/docs/commands/add" description="Start adding icons" />
+</Cards>
