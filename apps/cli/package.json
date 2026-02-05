@@ -12,7 +12,8 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/fellipeutaka/denji.git"
+    "url": "git+https://github.com/fellipeutaka/denji.git",
+    "directory": "apps/cli"
   },
   "main": "./dist/index.mjs",
   "module": "./dist/index.mjs",
