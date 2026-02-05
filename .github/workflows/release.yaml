@@ -39,7 +39,7 @@ jobs:
         run: bun install --frozen-lockfile
 
       - name: Build the CLI
-        run: bun run build
+        run: bun run build --filter=denji
 
       - name: Create Version PR or Publish to NPM
         id: changesets
