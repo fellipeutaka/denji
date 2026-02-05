@@ -4,7 +4,11 @@
   "linter": {
     "rules": {
       "style": {
-        "noParameterProperties": "off"
+        "noParameterProperties": "off",
+        "useBlockStatements": {
+          "level": "error",
+          "fix": "safe"
+        }
       },
       "complexity": {
         "noExcessiveCognitiveComplexity": {
