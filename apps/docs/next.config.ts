@@ -27,8 +27,13 @@ const config: NextConfig = {
         source: "/github",
       },
       {
+        source: "/docs",
+        destination: "/docs/react",
+        permanent: true,
+      },
+      {
         source: "/",
-        destination: "/docs",
+        destination: "/docs/react",
         permanent: true,
       },
     ];

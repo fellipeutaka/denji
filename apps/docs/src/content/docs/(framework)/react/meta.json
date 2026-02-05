@@ -1,0 +1,15 @@
+{
+  "root": true,
+  "title": "React",
+  "description": "React framework docs",
+  "icon": "React",
+  "pages": [
+    "index",
+    "installation",
+    "configuration",
+    "usage",
+    "commands",
+    "integrations",
+    "troubleshooting"
+  ]
+}

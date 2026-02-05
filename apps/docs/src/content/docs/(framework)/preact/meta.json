@@ -1,0 +1,15 @@
+{
+  "root": true,
+  "title": "Preact",
+  "description": "Preact framework docs",
+  "icon": "Preact",
+  "pages": [
+    "index",
+    "installation",
+    "configuration",
+    "usage",
+    "commands",
+    "integrations",
+    "troubleshooting"
+  ]
+}

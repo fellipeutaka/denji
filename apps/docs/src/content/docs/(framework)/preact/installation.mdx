@@ -1,0 +1,55 @@
+---
+title: Installation
+description: Install and set up Denji in your Preact project
+---
+
+## Install Package
+
+Install Denji as a dev dependency:
+
+```npm
+npm install -D denji
+```
+
+## Initialize Project
+
+Run the init command to set up config and template:
+
+```bash
+denji init --framework preact
+```
+
+This creates:
+- `denji.json` - Configuration file
+- `src/icons.tsx` - Icons template file (or your custom output path)
+
+### Custom Initialization
+
+You can customize initialization with flags:
+
+```bash
+denji init --framework preact --output ./src/components/icons.tsx --a11y hidden
+```
+
+Available options:
+- `--output <path>` - Output file path
+- `--framework preact` - Target framework
+- `--typescript` - Enable TypeScript (default: true)
+- `--a11y <strategy>` - Accessibility strategy
+
+## Verify Installation
+
+Check that Denji is installed correctly:
+
+```bash
+denji --version
+```
+
+You should see the installed version number.
+
+## Next Steps
+
+<Cards>
+  <Card title="Configuration" href="/docs/preact/configuration" description="Configure Denji options" />
+  <Card title="Add Icons" href="/docs/commands/add" description="Start adding icons" />
+</Cards>

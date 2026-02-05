@@ -1,6 +1,6 @@
 export const siteConfig = {
   description:
-    "CLI tool for managing SVG icons in React projects. Fetch from Iconify, convert to optimized components.",
+    "CLI tool for managing SVG icons in frontend projects. Supports React, Preact, and Solid.",
   links: {
     github: "https://github.com/fellipeutaka/denji",
     twitter: "https://twitter.com/fellipeutaka",
@@ -12,6 +12,8 @@ export const siteConfig = {
     "SVG",
     "Iconify",
     "React",
+    "Preact",
+    "Solid",
     "TypeScript",
     "Open Source",
     "Accessibility",

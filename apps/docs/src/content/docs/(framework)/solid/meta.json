@@ -1,0 +1,15 @@
+{
+  "root": true,
+  "title": "Solid",
+  "description": "Solid framework docs",
+  "icon": "Solid",
+  "pages": [
+    "index",
+    "installation",
+    "configuration",
+    "usage",
+    "commands",
+    "integrations",
+    "troubleshooting"
+  ]
+}

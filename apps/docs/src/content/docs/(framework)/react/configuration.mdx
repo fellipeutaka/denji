@@ -1,6 +1,6 @@
 ---
 title: Configuration
-description: Configure Denji options and hooks
+description: Configure Denji options and hooks for React
 ---
 
 import { Callout } from "fumadocs-ui/components/callout";
@@ -40,10 +40,10 @@ Output file path for generated icons.
 
 ### framework
 
-**Type:** `"react"`  
+**Type:** `"react" | "preact" | "solid"`  
 **Required:** Yes
 
-Target framework for generated components. Currently only React is supported.
+Target framework for generated components.
 
 ```json
 {
@@ -131,6 +131,24 @@ When enabled, icons include the source attribute:
 ```tsx
 <svg data-icon="lucide:check">...</svg>
 ```
+
+### react
+
+**Type:** `object`  
+**Default:** `{}`
+
+React-specific options:
+
+```json
+{
+  "react": {
+    "forwardRef": true
+  }
+}
+```
+
+#### `forwardRef`
+Wrap icon components with `forwardRef` for ref forwarding support.
 
 ### hooks
 

@@ -7,6 +7,9 @@
     "dev": "next dev",
     "start": "next start",
     "type-check": "next typegen && fumadocs-mdx && tsc --noEmit",
+    "lint": "biome check",
+    "lint:fix": "biome check --write",
+    "lint:doctor": "ultracite doctor",
     "postinstall": "fumadocs-mdx"
   },
   "dependencies": {

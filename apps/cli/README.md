@@ -1,11 +1,17 @@
 # Denji
 
-CLI tool for managing SVG icons in React and Preact projects. Fetches icons from Iconify, converts to optimized components, and maintains a centralized icons file.
+CLI tool for managing SVG icons in frontend projects. Fetches icons from Iconify, converts to optimized components, and maintains a centralized icons file.
+
+Supports **React**, **Preact**, and **Solid**.
+
+## Documentation
+
+Visit https://denji-docs.vercel.app/docs to view the full documentation.
 
 ## Installation
 
 ```bash
-bun add -D denji
+npm add -D denji
 ```
 
 ## Quick Start
@@ -39,7 +45,7 @@ Create `denji.json`:
   "typescript": true,
   "a11y": "hidden",
   "hooks": {
-    "postAdd": ["bunx biome check --write ./src/icons.tsx"]
+    "postAdd": ["npx biome check --write ./src/icons.tsx"]
   }
 }
 ```
@@ -49,36 +55,110 @@ Create `denji.json`:
 | Option | Type | Default | Description |
 |--------|------|---------|-------------|
 | `output` | `string` | - | Output file path (e.g., `./src/icons.tsx`) |
-| `framework` | `"react"` \| `"preact"` | - | Target framework |
+| `framework` | `"react"` \| `"preact"` \| `"solid"` | - | Target framework |
 | `typescript` | `boolean` | `true` | Generate TypeScript |
 | `a11y` | `"hidden"` \| `"img"` \| `"title"` \| `"presentation"` \| `false` | - | SVG accessibility strategy |
 | `hooks` | `object` | - | Lifecycle hooks |
-| `react` | `object` | - | React-specific options |
-| `preact` | `object` | - | Preact-specific options |
 
-### Framework-Specific Options
+## Frameworks
 
-#### React
+### React
+
+```bash
+denji init --framework react
+```
+
+```json
+{
+  "framework": "react",
+  "react": {
+    "forwardRef": true
+  }
+}
+```
+
+**Usage:**
+
+```tsx
+import { Icons } from "./icons";
+
+function App() {
+  return <Icons.Check className="size-4 text-green-500" />;
+}
+```
+
+**Options:**
 
 | Option | Type | Default | Description |
 |--------|------|---------|-------------|
 | `react.forwardRef` | `boolean` | `false` | Wrap icons with `forwardRef` |
 
-#### Preact
+### Preact
+
+```bash
+denji init --framework preact
+```
+
+```json
+{
+  "framework": "preact",
+  "preact": {
+    "forwardRef": true
+  }
+}
+```
+
+**Usage:**
+
+```tsx
+import { Icons } from "./icons";
+
+function App() {
+  return <Icons.Check className="size-4 text-green-500" />;
+}
+```
+
+**Options:**
 
 | Option | Type | Default | Description |
 |--------|------|---------|-------------|
 | `preact.forwardRef` | `boolean` | `false` | Wrap icons with `forwardRef` (uses `preact/compat`) |
 
-### Accessibility Options
+### Solid
 
-- `hidden` - Adds `aria-hidden="true"` (decorative icons)
-- `img` - Adds `role="img"` with `aria-label`
-- `title` - Adds `<title>` element inside SVG
-- `presentation` - Adds `role="presentation"`
-- `false` - No accessibility attributes
+```bash
+denji init --framework solid
+```
 
-### Hooks
+```json
+{
+  "framework": "solid"
+}
+```
+
+**Usage:**
+
+```tsx
+import { Icons } from "./icons";
+
+function App() {
+  return <Icons.Check class="size-4 text-green-500" />;
+}
+```
+
+> Note: Solid uses `class` instead of `className`. Refs are passed as regular props - no `forwardRef` needed.
+
+## Accessibility
+
+| Strategy | Description |
+|----------|-------------|
+| `hidden` | Adds `aria-hidden="true"` (decorative icons) |
+| `img` | Adds `role="img"` with `aria-label` |
+| `title` | Adds `<title>` element inside SVG |
+| `presentation` | Adds `role="presentation"` |
+| `false` | No accessibility attributes |
+
+## Hooks
 
 Available hooks: `preAdd`, `postAdd`, `preRemove`, `postRemove`, `preClear`, `postClear`, `preList`, `postList`
 
@@ -126,16 +206,6 @@ Remove all icons.
 ```bash
 denji clear
 denji clear --yes  # Skip confirmation
-```
-
-## Usage
-
-```tsx
-import { Icons } from "./icons";
-
-function App() {
-  return <Icons.Check className="size-4 text-green-500" />;
-}
 ```
 
 ## License

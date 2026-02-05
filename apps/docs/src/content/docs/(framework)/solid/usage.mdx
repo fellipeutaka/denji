@@ -1,16 +1,15 @@
 ---
 title: Usage
-description: Usage examples and patterns
+description: Usage examples and patterns for Solid
 ---
 
-import { Tab, Tabs } from "fumadocs-ui/components/tabs";
 import { Callout } from "fumadocs-ui/components/callout";
 
-Learn how to use Denji icons in your React components.
+Learn how to use Denji icons in your Solid components.
 
 ## Basic Usage
 
-Import and use icons as React components:
+Import and use icons as Solid components:
 
 ```tsx
 import { Icons } from "./icons";
@@ -18,25 +17,29 @@ import { Icons } from "./icons";
 function App() {
   return (
     <div>
-      <Icons.Check className="size-4" />
+      <Icons.Check class="size-4" />
     </div>
   );
 }
 ```
+
+<Callout type="info">
+Solid uses `class` instead of `className` for CSS classes.
+</Callout>
 
 ## Styling
 
 ### With Tailwind
 
 ```tsx
-<Icons.Check className="size-6 text-green-500" />
-<Icons.X className="size-4 text-red-500" />
+<Icons.Check class="size-6 text-green-500" />
+<Icons.X class="size-4 text-red-500" />
 ```
 
 ### With CSS
 
 ```tsx
-<Icons.Check className="icon" />
+<Icons.Check class="icon" />
 ```
 
 ```css
@@ -52,8 +55,8 @@ function App() {
 ```tsx
 <Icons.Check 
   style={{ 
-    width: 24, 
-    height: 24, 
+    width: "24px", 
+    height: "24px", 
     color: "green" 
   }} 
 />
@@ -104,8 +107,8 @@ Configure default a11y in `denji.json` or per icon with `--a11y` flag.
 ```tsx
 function SaveButton() {
   return (
-    <button className="flex items-center gap-2">
-      <Icons.Check className="size-4" />
+    <button class="flex items-center gap-2">
+      <Icons.Check class="size-4" />
       <span>Save</span>
     </button>
   );
@@ -119,9 +122,9 @@ function CloseButton() {
   return (
     <button 
       aria-label="Close"
-      className="p-2 rounded hover:bg-gray-100"
+      class="p-2 rounded hover:bg-gray-100"
     >
-      <Icons.X className="size-5" aria-hidden="true" />
+      <Icons.X class="size-5" aria-hidden="true" />
     </button>
   );
 }
@@ -130,30 +133,33 @@ function CloseButton() {
 ### Status Icons
 
 ```tsx
+import { splitProps, type Component } from "solid-js";
+
 const status = {
   success: { icon: Icons.Check, color: "text-green-500" },
   error: { icon: Icons.X, color: "text-red-500" },
   warning: { icon: Icons.AlertTriangle, color: "text-yellow-500" },
 };
 
-export interface StatusIconProps extends IconProps {
+interface StatusIconProps extends IconProps {
   type: keyof typeof status;
 }
 
-export function StatusIcon({ type, className, ...props }: StatusIconProps) {
-  const statusConfig = status[type];
+export const StatusIcon: Component<StatusIconProps> = (props) => {
+  const [local, rest] = splitProps(props, ["type", "class"]);
+  const statusConfig = status[local.type];
 
   if (!statusConfig) {
-    throw new Error(`Invalid status type: "${type}".`);
+    throw new Error(`Invalid status type: "${local.type}".`);
   }
 
-  const { icon: Icon, color } = statusConfig;
+  const Icon = statusConfig.icon;
 
-  return <Icon className={cn(color, "size-5", className)} {...props} />;
-}
+  return <Icon class={`${statusConfig.color} size-5 ${local.class ?? ""}`} {...rest} />;
+};
 
 // Usage
-<StatusIcon type="warning" className="size-8" />
+<StatusIcon type="warning" class="size-8" />
 ```
 
 ### Loading Spinner
@@ -162,7 +168,7 @@ export function StatusIcon({ type, className, ...props }: StatusIconProps) {
 function LoadingSpinner() {
   return (
     <Icons.Loader 
-      className="size-6 animate-spin"
+      class="size-6 animate-spin"
       aria-label="Loading"
     />
   );
@@ -176,22 +182,25 @@ Dynamic icon patterns should only be used when icon names come from external sou
 </Callout>
 
 ```tsx
-export interface DynamicIconProps extends IconProps {
-  name: keyof typeof Icons
+import { splitProps, type Component } from "solid-js";
+
+interface DynamicIconProps extends IconProps {
+  name: keyof typeof Icons;
 }
 
-export function DynamicIcon({ name, ...props }: DynamicIconProps) {
-  const Icon = Icons[name];
+export const DynamicIcon: Component<DynamicIconProps> = (props) => {
+  const [local, rest] = splitProps(props, ["name"]);
+  const Icon = Icons[local.name];
 
   if (!Icon) {
-    throw new Error(`Icon with name "${name}" does not exist.`);
+    throw new Error(`Icon with name "${local.name}" does not exist.`);
   }
 
-  return <Icon {...props} />;
-}
+  return <Icon {...rest} />;
+};
 
 // Usage
-<DynamicIcon name="Check" className="size-4" />
+<DynamicIcon name="Check" class="size-4" />
 ```
 
 ### Animations
@@ -200,7 +209,7 @@ export function DynamicIcon({ name, ...props }: DynamicIconProps) {
 function AnimatedCheck() {
   return (
     <Icons.Check 
-      className="size-6 animate-bounce text-green-500"
+      class="size-6 animate-bounce text-green-500"
     />
   );
 }
@@ -219,7 +228,7 @@ With custom animation:
 ```
 
 ```tsx
-<Icons.Loader className="size-6 spin" />
+<Icons.Loader class="size-6 spin" />
 ```
 
 ## TypeScript
@@ -230,8 +239,8 @@ Icons are fully typed. Import the types you need:
 import type { IconProps, Icon, IconName } from "./icons";
 
 // All available types:
-// IconProps = React.ComponentProps<"svg">
-// Icon = (props: IconProps) => React.JSX.Element
+// IconProps = ComponentProps<"svg">
+// Icon = (props: IconProps) => JSX.Element
 // IconName = keyof typeof Icons
 
 // Example usage
@@ -246,3 +255,4 @@ const invalidIcon: IconName = "NonExistent"; // ❌ Type error
 3. **Organization**: Group related icons in separate files if needed
 4. **Performance**: Icons are lightweight SVG components
 5. **Consistency**: Use same icon library for cohesive design
+6. **Refs**: In Solid, refs are passed as regular props - no `forwardRef` needed

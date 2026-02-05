@@ -1,0 +1,247 @@
+---
+title: Usage
+description: Usage examples and patterns for React
+---
+
+import { Callout } from "fumadocs-ui/components/callout";
+
+Learn how to use Denji icons in your React components.
+
+## Basic Usage
+
+Import and use icons as React components:
+
+```tsx
+import { Icons } from "./icons";
+
+function App() {
+  return (
+    <div>
+      <Icons.Check className="size-4" />
+    </div>
+  );
+}
+```
+
+## Styling
+
+### With Tailwind
+
+```tsx
+<Icons.Check className="size-6 text-green-500" />
+<Icons.X className="size-4 text-red-500" />
+```
+
+### With CSS
+
+```tsx
+<Icons.Check className="icon" />
+```
+
+```css
+.icon {
+  width: 1rem;
+  height: 1rem;
+  color: currentColor;
+}
+```
+
+### Inline Styles
+
+```tsx
+<Icons.Check 
+  style={{ 
+    width: 24, 
+    height: 24, 
+    color: "green" 
+  }} 
+/>
+```
+
+## Accessibility
+
+Icons inherit a11y strategy from config, but can be customized per use:
+
+### Decorative Icons
+
+For icons that are purely decorative:
+
+```tsx
+<button>
+  <Icons.Check aria-hidden="true" />
+  Save Changes
+</button>
+```
+
+### Semantic Icons
+
+For icons with meaning:
+
+```tsx
+<Icons.Check 
+  role="img" 
+  aria-label="Success" 
+/>
+```
+
+### With Text Alternative
+
+```tsx
+<button aria-label="Close dialog">
+  <Icons.X aria-hidden="true" />
+</button>
+```
+
+<Callout type="info">
+Configure default a11y in `denji.json` or per icon with `--a11y` flag.
+</Callout>
+
+## Common Patterns
+
+### Button Icons
+
+```tsx
+function SaveButton() {
+  return (
+    <button className="flex items-center gap-2">
+      <Icons.Check className="size-4" />
+      <span>Save</span>
+    </button>
+  );
+}
+```
+
+### Icon-Only Button
+
+```tsx
+function CloseButton() {
+  return (
+    <button 
+      aria-label="Close"
+      className="p-2 rounded hover:bg-gray-100"
+    >
+      <Icons.X className="size-5" aria-hidden="true" />
+    </button>
+  );
+}
+```
+
+### Status Icons
+
+```tsx
+const status = {
+  success: { icon: Icons.Check, color: "text-green-500" },
+  error: { icon: Icons.X, color: "text-red-500" },
+  warning: { icon: Icons.AlertTriangle, color: "text-yellow-500" },
+};
+
+export interface StatusIconProps extends IconProps {
+  type: keyof typeof status;
+}
+
+export function StatusIcon({ type, className, ...props }: StatusIconProps) {
+  const statusConfig = status[type];
+
+  if (!statusConfig) {
+    throw new Error(`Invalid status type: "${type}".`);
+  }
+
+  const { icon: Icon, color } = statusConfig;
+
+  return <Icon className={cn(color, "size-5", className)} {...props} />;
+}
+
+// Usage
+<StatusIcon type="warning" className="size-8" />
+```
+
+### Loading Spinner
+
+```tsx
+function LoadingSpinner() {
+  return (
+    <Icons.Loader 
+      className="size-6 animate-spin"
+      aria-label="Loading"
+    />
+  );
+}
+```
+
+### Dynamic Icons
+
+<Callout type="warn">
+Dynamic icon patterns should only be used when icon names come from external sources (CMS, database, API). For static use cases, prefer direct imports like `<Icons.Check />` - this enables better tree-shaking and smaller bundles.
+</Callout>
+
+```tsx
+export interface DynamicIconProps extends IconProps {
+  name: keyof typeof Icons
+}
+
+export function DynamicIcon({ name, ...props }: DynamicIconProps) {
+  const Icon = Icons[name];
+
+  if (!Icon) {
+    throw new Error(`Icon with name "${name}" does not exist.`);
+  }
+
+  return <Icon {...props} />;
+}
+
+// Usage
+<DynamicIcon name="Check" className="size-4" />
+```
+
+### Animations
+
+```tsx
+function AnimatedCheck() {
+  return (
+    <Icons.Check 
+      className="size-6 animate-bounce text-green-500"
+    />
+  );
+}
+```
+
+With custom animation:
+
+```css
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.spin {
+  animation: spin 1s linear infinite;
+}
+```
+
+```tsx
+<Icons.Loader className="size-6 spin" />
+```
+
+## TypeScript
+
+Icons are fully typed. Import the types you need:
+
+```tsx
+import type { IconProps, Icon, IconName } from "./icons";
+
+// All available types:
+// IconProps = React.ComponentProps<"svg">
+// Icon = (props: IconProps) => React.JSX.Element
+// IconName = keyof typeof Icons
+
+// Example usage
+const iconName: IconName = "Check"; // ✅ Type-safe
+const invalidIcon: IconName = "NonExistent"; // ❌ Type error
+```
+
+## Tips
+
+1. **Tree Shaking**: Only imported icons are bundled
+2. **Naming**: Use descriptive names with `--name` flag
+3. **Organization**: Group related icons in separate files if needed
+4. **Performance**: Icons are lightweight SVG components
+5. **Consistency**: Use same icon library for cohesive design

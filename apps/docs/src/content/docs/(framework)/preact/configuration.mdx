@@ -1,0 +1,201 @@
+---
+title: Configuration
+description: Configure Denji options and hooks for Preact
+---
+
+import { Callout } from "fumadocs-ui/components/callout";
+
+Configuration is stored in `denji.json` at your project root.
+
+## Example Config
+
+```json
+{
+  "$schema": "./node_modules/denji/configuration_schema.json",
+  "output": "./src/icons.tsx",
+  "framework": "preact",
+  "typescript": true,
+  "a11y": "hidden",
+  "trackSource": true,
+  "hooks": {
+    "postAdd": ["npx biome check --write ./src/icons.tsx"]
+  }
+}
+```
+
+## Options
+
+### output
+
+**Type:** `string`  
+**Required:** Yes
+
+Output file path for generated icons.
+
+```json
+{
+  "output": "./src/icons.tsx"
+}
+```
+
+### framework
+
+**Type:** `"react" | "preact" | "solid"`  
+**Required:** Yes
+
+Target framework for generated components.
+
+```json
+{
+  "framework": "preact"
+}
+```
+
+### typescript
+
+**Type:** `boolean`  
+**Default:** `true`
+
+Generate TypeScript or JavaScript output.
+
+```json
+{
+  "typescript": true
+}
+```
+
+### a11y
+
+**Type:** `"hidden" | "img" | "title" | "presentation" | false`  
+**Default:** `undefined`
+
+SVG accessibility strategy:
+
+#### `hidden`
+Adds `aria-hidden="true"` - for decorative icons that should be hidden from screen readers.
+
+```tsx
+<svg aria-hidden="true">...</svg>
+```
+
+#### `img`
+Adds `role="img"` with `aria-label` - for icons with semantic meaning.
+
+```tsx
+<svg role="img" aria-label="Check">...</svg>
+```
+
+#### `title`
+Adds `<title>` element inside SVG - provides accessible name.
+
+```tsx
+<svg>
+  <title>Check</title>
+  ...
+</svg>
+```
+
+#### `presentation`
+Adds `role="presentation"` - marks icon as presentational.
+
+```tsx
+<svg role="presentation">...</svg>
+```
+
+#### `false`
+No accessibility attributes added.
+
+<Callout type="info">
+You can override a11y per icon using the `--a11y` flag:
+
+```bash
+denji add lucide:check --a11y img
+```
+</Callout>
+
+### trackSource
+
+**Type:** `boolean`  
+**Default:** `true`
+
+Add `data-icon` attribute with the original Iconify source name. Useful for debugging, identifying icon collections, and enabling future `update` command.
+
+```json
+{
+  "trackSource": true
+}
+```
+
+When enabled, icons include the source attribute:
+
+```tsx
+<svg data-icon="lucide:check">...</svg>
+```
+
+### preact
+
+**Type:** `object`  
+**Default:** `{}`
+
+Preact-specific options:
+
+```json
+{
+  "preact": {
+    "forwardRef": true
+  }
+}
+```
+
+#### `forwardRef`
+Wrap icon components with `forwardRef` from `preact/compat` for ref forwarding support.
+
+### hooks
+
+**Type:** `object`  
+**Default:** `{}`
+
+Lifecycle hooks to run shell commands at specific points:
+
+```json
+{
+  "hooks": {
+    "preAdd": ["echo 'Adding icons...'"],
+    "postAdd": ["npx biome check --write ./src/icons.tsx"],
+    "preRemove": [],
+    "postRemove": ["echo 'Removed icons'"],
+    "preClear": [],
+    "postClear": [],
+    "preList": [],
+    "postList": []
+  }
+}
+```
+
+Available hooks:
+- `preAdd` - Before adding icons
+- `postAdd` - After adding icons
+- `preRemove` - Before removing icons
+- `postRemove` - After removing icons
+- `preClear` - Before clearing all icons
+- `postClear` - After clearing all icons
+- `preList` - Before listing icons
+- `postList` - After listing icons
+
+Common use cases:
+- Format code after adding icons
+- Run type checking
+- Update icon registry
+- Trigger builds
+
+## Schema Validation
+
+The config includes JSON schema for editor validation and auto-completion:
+
+```json
+{
+  "$schema": "./node_modules/denji/configuration_schema.json"
+}
+```
+
+This enables IntelliSense in VS Code and other editors.

@@ -3,5 +3,9 @@
   "output": "./src/components/icons.tsx",
   "framework": "react",
   "typescript": true,
-  "a11y": "hidden"
+  "a11y": "hidden",
+  "trackSource": false,
+  "hooks": {
+    "postAdd": ["bun run lint:fix ./src/components/icons.tsx"]
+  }
 }

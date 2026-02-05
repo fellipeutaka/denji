@@ -1,6 +1,6 @@
 ---
 title: Installation
-description: Install and set up Denji in your project
+description: Install and set up Denji in your Solid project
 ---
 
 ## Install Package
@@ -16,7 +16,7 @@ npm install -D denji
 Run the init command to set up config and template:
 
 ```bash
-denji init
+denji init --framework solid
 ```
 
 This creates:
@@ -28,12 +28,12 @@ This creates:
 You can customize initialization with flags:
 
 ```bash
-denji init --output ./src/components/icons.tsx --a11y hidden
+denji init --framework solid --output ./src/components/icons.tsx --a11y hidden
 ```
 
 Available options:
 - `--output <path>` - Output file path
-- `--framework <name>` - Target framework (currently only `react`)
+- `--framework solid` - Target framework
 - `--typescript` - Enable TypeScript (default: true)
 - `--a11y <strategy>` - Accessibility strategy
 
@@ -50,6 +50,6 @@ You should see the installed version number.
 ## Next Steps
 
 <Cards>
-  <Card title="Configuration" href="/docs/configuration" description="Configure Denji options" />
+  <Card title="Configuration" href="/docs/solid/configuration" description="Configure Denji options" />
   <Card title="Add Icons" href="/docs/commands/add" description="Start adding icons" />
 </Cards>
