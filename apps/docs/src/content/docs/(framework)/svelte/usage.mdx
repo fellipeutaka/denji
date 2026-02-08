@@ -1,0 +1,211 @@
+---
+title: Usage
+description: Usage examples and patterns for Svelte
+---
+
+import { Callout } from "fumadocs-ui/components/callout";
+
+Learn how to use Denji icons in your Svelte components.
+
+## Basic Usage
+
+Import and use icons in Svelte templates:
+
+```svelte
+<script lang="ts">
+  import { Icons } from "./icons";
+</script>
+
+<Icons.Check class="size-4" />
+```
+
+## Styling
+
+### With Tailwind
+
+```svelte
+<Icons.Check class="size-6 text-green-500" />
+<Icons.X class="size-4 text-red-500" />
+```
+
+### With Scoped CSS
+
+```svelte
+<Icons.Check class="icon" />
+
+<style>
+  :global(.icon) {
+    width: 1rem;
+    height: 1rem;
+    color: currentColor;
+  }
+</style>
+```
+
+### Inline Styles
+
+```svelte
+<Icons.Check style="width: 24px; height: 24px; color: green;" />
+```
+
+## Accessibility
+
+Icons inherit a11y strategy from config, but can be customized per use:
+
+### Decorative Icons
+
+For icons that are purely decorative:
+
+```svelte
+<button>
+  <Icons.Check aria-hidden="true" />
+  Save Changes
+</button>
+```
+
+### Semantic Icons
+
+For icons with meaning:
+
+```svelte
+<Icons.Check role="img" aria-label="Success" />
+```
+
+### With Text Alternative
+
+```svelte
+<button aria-label="Close dialog">
+  <Icons.X aria-hidden="true" />
+</button>
+```
+
+<Callout type="info">
+Configure default a11y in `denji.json` or per icon with `--a11y` flag.
+</Callout>
+
+## Common Patterns
+
+### Button Icons
+
+```svelte
+<script lang="ts">
+  import { Icons } from "./icons";
+</script>
+
+<button class="flex items-center gap-2">
+  <Icons.Check class="size-4" />
+  <span>Save</span>
+</button>
+```
+
+### Icon-Only Button
+
+```svelte
+<button aria-label="Close" class="p-2 rounded hover:bg-gray-100">
+  <Icons.X class="size-5" aria-hidden="true" />
+</button>
+```
+
+### Direct Component Import
+
+You can also import individual icon components directly:
+
+```svelte
+<script lang="ts">
+  import Check from "./icons/Check.svelte";
+</script>
+
+<Check class="size-4 text-green-500" />
+```
+
+### Loading Spinner
+
+```svelte
+<Icons.Loader class="size-6 animate-spin" aria-label="Loading" />
+```
+
+### Dynamic Icons
+
+<Callout type="warn">
+Dynamic icon patterns should only be used when icon names come from external sources (CMS, database, API). For static use cases, prefer direct imports like `<Icons.Check />` for better tree-shaking.
+</Callout>
+
+```svelte
+<script lang="ts">
+  import { Icons, type IconName } from "./icons";
+
+  interface Props {
+    name: IconName;
+  }
+
+  let { name, ...rest }: Props = $props();
+
+  $: IconComponent = Icons[name];
+</script>
+
+<svelte:component this={IconComponent} {...rest} />
+```
+
+### Animations
+
+```svelte
+<Icons.Check class="size-6 animate-bounce text-green-500" />
+```
+
+With custom animation:
+
+```svelte
+<Icons.Loader class="size-6 spin" />
+
+<style>
+  @keyframes spin {
+    to { transform: rotate(360deg); }
+  }
+
+  :global(.spin) {
+    animation: spin 1s linear infinite;
+  }
+</style>
+```
+
+## TypeScript
+
+Icons are fully typed. Import types from the generated `types.ts`:
+
+```ts
+import type { IconProps } from "./icons/types";
+import type { IconName } from "./icons";
+
+// IconProps = SVGAttributes<SVGSVGElement>
+// IconName = keyof typeof Icons
+
+const iconName: IconName = "Check"; // Type-safe
+```
+
+## Svelte 5 Runes
+
+Generated components use Svelte 5's `$props()` runes API:
+
+```svelte
+<script lang="ts">
+  import type { SVGAttributes } from "svelte/elements";
+
+  type $$Props = SVGAttributes<SVGSVGElement>;
+
+  let { ...props }: $$Props = $props();
+</script>
+
+<svg viewBox="0 0 24 24" aria-hidden="true" {...props}>
+  <path d="M20 6 9 17l-5-5"/>
+</svg>
+```
+
+This provides full type safety and auto-completion for all SVG attributes.
+
+## Tips
+
+1. **Direct imports**: Import individual `.svelte` files for maximum tree-shaking
+2. **Barrel imports**: Use `Icons.X` for convenience and API consistency
+3. **Naming**: Use descriptive names with `--name` flag
+4. **Performance**: Native Svelte components are lightweight and efficient
+5. **Consistency**: Use same icon library for cohesive design

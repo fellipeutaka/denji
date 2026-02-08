@@ -27,6 +27,10 @@ export async function createFrameworkStrategy(
       const { vueStrategy } = await import("./vue/strategy");
       return vueStrategy;
     }
+    case "svelte": {
+      const { svelteStrategy } = await import("./svelte/strategy");
+      return svelteStrategy;
+    }
     default: {
       throw new Error(`Unknown framework: ${name}`);
     }

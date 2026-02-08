@@ -1,0 +1,56 @@
+---
+title: Installation
+description: Install and set up Denji in your Svelte project
+---
+
+## Install Package
+
+Install Denji as a dev dependency:
+
+```npm
+npm install -D denji
+```
+
+## Initialize Project
+
+Run the init command to set up config and template:
+
+```bash
+denji init --framework svelte
+```
+
+This creates:
+- `denji.json` - Configuration file
+- `src/icons/` - Icons folder with barrel file and types
+
+### Custom Initialization
+
+You can customize initialization with flags:
+
+```bash
+denji init --framework svelte --output ./src/lib/icons --a11y hidden
+```
+
+Available options:
+- `--output <path>` - Output folder path
+- `--output-type <type>` - Output type (`file` or `folder`, defaults to `folder` for Svelte)
+- `--framework svelte` - Target framework
+- `--typescript` - Enable TypeScript (default: true)
+- `--a11y <strategy>` - Accessibility strategy
+
+## Verify Installation
+
+Check that Denji is installed correctly:
+
+```bash
+denji --version
+```
+
+You should see the installed version number.
+
+## Next Steps
+
+<Cards>
+  <Card title="Configuration" href="/docs/svelte/configuration" description="Configure Denji options" />
+  <Card title="Add Icons" href="/docs/commands/add" description="Start adding icons" />
+</Cards>

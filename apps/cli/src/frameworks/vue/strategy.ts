@@ -278,6 +278,8 @@ export const vueStrategy: FrameworkStrategy = {
 
   supportsRef: false,
 
+  preferredOutputType: "file",
+
   getIconsTemplate,
 
   getImports(_options: VueOptions) {

@@ -119,6 +119,8 @@ export const reactStrategy: FrameworkStrategy = {
 
   supportsRef: true,
 
+  preferredOutputType: "file",
+
   getIconsTemplate,
 
   getImports(options: ReactOptions) {

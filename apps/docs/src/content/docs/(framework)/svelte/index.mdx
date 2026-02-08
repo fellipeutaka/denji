@@ -1,0 +1,88 @@
+---
+title: Introduction
+description: CLI tool for managing SVG icons in Svelte projects
+---
+
+import { Step, Steps } from "fumadocs-ui/components/steps";
+import { getPageTreePeers } from "fumadocs-core/page-tree";
+import { source } from "@/lib/source";
+
+Denji is a CLI tool that simplifies icon management in frontend projects. It fetches icons from Iconify's vast library, converts them to optimized Svelte components, and maintains a centralized icons folder.
+
+## Features
+
+- **200,000+ icons** - Access icons from Iconify's collection (Lucide, Material Design, Heroicons, etc.)
+- **Type-safe** - Full TypeScript support with auto-completion
+- **Native Svelte** - Generates real `.svelte` components using Svelte 5 runes
+- **Optimized** - Clean, tree-shakeable components with SVGO optimization
+- **Accessible** - Built-in accessibility strategies (ARIA attributes, titles, roles)
+- **Customizable** - Lifecycle hooks for custom transformations
+- **Zero dependencies** - Lightweight CLI with no runtime overhead
+
+## About the Name
+
+Named after Denji from Chainsaw Man. Short, memorable, perfect for CLI commands.
+
+![Denji from Chainsaw Man](https://media1.tenor.com/m/9TCYYMfVlYAAAAAd/denji-chainsaw-man.gif)
+
+## Quick Start
+
+<Steps>
+<Step>
+
+### Install Denji
+
+```npm
+npm i -D denji
+```
+
+</Step>
+
+<Step>
+
+### Initialize project
+
+```bash
+denji init --framework svelte
+```
+
+Creates `denji.json` config and `src/icons/` folder with barrel file.
+
+</Step>
+
+<Step>
+
+### Add icons
+
+```bash
+denji add lucide:check mdi:home
+```
+
+Fetches icons from Iconify and creates Svelte components.
+
+</Step>
+
+<Step>
+
+### Use in your app
+
+```svelte
+<script lang="ts">
+  import { Icons } from "./icons";
+</script>
+
+<Icons.Check class="size-4" />
+```
+
+</Step>
+</Steps>
+
+## Next Steps
+
+<Cards>
+  {getPageTreePeers(source.getPageTree(), "/docs/svelte").map((peer) => (
+    <Card key={peer.url} title={peer.name} href={peer.url}>
+      {peer.description}
+    </Card>
+  ))}
+</Cards>

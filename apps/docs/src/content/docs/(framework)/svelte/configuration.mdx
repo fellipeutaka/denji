@@ -1,0 +1,178 @@
+---
+title: Configuration
+description: Configure Denji options and hooks for Svelte
+---
+
+import { Callout } from "fumadocs-ui/components/callout";
+
+Configuration is stored in `denji.json` at your project root.
+
+## Example Config
+
+```json
+{
+  "$schema": "./node_modules/denji/configuration_schema.json",
+  "output": {
+    "type": "folder",
+    "path": "./src/icons"
+  },
+  "framework": "svelte",
+  "typescript": true,
+  "a11y": "hidden",
+  "trackSource": true,
+  "hooks": {
+    "postAdd": ["npx prettier --write ./src/icons"]
+  }
+}
+```
+
+## Options
+
+### output
+
+**Type:** `string | { type: "file" | "folder", path: string }`
+**Required:** Yes
+
+Output path for generated icons. Svelte uses folder mode by default — each icon becomes a separate `.svelte` file with a barrel `index.ts`.
+
+```json
+{
+  "output": {
+    "type": "folder",
+    "path": "./src/icons"
+  }
+}
+```
+
+<Callout type="info">
+Legacy string format (`"output": "./src/icons"`) is still supported and normalized to `{ type: "file", path: "..." }` internally.
+</Callout>
+
+### framework
+
+**Type:** `"react" | "preact" | "solid" | "vue" | "svelte"`
+**Required:** Yes
+
+Target framework for generated components.
+
+```json
+{
+  "framework": "svelte"
+}
+```
+
+### typescript
+
+**Type:** `boolean`
+**Default:** `true`
+
+Generate TypeScript or JavaScript output. When enabled, Svelte components include typed `$props()` with `SVGAttributes<SVGSVGElement>`.
+
+```json
+{
+  "typescript": true
+}
+```
+
+### a11y
+
+**Type:** `"hidden" | "img" | "title" | "presentation" | false`
+**Default:** `undefined`
+
+SVG accessibility strategy:
+
+#### `hidden`
+Adds `aria-hidden="true"` - for decorative icons hidden from screen readers.
+
+```svelte
+<svg aria-hidden="true" {...props}>...</svg>
+```
+
+#### `img`
+Adds `role="img"` with `aria-label` - for icons with semantic meaning.
+
+```svelte
+<svg role="img" aria-label="Check" {...props}>...</svg>
+```
+
+#### `title`
+Adds `<title>` element inside SVG - provides accessible name.
+
+```svelte
+<svg {...props}><title>Check</title>...</svg>
+```
+
+#### `presentation`
+Adds `role="presentation"` - marks icon as presentational.
+
+```svelte
+<svg role="presentation" {...props}>...</svg>
+```
+
+#### `false`
+No accessibility attributes added.
+
+<Callout type="info">
+You can override a11y per icon using the `--a11y` flag:
+
+```bash
+denji add lucide:check --a11y img
+```
+</Callout>
+
+### trackSource
+
+**Type:** `boolean`
+**Default:** `true`
+
+Add `data-icon` attribute with the original Iconify source name.
+
+```json
+{
+  "trackSource": true
+}
+```
+
+When enabled, icons include the source attribute:
+
+```svelte
+<svg data-icon="lucide:check" {...props}>...</svg>
+```
+
+### hooks
+
+**Type:** `object`
+**Default:** `{}`
+
+Lifecycle hooks to run shell commands at specific points:
+
+```json
+{
+  "hooks": {
+    "preAdd": ["echo 'Adding icons...'"],
+    "postAdd": ["npx prettier --write ./src/icons"],
+    "preRemove": [],
+    "postRemove": [],
+    "preClear": [],
+    "postClear": [],
+    "preList": [],
+    "postList": []
+  }
+}
+```
+
+## Schema Validation
+
+The config includes JSON schema for editor validation and auto-completion:
+
+```json
+{
+  "$schema": "./node_modules/denji/configuration_schema.json"
+}
+```
+
+## Svelte-Specific Notes
+
+<Callout type="info">
+Svelte uses folder output mode by default. Each icon is a standalone `.svelte` component file, with a barrel `index.ts` that exports an `Icons` object for consistent API across all frameworks.
+</Callout>

@@ -1,5 +1,5 @@
 import type { ZodMiniType } from "zod/mini";
-import type { A11y } from "~/schemas/config";
+import type { A11y, OutputType } from "~/schemas/config";
 
 /**
  * Framework-specific options from config (e.g., { forwardRef: boolean })
@@ -72,6 +72,9 @@ export interface FrameworkStrategy {
   /** Whether this framework supports ref forwarding */
   supportsRef: boolean;
 
+  /** Preferred output type for this framework */
+  preferredOutputType: OutputType;
+
   /**
    * Generate the initial icons file template
    */
@@ -101,6 +104,12 @@ export interface FrameworkStrategy {
    * Get the config key for framework options (e.g., "react" or "preact")
    */
   getConfigKey(): string;
+
+  /**
+   * Generate types.ts content for folder mode (optional).
+   * Only needed for folder-mode frameworks.
+   */
+  getTypesFileContent?(): string;
 
   /**
    * Transform raw SVG string into framework-specific component code

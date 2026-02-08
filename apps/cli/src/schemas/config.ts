@@ -18,6 +18,7 @@ import {
 import { preactOptionsSchema } from "~/frameworks/preact/schema";
 import { reactOptionsSchema } from "~/frameworks/react/schema";
 import { solidOptionsSchema } from "~/frameworks/solid/schema";
+import { svelteOptionsSchema } from "~/frameworks/svelte/schema";
 import { vueOptionsSchema } from "~/frameworks/vue/schema";
 
 export const a11ySchema = union([
@@ -30,6 +31,39 @@ export const a11ySchema = union([
 );
 export type A11y = Infer<typeof a11ySchema>;
 
+// Output config
+export const outputTypeSchema = zodEnum(["file", "folder"]).check(
+  describe(
+    "Output type: 'file' for single icons file, 'folder' for one file per icon component"
+  )
+);
+export type OutputType = Infer<typeof outputTypeSchema>;
+
+const outputObjectSchema = object({
+  type: outputTypeSchema,
+  path: string().check(
+    describe("The output path for generated icon components")
+  ),
+}).check(
+  describe(
+    "Output configuration for generated icon components (e.g., { type: 'file', path: './src/icons.tsx' })"
+  )
+);
+
+const outputSchema = union([
+  string().check(
+    describe(
+      "The output file path for generated icon components (e.g., './src/icons.tsx'). Shorthand for { type: 'file', path: '...' }"
+    )
+  ),
+  outputObjectSchema,
+]);
+
+export interface OutputConfig {
+  type: OutputType;
+  path: string;
+}
+
 // Base config (shared across all frameworks)
 const baseConfigSchema = object({
   $schema: _default(
@@ -40,11 +74,7 @@ const baseConfigSchema = object({
       "The URL of the JSON Schema for this configuration file (e.g., './node_modules/denji/configuration_schema.json')"
     )
   ),
-  output: string().check(
-    describe(
-      "The output file path for generated icon components (e.g., './src/icons.tsx')"
-    )
-  ),
+  output: outputSchema,
   typescript: _default(boolean(), true).check(
     describe("Whether to generate TypeScript code")
   ),
@@ -110,12 +140,19 @@ const vueConfigSchema = object({
   vue: optional(vueOptionsSchema),
 });
 
+// Svelte-specific config
+const svelteConfigSchema = object({
+  framework: literal("svelte").check(describe("Svelte framework")),
+  svelte: optional(svelteOptionsSchema),
+});
+
 // Framework discriminated union
 const frameworkConfigSchema = discriminatedUnion("framework", [
   reactConfigSchema,
   preactConfigSchema,
   solidConfigSchema,
   vueConfigSchema,
+  svelteConfigSchema,
 ]);
 
 // Final config = base + framework-specific
@@ -126,11 +163,32 @@ export const configSchema = intersection(
   .check(meta({ title: "Denji Configuration Schema" }))
   .check(describe("Schema for Denji configuration file"));
 
-export type Config = Infer<typeof configSchema>;
+// Raw config type from Zod (output may be string or object)
+type RawConfig = Infer<typeof configSchema>;
+
+// Distributive Omit preserves discriminated union variants
+type DistributiveOmit<T, K extends keyof T> = T extends unknown
+  ? Omit<T, K>
+  : never;
+
+// Normalized config type (output is always OutputConfig after loadConfig)
+export type Config = DistributiveOmit<RawConfig, "output"> & {
+  output: OutputConfig;
+};
 
 // Export framework schema for validation in init command
-export const frameworkSchema = zodEnum(["react", "preact", "solid", "vue"]);
+export const frameworkSchema = zodEnum([
+  "react",
+  "preact",
+  "solid",
+  "vue",
+  "svelte",
+]);
 export type Framework = Infer<typeof frameworkSchema>;
+
+export const FOLDER_ONLY_FRAMEWORKS: ReadonlySet<Framework> = new Set([
+  "svelte",
+]);
 
 export const CONFIG_FILE = "denji.json";
 export const CONFIG_SCHEMA_FILE = "configuration_schema.json";

@@ -67,6 +67,26 @@ export async function access(
   }
 }
 
+export async function readdir(path: Parameters<typeof fs.readdir>[0]) {
+  try {
+    const entries = await fs.readdir(path);
+
+    return new Ok(entries);
+  } catch {
+    return new Err("Failed to read directory.");
+  }
+}
+
+export async function unlink(path: Parameters<typeof fs.unlink>[0]) {
+  try {
+    await fs.unlink(path);
+
+    return new Ok(null);
+  } catch {
+    return new Err("Failed to delete file.");
+  }
+}
+
 export async function appendFile(
   path: Parameters<typeof fs.appendFile>[0],
   data: Parameters<typeof fs.appendFile>[1],

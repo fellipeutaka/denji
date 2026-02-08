@@ -10,8 +10,35 @@
           "type": "string"
         },
         "output": {
-          "type": "string",
-          "description": "The output file path for generated icon components (e.g., './src/icons.tsx')"
+          "anyOf": [
+            {
+              "type": "string",
+              "description": "The output file path for generated icon components (e.g., './src/icons.tsx'). Shorthand for { type: 'file', path: '...' }"
+            },
+            {
+              "type": "object",
+              "properties": {
+                "type": {
+                  "type": "string",
+                  "enum": [
+                    "file",
+                    "folder"
+                  ],
+                  "description": "Output type: 'file' for single icons file, 'folder' for one file per icon component"
+                },
+                "path": {
+                  "type": "string",
+                  "description": "The output path for generated icon components"
+                }
+              },
+              "required": [
+                "type",
+                "path"
+              ],
+              "additionalProperties": false,
+              "description": "Output configuration for generated icon components (e.g., { type: 'file', path: './src/icons.tsx' })"
+            }
+          ]
         },
         "typescript": {
           "default": true,
@@ -214,6 +241,25 @@
               ],
               "additionalProperties": false,
               "description": "Vue-specific configuration options"
+            }
+          },
+          "required": [
+            "framework"
+          ]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "framework": {
+              "type": "string",
+              "const": "svelte",
+              "description": "Svelte framework"
+            },
+            "svelte": {
+              "type": "object",
+              "properties": {},
+              "additionalProperties": false,
+              "description": "Svelte-specific configuration options"
             }
           },
           "required": [

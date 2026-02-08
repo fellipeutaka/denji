@@ -121,6 +121,8 @@ export const preactStrategy: FrameworkStrategy = {
 
   supportsRef: true,
 
+  preferredOutputType: "file",
+
   getIconsTemplate,
 
   getImports(options: PreactOptions) {

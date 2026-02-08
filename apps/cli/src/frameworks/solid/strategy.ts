@@ -87,6 +87,8 @@ export const solidStrategy: FrameworkStrategy = {
 
   supportsRef: true,
 
+  preferredOutputType: "file",
+
   getIconsTemplate,
 
   getImports(_options: SolidOptions) {
