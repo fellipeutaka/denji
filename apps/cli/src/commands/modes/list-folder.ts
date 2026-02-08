@@ -37,5 +37,10 @@ export async function listFolderMode(
     return preListResult;
   }
 
-  return displayResults(options, cfg, iconNames, deps);
+  return displayResults(
+    options,
+    cfg,
+    iconNames.map((name) => ({ name })),
+    deps
+  );
 }

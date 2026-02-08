@@ -95,10 +95,13 @@ export async function fetchIcon(iconName: string) {
 // Icons File Parsing (AST-based)
 // ============================================================================
 
+const DATA_ICON_REGEX = /data-icon="([^"]+)"/;
+
 interface IconEntry {
   name: string;
   start: number;
   end: number;
+  source?: string;
 }
 
 export function parseIconsFile(content: string): {
@@ -142,10 +145,16 @@ export function parseIconsFile(content: string): {
                 prop.type !== "SpreadElement" &&
                 prop.key?.type === "Identifier"
               ) {
+                // Extract data-icon attribute if present
+                const iconCode = content.slice(prop.start, prop.end);
+                const dataIconMatch = iconCode.match(DATA_ICON_REGEX);
+                const source = dataIconMatch?.[1];
+
                 icons.push({
                   name: prop.key.name,
                   start: prop.start,
                   end: prop.end,
+                  source,
                 });
               }
             }

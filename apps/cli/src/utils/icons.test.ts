@@ -237,6 +237,69 @@ export const Icons = {
       expect(result.icons[0]?.start).toBeGreaterThan(0);
       expect(result.icons[0]?.end).toBeGreaterThan(result.icons[0]?.start ?? 0);
     });
+
+    it("extracts data-icon attribute when present", () => {
+      const fileWithDataIcon = `export const Icons = {
+  Check: (props) => (<svg data-icon="lucide:check" {...props}></svg>),
+  Eye: (props) => (<svg data-icon="lucide:eye" {...props}></svg>),
+} as const;
+`;
+      const result = parseIconsFile(fileWithDataIcon);
+      expect(result.icons).toHaveLength(2);
+      expect(result.icons[0]?.name).toBe("Check");
+      expect(result.icons[0]?.source).toBe("lucide:check");
+      expect(result.icons[1]?.name).toBe("Eye");
+      expect(result.icons[1]?.source).toBe("lucide:eye");
+    });
+
+    it("returns undefined source when data-icon is not present", () => {
+      const result = parseIconsFile(singleIconFile);
+      expect(result.icons[0]?.name).toBe("Home");
+      expect(result.icons[0]?.source).toBeUndefined();
+    });
+
+    it("handles mixed icons with and without data-icon", () => {
+      const mixedFile = `export const Icons = {
+  Check: (props) => (<svg data-icon="lucide:check" {...props}></svg>),
+  Home: (props) => (<svg {...props}></svg>),
+  Eye: (props) => (<svg data-icon="lucide:eye" {...props}></svg>),
+} as const;
+`;
+      const result = parseIconsFile(mixedFile);
+      expect(result.icons).toHaveLength(3);
+      expect(result.icons[0]?.name).toBe("Check");
+      expect(result.icons[0]?.source).toBe("lucide:check");
+      expect(result.icons[1]?.name).toBe("Home");
+      expect(result.icons[1]?.source).toBeUndefined();
+      expect(result.icons[2]?.name).toBe("Eye");
+      expect(result.icons[2]?.source).toBe("lucide:eye");
+    });
+
+    it("extracts data-icon from different attribute positions", () => {
+      const fileWithDifferentPositions = `export const Icons = {
+  Check: (props) => (
+    <svg
+      data-icon="lucide:check"
+      height="1em"
+      viewBox="0 0 24 24"
+      {...props}
+    ></svg>
+  ),
+  Eye: (props) => (
+    <svg
+      height="1em"
+      data-icon="lucide:eye"
+      viewBox="0 0 24 24"
+      {...props}
+    ></svg>
+  ),
+} as const;
+`;
+      const result = parseIconsFile(fileWithDifferentPositions);
+      expect(result.icons).toHaveLength(2);
+      expect(result.icons[0]?.source).toBe("lucide:check");
+      expect(result.icons[1]?.source).toBe("lucide:eye");
+    });
   });
 
   describe("getExistingIconNames", () => {

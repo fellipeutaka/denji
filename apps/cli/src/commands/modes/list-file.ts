@@ -34,27 +34,28 @@ export async function listFileMode(
   const iconsContent = iconsFileResult.value;
   const { icons: parsedIcons } = icons.parseIconsFile(iconsContent);
 
-  return displayResults(
-    options,
-    cfg,
-    parsedIcons.map((icon) => icon.name),
-    deps
-  );
+  return displayResults(options, cfg, parsedIcons, deps);
 }
 
 export async function displayResults(
   options: ListOptions,
   cfg: Config,
-  iconNames: string[],
+  parsedIcons: Array<{ name: string; source?: string }>,
   deps: Pick<Deps, "hooks" | "logger">
 ) {
   const { hooks, logger } = deps;
+  const trackSource = cfg.trackSource ?? true;
 
   if (options.json) {
     const output = {
-      count: iconNames.length,
+      count: parsedIcons.length,
       output: cfg.output.path,
-      icons: iconNames,
+      icons: trackSource
+        ? parsedIcons.map((icon) => ({
+            name: icon.name,
+            source: icon.source ?? null,
+          }))
+        : parsedIcons.map((icon) => icon.name),
     };
     console.info(JSON.stringify(output, null, 2));
     const postListResult = await hooks.runHooks(
@@ -67,7 +68,7 @@ export async function displayResults(
     return new Ok(null);
   }
 
-  if (iconNames.length === 0) {
+  if (parsedIcons.length === 0) {
     logger.info(`No icons found in ${cfg.output.path}`);
     const postListResult = await hooks.runHooks(
       cfg.hooks?.postList,
@@ -79,11 +80,16 @@ export async function displayResults(
     return new Ok(null);
   }
 
-  logger.success(`Found ${iconNames.length} icon(s) in ${cfg.output.path}`);
+  logger.success(`Found ${parsedIcons.length} icon(s) in ${cfg.output.path}`);
   logger.break();
   logger.info("Icons:");
-  for (const name of iconNames) {
-    logger.info(`  • ${name}`);
+  for (const icon of parsedIcons) {
+    if (trackSource) {
+      const sourceInfo = icon.source ? `(${icon.source})` : "(⚠️  Unknown)";
+      logger.info(`  • ${icon.name} ${sourceInfo}`);
+    } else {
+      logger.info(`  • ${icon.name}`);
+    }
   }
 
   const postListResult = await hooks.runHooks(cfg.hooks?.postList, options.cwd);

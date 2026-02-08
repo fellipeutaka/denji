@@ -46,8 +46,8 @@ describe("ListCommand", () => {
         "Found 2 icon(s) in ./src/icons.tsx"
       );
       expect(deps.logger.info).toHaveBeenCalledWith("Icons:");
-      expect(deps.logger.info).toHaveBeenCalledWith("  • Check");
-      expect(deps.logger.info).toHaveBeenCalledWith("  • Home");
+      expect(deps.logger.info).toHaveBeenCalledWith("  • Check (⚠️  Unknown)");
+      expect(deps.logger.info).toHaveBeenCalledWith("  • Home (⚠️  Unknown)");
     });
 
     it("outputs JSON when --json flag is set", async () => {
@@ -63,7 +63,10 @@ describe("ListCommand", () => {
       expect(jsonOutput).toEqual({
         count: 2,
         output: "./src/icons.tsx",
-        icons: ["Check", "Home"],
+        icons: [
+          { name: "Check", source: null },
+          { name: "Home", source: null },
+        ],
       });
     });
 
@@ -143,6 +146,126 @@ describe("ListCommand", () => {
         ["echo post"],
         "/test/project"
       );
+    });
+
+    it("displays icon sources when trackSource is enabled", async () => {
+      const iconsWithSource = `export const Icons = {
+  Check: (props) => (<svg data-icon="lucide:check" {...props}></svg>),
+  Eye: (props) => (<svg data-icon="lucide:eye" {...props}></svg>),
+} as const;
+`;
+      const deps = createListDeps({
+        fs: createMockFs({
+          readFile: mock(() => Promise.resolve(new Ok(iconsWithSource))),
+        }),
+        config: withConfig({ trackSource: true }),
+      });
+      const command = new ListCommand(deps);
+
+      const result = await command.run({ cwd: "/test/project" });
+
+      expect(result.isOk()).toBe(true);
+      expect(deps.logger.info).toHaveBeenCalledWith("  • Check (lucide:check)");
+      expect(deps.logger.info).toHaveBeenCalledWith("  • Eye (lucide:eye)");
+    });
+
+    it("shows Unknown for icons without data-icon when trackSource is enabled", async () => {
+      const iconsWithMixedSource = `export const Icons = {
+  Check: (props) => (<svg data-icon="lucide:check" {...props}></svg>),
+  Eye: (props) => (<svg data-icon="lucide:eye" {...props}></svg>),
+  Pencil: (props) => (<svg {...props}></svg>),
+} as const;
+`;
+      const deps = createListDeps({
+        fs: createMockFs({
+          readFile: mock(() => Promise.resolve(new Ok(iconsWithMixedSource))),
+        }),
+        config: withConfig({ trackSource: true }),
+      });
+      const command = new ListCommand(deps);
+
+      const result = await command.run({ cwd: "/test/project" });
+
+      expect(result.isOk()).toBe(true);
+      expect(deps.logger.info).toHaveBeenCalledWith("  • Check (lucide:check)");
+      expect(deps.logger.info).toHaveBeenCalledWith("  • Eye (lucide:eye)");
+      expect(deps.logger.info).toHaveBeenCalledWith("  • Pencil (⚠️  Unknown)");
+    });
+
+    it("does not show source info when trackSource is disabled", async () => {
+      const iconsWithSource = `export const Icons = {
+  Check: (props) => (<svg data-icon="lucide:check" {...props}></svg>),
+  Eye: (props) => (<svg data-icon="lucide:eye" {...props}></svg>),
+} as const;
+`;
+      const deps = createListDeps({
+        fs: createMockFs({
+          readFile: mock(() => Promise.resolve(new Ok(iconsWithSource))),
+        }),
+        config: withConfig({ trackSource: false }),
+      });
+      const command = new ListCommand(deps);
+
+      const result = await command.run({ cwd: "/test/project" });
+
+      expect(result.isOk()).toBe(true);
+      expect(deps.logger.info).toHaveBeenCalledWith("  • Check");
+      expect(deps.logger.info).toHaveBeenCalledWith("  • Eye");
+    });
+
+    it("outputs source info in JSON when trackSource is enabled", async () => {
+      const iconsWithSource = `export const Icons = {
+  Check: (props) => (<svg data-icon="lucide:check" {...props}></svg>),
+  Eye: (props) => (<svg data-icon="lucide:eye" {...props}></svg>),
+  Pencil: (props) => (<svg {...props}></svg>),
+} as const;
+`;
+      const deps = createListDeps({
+        fs: createMockFs({
+          readFile: mock(() => Promise.resolve(new Ok(iconsWithSource))),
+        }),
+        config: withConfig({ trackSource: true }),
+      });
+      const command = new ListCommand(deps);
+
+      const result = await command.run({ cwd: "/test/project", json: true });
+
+      expect(result.isOk()).toBe(true);
+      const jsonOutput = JSON.parse(consoleInfoSpy.mock.calls[0][0]);
+      expect(jsonOutput).toEqual({
+        count: 3,
+        output: "./src/icons.tsx",
+        icons: [
+          { name: "Check", source: "lucide:check" },
+          { name: "Eye", source: "lucide:eye" },
+          { name: "Pencil", source: null },
+        ],
+      });
+    });
+
+    it("outputs icon names only in JSON when trackSource is disabled", async () => {
+      const iconsWithSource = `export const Icons = {
+  Check: (props) => (<svg data-icon="lucide:check" {...props}></svg>),
+  Eye: (props) => (<svg data-icon="lucide:eye" {...props}></svg>),
+} as const;
+`;
+      const deps = createListDeps({
+        fs: createMockFs({
+          readFile: mock(() => Promise.resolve(new Ok(iconsWithSource))),
+        }),
+        config: withConfig({ trackSource: false }),
+      });
+      const command = new ListCommand(deps);
+
+      const result = await command.run({ cwd: "/test/project", json: true });
+
+      expect(result.isOk()).toBe(true);
+      const jsonOutput = JSON.parse(consoleInfoSpy.mock.calls[0][0]);
+      expect(jsonOutput).toEqual({
+        count: 2,
+        output: "./src/icons.tsx",
+        icons: ["Check", "Eye"],
+      });
     });
   });
 
