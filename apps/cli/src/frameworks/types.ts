@@ -18,6 +18,8 @@ export interface TransformSvgOptions {
   iconName: string;
   /** Component name (e.g., "Home") */
   componentName: string;
+  /** Output mode: "file" for object properties, "folder" for standalone exports */
+  outputMode?: OutputType;
 }
 
 /**

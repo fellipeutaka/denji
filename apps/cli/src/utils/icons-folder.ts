@@ -40,7 +40,7 @@ export function generateBarrel(
   }
 
   const imports = sorted
-    .map((name) => `import ${name} from "./${name}${ext}";`)
+    .map((name) => `import { ${name} } from "./${name}${ext}";`)
     .join("\n");
 
   const iconEntries = sorted.join(", ");

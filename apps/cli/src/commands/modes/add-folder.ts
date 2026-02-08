@@ -67,6 +67,7 @@ export async function addFolderMode(
         trackSource: cfg.trackSource ?? true,
         iconName: icon,
         componentName,
+        outputMode: "folder",
       },
       { ...frameworkOptions, typescript: cfg.typescript }
     );

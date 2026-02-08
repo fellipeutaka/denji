@@ -178,8 +178,82 @@ describe("React Strategy", () => {
         { forwardRef: false }
       );
 
-      expect(result).toContain("strokeWidth");
-      expect(result).toContain("strokeLinecap");
+      expect(result).toContain("strokeWidth={2}");
+      expect(result).toContain("strokeLinecap=");
+      expect(result).not.toContain("stroke-width");
+      expect(result).not.toContain("stroke-linecap");
+    });
+
+    it("generates standalone named export for folder mode", async () => {
+      const svg =
+        '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg>';
+
+      const result = await reactStrategy.transformSvg(
+        svg,
+        {
+          iconName: "lucide:check",
+          componentName: "Check",
+          trackSource: false,
+          outputMode: "folder",
+        },
+        { forwardRef: false }
+      );
+
+      expect(result).toContain(
+        'import type { ComponentProps, JSX } from "react"'
+      );
+      expect(result).toContain('export type IconProps = ComponentProps<"svg">');
+      expect(result).toContain(
+        "export function Check(props: IconProps): JSX.Element"
+      );
+      expect(result).not.toContain("Check: (props) =>");
+    });
+
+    it("generates standalone named export with forwardRef for folder mode", async () => {
+      const svg =
+        '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg>';
+
+      const result = await reactStrategy.transformSvg(
+        svg,
+        {
+          iconName: "lucide:check",
+          componentName: "Check",
+          trackSource: false,
+          outputMode: "folder",
+        },
+        { forwardRef: true }
+      );
+
+      expect(result).toContain(
+        'import { forwardRef, type ComponentProps, type ComponentRef } from "react"'
+      );
+      expect(result).toContain('export type IconProps = ComponentProps<"svg">');
+      expect(result).toContain(
+        "export const Check = forwardRef<SVGSVGElement, IconProps>"
+      );
+      expect(result).toContain("function Check(props, ref)");
+      expect(result).toContain('Check.displayName = "Check"');
+      expect(result).toContain("ref={ref}");
+    });
+
+    it("generates object property for file mode", async () => {
+      const svg =
+        '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg>';
+
+      const result = await reactStrategy.transformSvg(
+        svg,
+        {
+          iconName: "lucide:check",
+          componentName: "Check",
+          trackSource: false,
+          outputMode: "file",
+        },
+        { forwardRef: false }
+      );
+
+      expect(result).toContain("Check: (props) =>");
+      expect(result).not.toContain("export function Check");
+      expect(result).not.toContain("import");
     });
   });
 

@@ -27,7 +27,17 @@ export const Icons = {};
 <% } -%>
 `;
 
+const FOLDER_TEMPLATE = `import type { ComponentProps, JSX } from "solid-js";
+
+export type IconProps = ComponentProps<"svg">;
+
+export function <%= it.componentName %>(props: IconProps): JSX.Element {
+  return <%= it.svg %>;
+}
+`;
+
 eta.loadTemplate("@solid/icons", ICONS_TEMPLATE);
+eta.loadTemplate("@solid/folder", FOLDER_TEMPLATE);
 
 function getIconsTemplate(config: TemplateConfig): string {
   return eta.render("@solid/icons", {
@@ -43,7 +53,8 @@ function transformSvg(
   svg: string,
   options: TransformSvgOptions
 ): Promise<string> {
-  const { a11y, trackSource, iconName, componentName } = options;
+  const { a11y, trackSource, iconName, componentName, outputMode } = options;
+  const isFolderMode = outputMode === "folder";
 
   // Optimize SVG with SVGO (keeps kebab-case attributes)
   let result = optimizeSvg(svg);
@@ -72,6 +83,17 @@ function transformSvg(
   // Add props spreading - Solid uses native spread syntax
   result = result.replace(SVG_OPENING_TAG_REGEX, "<svg$1 {...props}>");
 
+  if (isFolderMode) {
+    // Folder mode: generate standalone named export
+    return Promise.resolve(
+      eta.render("@solid/folder", {
+        componentName,
+        svg: result,
+      })
+    );
+  }
+
+  // File mode: generate object property
   return Promise.resolve(`${componentName}: (props) => (${result})`);
 }
 

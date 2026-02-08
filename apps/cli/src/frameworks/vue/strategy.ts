@@ -23,7 +23,17 @@ export const Icons = {};
 <% } -%>
 `;
 
+const FOLDER_TEMPLATE = `import { h, type FunctionalComponent, type SVGAttributes } from "vue";
+
+export type IconProps = SVGAttributes;
+
+export function <%= it.componentName %>(props: IconProps): FunctionalComponent<IconProps> {
+  return <%= it.hCall %>;
+}
+`;
+
 eta.loadTemplate("@vue/icons", ICONS_TEMPLATE);
+eta.loadTemplate("@vue/folder", FOLDER_TEMPLATE);
 
 function getIconsTemplate(config: TemplateConfig): string {
   return eta.render("@vue/icons", {
@@ -210,7 +220,8 @@ function transformSvg(
   svg: string,
   options: TransformSvgOptions
 ): Promise<string> {
-  const { a11y, trackSource, iconName, componentName } = options;
+  const { a11y, trackSource, iconName, componentName, outputMode } = options;
+  const isFolderMode = outputMode === "folder";
 
   // Optimize SVG with SVGO (keeps kebab-case attributes)
   const optimized = optimizeSvg(svg);
@@ -263,6 +274,17 @@ function transformSvg(
     }
   }
 
+  if (isFolderMode) {
+    // Folder mode: generate standalone named export
+    return Promise.resolve(
+      eta.render("@vue/folder", {
+        componentName,
+        hCall,
+      })
+    );
+  }
+
+  // File mode: generate object property
   return Promise.resolve(`${componentName}: (props) => ${hCall}`);
 }
 

@@ -33,7 +33,31 @@ export const Icons = {};
 <% } -%>
 `;
 
+const FOLDER_TEMPLATE = `import type { ComponentProps, JSX } from "preact";
+
+export type IconProps = ComponentProps<"svg">;
+
+export function <%= it.componentName %>(props: IconProps): JSX.Element {
+  return <%= it.svg %>;
+}
+`;
+
+const FOLDER_FORWARDREF_TEMPLATE = `import { forwardRef, type ComponentProps, type ComponentRef } from "preact/compat";
+
+export type IconProps = ComponentProps<"svg">;
+
+export const <%= it.componentName %> = forwardRef<SVGSVGElement, IconProps>(
+  function <%= it.componentName %>(props, ref) {
+    return <%= it.svg %>;
+  }
+);
+
+<%= it.componentName %>.displayName = "<%= it.componentName %>";
+`;
+
 eta.loadTemplate("@preact/icons", ICONS_TEMPLATE);
+eta.loadTemplate("@preact/folder", FOLDER_TEMPLATE);
+eta.loadTemplate("@preact/folder-forwardref", FOLDER_FORWARDREF_TEMPLATE);
 
 function getIconsTemplate(config: TemplateConfig): string {
   const opts = config.frameworkOptions as PreactOptions;
@@ -54,8 +78,9 @@ async function transformSvg(
   options: TransformSvgOptions,
   frameworkOptions: PreactOptions
 ): Promise<string> {
-  const { a11y, trackSource, iconName, componentName } = options;
+  const { a11y, trackSource, iconName, componentName, outputMode } = options;
   const forwardRef = frameworkOptions?.forwardRef ?? false;
+  const isFolderMode = outputMode === "folder";
 
   const svgProps: Record<string, string> = getA11yAttrs(a11y, componentName);
 
@@ -101,6 +126,22 @@ async function transformSvg(
     );
   }
 
+  if (isFolderMode) {
+    // Folder mode: generate standalone named export
+    if (forwardRef) {
+      result = result.replace(SVG_OPENING_TAG_REGEX, "<svg$1 ref={ref}>");
+      return eta.render("@preact/folder-forwardref", {
+        componentName,
+        svg: result,
+      });
+    }
+    return eta.render("@preact/folder", {
+      componentName,
+      svg: result,
+    });
+  }
+
+  // File mode: generate object property
   if (forwardRef) {
     result = result.replace(SVG_OPENING_TAG_REGEX, "<svg$1 ref={ref}>");
     return `${componentName}: forwardRef<SVGSVGElement, IconProps>((props, ref) => (${result}))`;
