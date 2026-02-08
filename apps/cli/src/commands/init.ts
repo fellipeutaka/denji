@@ -1,14 +1,21 @@
 import path from "node:path";
 import { intro, outro } from "@clack/prompts";
 import { Command } from "commander";
-import { getFrameworkOptions } from "~/frameworks/registry";
+import {
+  frameworkDisplayNames,
+  getFrameworkOptions,
+} from "~/frameworks/registry";
 import type { FrameworkOptions, FrameworkStrategy } from "~/frameworks/types";
 import {
   a11ySchema,
   CONFIG_FILE,
   type Config,
   configSchema,
+  FOLDER_ONLY_FRAMEWORKS,
   frameworkSchema,
+  type OutputConfig,
+  type OutputType,
+  outputTypeSchema,
 } from "~/schemas/config";
 import { initDefaults } from "~/services/defaults";
 import type { InitDeps } from "~/services/deps";
@@ -18,6 +25,7 @@ import { Err, Ok } from "~/utils/result";
 export interface InitOptions {
   cwd: string;
   output?: string;
+  outputType?: string;
   framework?: string;
   typescript?: boolean;
   a11y?: string;
@@ -49,19 +57,33 @@ export class InitCommand {
     }
     const { config, strategy } = configResult.value;
 
-    // 4. Validate output extension using strategy
-    const extensionResult = this.validateExtension(config, strategy);
-    if (extensionResult.isErr()) {
-      return extensionResult;
+    const isFolderMode = config.output.type === "folder";
+
+    // 4. Validate output extension (file mode only)
+    if (!isFolderMode) {
+      const extensionResult = this.validateExtension(config, strategy);
+      if (extensionResult.isErr()) {
+        return extensionResult;
+      }
     }
 
-    // 5. Check if output file already exists
-    const outputPath = path.resolve(options.cwd, config.output);
+    const outputPath = path.resolve(options.cwd, config.output.path);
+
+    if (isFolderMode) {
+      return this.deps.initFolderMode(
+        config,
+        strategy,
+        outputPath,
+        configPath,
+        this.deps
+      );
+    }
+    // 5b. File mode: existing behavior
     if (await fs.access(outputPath)) {
       return new Err(`Output file already exists: ${outputPath}`);
     }
 
-    // 6. Create parent directory for output if needed
+    // Create parent directory if needed
     const outputDir = path.dirname(outputPath);
     if (!(await fs.access(outputDir))) {
       const mkdirResult = await fs.mkdir(outputDir, { recursive: true });
@@ -70,7 +92,7 @@ export class InitCommand {
       }
     }
 
-    // 7. Write denji.json
+    // Write denji.json
     const configContent = JSON.stringify(config, null, 2);
     const writeConfigResult = await fs.writeFile(configPath, configContent);
     if (writeConfigResult.isErr()) {
@@ -78,7 +100,7 @@ export class InitCommand {
     }
     logger.success(`Created ${CONFIG_FILE}`);
 
-    // 8. Write icons file using strategy template
+    // Write icons file
     const frameworkOptions =
       (config[strategy.getConfigKey() as keyof Config] as FrameworkOptions) ??
       {};
@@ -88,22 +110,15 @@ export class InitCommand {
     });
     const writeIconsResult = await fs.writeFile(outputPath, iconsContent);
     if (writeIconsResult.isErr()) {
-      return new Err(`Failed to write ${config.output}`);
+      return new Err(`Failed to write ${config.output.path}`);
     }
-    logger.success(`Created ${config.output}`);
+    logger.success(`Created ${config.output.path}`);
 
     return new Ok(null);
   }
 
   async resolveConfig(options: InitOptions) {
     const { prompts, frameworks } = this.deps;
-
-    const output =
-      options.output ??
-      (await prompts.text({
-        message: "Where should icons be created?",
-        defaultValue: "./src/icons.tsx",
-      }));
 
     const frameworkInput =
       options.framework ??
@@ -116,13 +131,44 @@ export class InitCommand {
     const frameworkResult = frameworkSchema.safeParse(frameworkInput);
     if (!frameworkResult.success) {
       return new Err(
-        `Invalid framework: ${frameworkInput}. Use: react, preact`
+        `Invalid framework: ${frameworkInput}. Use: react, preact, solid, vue, svelte`
       );
     }
     const framework = frameworkResult.data;
 
     // Load framework strategy
     const strategy = await frameworks.createStrategy(framework);
+
+    // Resolve output type (from flag or framework default)
+    let outputType: OutputType = strategy.preferredOutputType;
+    if (options.outputType !== undefined) {
+      const typeResult = outputTypeSchema.safeParse(options.outputType);
+      if (!typeResult.success) {
+        return new Err(
+          `Invalid output type: ${options.outputType}. Use: file, folder`
+        );
+      }
+      outputType = typeResult.data;
+    }
+
+    // Reject file mode for folder-only frameworks
+    if (outputType === "file" && FOLDER_ONLY_FRAMEWORKS.has(framework)) {
+      return new Err(
+        `${frameworkDisplayNames[framework]} only supports folder output mode. Remove --output-type file`
+      );
+    }
+
+    const isFolderMode = outputType === "folder";
+    const defaultOutput = isFolderMode ? "./src/icons" : "./src/icons.tsx";
+
+    const outputPath =
+      options.output ??
+      (await prompts.text({
+        message: "Where should icons be created?",
+        defaultValue: defaultOutput,
+      }));
+
+    const output: OutputConfig = { type: outputType, path: outputPath };
 
     const typescript =
       options.typescript ??
@@ -182,7 +228,7 @@ export class InitCommand {
       forwardRef: options.forwardRef,
     });
 
-    const config = configSchema.parse({
+    const raw = configSchema.parse({
       output,
       framework,
       typescript,
@@ -191,11 +237,17 @@ export class InitCommand {
       [strategy.getConfigKey()]: frameworkOptions,
     });
 
+    // Normalize to Config with OutputConfig
+    const config: Config = {
+      ...raw,
+      output,
+    };
+
     return new Ok({ config, strategy });
   }
 
   validateExtension(config: Config, strategy: FrameworkStrategy) {
-    const ext = path.extname(config.output);
+    const ext = path.extname(config.output.path);
     const expectedExt = config.typescript
       ? strategy.fileExtensions.typescript
       : strategy.fileExtensions.javascript;
@@ -203,7 +255,7 @@ export class InitCommand {
     if (ext !== expectedExt) {
       const lang = config.typescript ? "TypeScript" : "JavaScript";
       return new Err(
-        `Invalid extension "${ext}" for ${strategy.name} + ${lang}. Use "${expectedExt}"`
+        `Invalid extension "${ext}" for ${frameworkDisplayNames[config.framework]} + ${lang}. Use "${expectedExt}"`
       );
     }
 
@@ -223,7 +275,8 @@ export const init = new Command()
     "The working directory. Defaults to the current directory.",
     process.cwd()
   )
-  .option("--output <file>", "Output file path for icons")
+  .option("--output <path>", "Output path for icons")
+  .option("--output-type <type>", "Output type: file or folder")
   .option("--framework <framework>", "Framework to use")
   .option("--typescript", "Use TypeScript")
   .option("--no-typescript", "Use JavaScript")

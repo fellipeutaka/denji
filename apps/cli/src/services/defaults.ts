@@ -1,6 +1,13 @@
 import { createFrameworkStrategy } from "~/frameworks/factory";
 import { loadConfig } from "~/utils/config";
-import { access, mkdir, readFile, writeFile } from "~/utils/fs";
+import {
+  access,
+  mkdir,
+  readdir,
+  readFile,
+  unlink,
+  writeFile,
+} from "~/utils/fs";
 import { runHooks } from "~/utils/hooks";
 import {
   fetchIcon,
@@ -43,6 +50,8 @@ export const defaultFs: FileSystem = {
   readFile,
   writeFile,
   mkdir,
+  readdir,
+  unlink,
 };
 
 export const defaultConfig: ConfigLoader = {
@@ -87,6 +96,15 @@ export const listDefaults: ListDeps = {
   hooks: defaultHooks,
   icons: defaultIcons,
   logger: defaultLogger,
+  frameworks: defaultFrameworks,
+  runFileMode: async (...args) => {
+    const { listFileMode } = await import("~/commands/modes/list-file");
+    return listFileMode(...args);
+  },
+  runFolderMode: async (...args) => {
+    const { listFolderMode } = await import("~/commands/modes/list-folder");
+    return listFolderMode(...args);
+  },
 };
 
 export const clearDefaults: ClearDeps = {
@@ -97,6 +115,14 @@ export const clearDefaults: ClearDeps = {
   prompts: defaultPrompts,
   logger: defaultLogger,
   frameworks: defaultFrameworks,
+  runFileMode: async (...args) => {
+    const { clearFileMode } = await import("~/commands/modes/clear-file");
+    return clearFileMode(...args);
+  },
+  runFolderMode: async (...args) => {
+    const { clearFolderMode } = await import("~/commands/modes/clear-folder");
+    return clearFolderMode(...args);
+  },
 };
 
 export const removeDefaults: RemoveDeps = {
@@ -107,6 +133,14 @@ export const removeDefaults: RemoveDeps = {
   prompts: defaultPrompts,
   logger: defaultLogger,
   frameworks: defaultFrameworks,
+  runFileMode: async (...args) => {
+    const { removeFileMode } = await import("~/commands/modes/remove-file");
+    return removeFileMode(...args);
+  },
+  runFolderMode: async (...args) => {
+    const { removeFolderMode } = await import("~/commands/modes/remove-folder");
+    return removeFolderMode(...args);
+  },
 };
 
 export const initDefaults: InitDeps = {
@@ -114,6 +148,10 @@ export const initDefaults: InitDeps = {
   prompts: defaultPrompts,
   logger: defaultLogger,
   frameworks: defaultFrameworks,
+  initFolderMode: async (...args) => {
+    const { initFolderMode } = await import("~/commands/modes/init-folder");
+    return initFolderMode(...args);
+  },
 };
 
 export const addDefaults: AddDeps = {
@@ -124,4 +162,12 @@ export const addDefaults: AddDeps = {
   prompts: defaultPrompts,
   logger: defaultLogger,
   frameworks: defaultFrameworks,
+  runFileMode: async (...args) => {
+    const { addFileMode } = await import("~/commands/modes/add-file");
+    return addFileMode(...args);
+  },
+  runFolderMode: async (...args) => {
+    const { addFolderMode } = await import("~/commands/modes/add-folder");
+    return addFolderMode(...args);
+  },
 };

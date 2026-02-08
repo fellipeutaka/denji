@@ -267,7 +267,7 @@ describe("InitCommand", () => {
       const config = getWrittenConfig(deps.fs.writeFile, "denji.json");
       expect(config).toMatchObject({
         $schema: "https://denji-docs.vercel.app/configuration_schema.json",
-        output: "./src/icons.tsx",
+        output: { type: "file", path: "./src/icons.tsx" },
         framework: "react",
         typescript: true,
         a11y: "hidden",

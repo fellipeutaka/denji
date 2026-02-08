@@ -328,7 +328,9 @@ ${iconEntries},
 
     it("uses config output path in messages", async () => {
       const deps = createListDeps({
-        config: withConfig({ output: "./lib/components/icons.tsx" }),
+        config: withConfig({
+          output: { type: "file", path: "./lib/components/icons.tsx" },
+        }),
       });
       const command = new ListCommand(deps);
 
@@ -341,7 +343,9 @@ ${iconEntries},
 
     it("includes config output in JSON response", async () => {
       const deps = createListDeps({
-        config: withConfig({ output: "./custom/path/icons.tsx" }),
+        config: withConfig({
+          output: { type: "file", path: "./custom/path/icons.tsx" },
+        }),
       });
       const command = new ListCommand(deps);
 

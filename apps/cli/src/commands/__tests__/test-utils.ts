@@ -1,4 +1,8 @@
 import { mock } from "bun:test";
+import { addFileMode } from "~/commands/modes/add-file";
+import { clearFileMode } from "~/commands/modes/clear-file";
+import { listFileMode } from "~/commands/modes/list-file";
+import { removeFileMode } from "~/commands/modes/remove-file";
 import type { Config } from "~/schemas/config";
 import type {
   AddDeps,
@@ -28,7 +32,7 @@ import { Err, Ok } from "~/utils/result";
 
 export const defaultTestConfig: Config = {
   $schema: "https://denji-docs.vercel.app/configuration_schema.json",
-  output: "./src/icons.tsx",
+  output: { type: "file", path: "./src/icons.tsx" },
   framework: "react",
   typescript: true,
   trackSource: true,
@@ -60,6 +64,8 @@ export function createMockFs(overrides: Partial<FileSystem> = {}): FileSystem {
     readFile: mock(() => Promise.resolve(new Ok(sampleIconsFileContent))),
     writeFile: mock(() => Promise.resolve(new Ok(null))),
     mkdir: mock(() => Promise.resolve(new Ok(null))),
+    readdir: mock(() => Promise.resolve(new Ok([]))),
+    unlink: mock(() => Promise.resolve(new Ok(null))),
     ...overrides,
   };
 }
@@ -171,6 +177,10 @@ export function createListDeps(overrides: Partial<ListDeps> = {}): ListDeps {
     hooks: createMockHooks(overrides.hooks),
     icons: createMockIcons(overrides.icons),
     logger: createMockLogger(overrides.logger),
+    frameworks: createMockFrameworks(overrides.frameworks),
+    runFileMode: overrides.runFileMode ?? listFileMode,
+    runFolderMode:
+      overrides.runFolderMode ?? mock(() => Promise.resolve(new Ok(null))),
   };
 }
 
@@ -183,6 +193,9 @@ export function createClearDeps(overrides: Partial<ClearDeps> = {}): ClearDeps {
     prompts: createMockPrompter(overrides.prompts),
     logger: createMockLogger(overrides.logger),
     frameworks: createMockFrameworks(overrides.frameworks),
+    runFileMode: overrides.runFileMode ?? clearFileMode,
+    runFolderMode:
+      overrides.runFolderMode ?? mock(() => Promise.resolve(new Ok(null))),
   };
 }
 
@@ -197,6 +210,9 @@ export function createRemoveDeps(
     prompts: createMockPrompter(overrides.prompts),
     logger: createMockLogger(overrides.logger),
     frameworks: createMockFrameworks(overrides.frameworks),
+    runFileMode: overrides.runFileMode ?? removeFileMode,
+    runFolderMode:
+      overrides.runFolderMode ?? mock(() => Promise.resolve(new Ok(null))),
   };
 }
 
@@ -206,6 +222,8 @@ export function createInitDeps(overrides: Partial<InitDeps> = {}): InitDeps {
     prompts: createMockPrompter(overrides.prompts),
     logger: createMockLogger(overrides.logger),
     frameworks: createMockFrameworks(overrides.frameworks),
+    initFolderMode:
+      overrides.initFolderMode ?? mock(() => Promise.resolve(new Ok(null))),
   };
 }
 
@@ -218,6 +236,9 @@ export function createAddDeps(overrides: Partial<AddDeps> = {}): AddDeps {
     prompts: createMockPrompter(overrides.prompts),
     logger: createMockLogger(overrides.logger),
     frameworks: createMockFrameworks(overrides.frameworks),
+    runFileMode: overrides.runFileMode ?? addFileMode,
+    runFolderMode:
+      overrides.runFolderMode ?? mock(() => Promise.resolve(new Ok(null))),
   };
 }
 

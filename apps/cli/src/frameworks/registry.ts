@@ -19,7 +19,16 @@ export const frameworkRegistry: FrameworkMeta[] = [
   { value: "preact", label: "Preact" },
   { value: "solid", label: "Solid" },
   { value: "vue", label: "Vue" },
+  { value: "svelte", label: "Svelte" },
 ];
+
+/**
+ * Display name lookup (e.g., "react" → "React", "vue" → "Vue")
+ */
+export const frameworkDisplayNames: Record<Framework, string> =
+  Object.fromEntries(
+    frameworkRegistry.map(({ value, label }) => [value, label])
+  ) as Record<Framework, string>;
 
 /**
  * Get framework options for select prompts

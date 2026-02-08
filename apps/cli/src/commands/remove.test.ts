@@ -418,7 +418,9 @@ describe("RemoveCommand", () => {
 
     it("uses config output path for icons file", async () => {
       const deps = createRemoveDeps({
-        config: withConfig({ output: "./lib/icons/index.tsx" }),
+        config: withConfig({
+          output: { type: "file", path: "./lib/icons/index.tsx" },
+        }),
       });
       const command = new RemoveCommand(deps);
 
