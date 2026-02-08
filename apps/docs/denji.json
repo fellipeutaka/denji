@@ -4,7 +4,7 @@
   "framework": "react",
   "typescript": true,
   "a11y": "hidden",
-  "trackSource": false,
+  "trackSource": true,
   "hooks": {
     "postAdd": ["bun run lint:fix ./src/components/icons.tsx"]
   }
