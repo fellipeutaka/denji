@@ -66,16 +66,12 @@ src/commands/
   list.ts, add.ts, clear.ts, remove.ts, init.ts
 ```
 
-Each command class accepts deps via constructor, with factory function for production:
+Each command class accepts deps via constructor:
 
 ```typescript
 export class ListCommand {
   constructor(private readonly deps: ListDeps) {}
   async run(options: ListOptions) { /* uses this.deps */ }
-}
-
-export function createListCommand(): ListCommand {
-  return new ListCommand(listDefaults);
 }
 ```
 

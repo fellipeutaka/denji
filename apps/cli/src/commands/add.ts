@@ -87,10 +87,6 @@ export class AddCommand {
   }
 }
 
-export function createAddCommand(): AddCommand {
-  return new AddCommand(addDefaults);
-}
-
 export const add = new Command()
   .name("add")
   .description("Add icons to your project")
@@ -105,7 +101,7 @@ export const add = new Command()
   .action(async (icons: string[], options: AddOptions) => {
     intro("denji add");
 
-    const command = createAddCommand();
+    const command = new AddCommand(addDefaults);
 
     const result = await command.run(icons, options);
     if (result.isErr()) {

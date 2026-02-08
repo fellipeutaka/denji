@@ -282,10 +282,6 @@ export class InitCommand {
   }
 }
 
-export function createInitCommand(): InitCommand {
-  return new InitCommand(initDefaults);
-}
-
 export const init = new Command()
   .name("init")
   .description("Initialize a new denji project")
@@ -307,7 +303,7 @@ export const init = new Command()
   .action(async (options: InitOptions) => {
     intro("denji init");
 
-    const command = createInitCommand();
+    const command = new InitCommand(initDefaults);
 
     const result = await command.run(options);
     if (result.isErr()) {

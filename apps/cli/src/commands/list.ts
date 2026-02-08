@@ -39,10 +39,6 @@ export class ListCommand {
   }
 }
 
-export function createListCommand(): ListCommand {
-  return new ListCommand(listDefaults);
-}
-
 export const list = new Command()
   .name("list")
   .description("List all icons in your project")
@@ -57,7 +53,7 @@ export const list = new Command()
       intro("denji list");
     }
 
-    const command = createListCommand();
+    const command = new ListCommand(listDefaults);
 
     const result = await command.run(options);
     if (result.isErr()) {

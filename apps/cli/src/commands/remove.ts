@@ -39,10 +39,6 @@ export class RemoveCommand {
   }
 }
 
-export function createRemoveCommand(): RemoveCommand {
-  return new RemoveCommand(removeDefaults);
-}
-
 export const remove = new Command()
   .name("remove")
   .description("Remove icons from your project")
@@ -56,7 +52,7 @@ export const remove = new Command()
   .action(async (icons: string[], options: RemoveOptions) => {
     intro("denji remove");
 
-    const command = createRemoveCommand();
+    const command = new RemoveCommand(removeDefaults);
 
     const result = await command.run(icons, options);
     if (result.isErr()) {

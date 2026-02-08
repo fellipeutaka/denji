@@ -40,10 +40,6 @@ export class ClearCommand {
   }
 }
 
-export function createClearCommand(): ClearCommand {
-  return new ClearCommand(clearDefaults);
-}
-
 export const clear = new Command()
   .name("clear")
   .description("Remove all icons from your project")
@@ -57,7 +53,7 @@ export const clear = new Command()
   .action(async (options: ClearOptions) => {
     intro("denji clear");
 
-    const command = createClearCommand();
+    const command = new ClearCommand(clearDefaults);
 
     const result = await command.run(options);
     if (result.isErr()) {
