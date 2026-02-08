@@ -139,8 +139,8 @@ export class InitCommand {
     // Load framework strategy
     const strategy = await frameworks.createStrategy(framework);
 
-    // Resolve output type (from flag or framework default)
-    let outputType: OutputType = strategy.preferredOutputType;
+    // Resolve output type
+    let outputType: OutputType;
     if (options.outputType !== undefined) {
       const typeResult = outputTypeSchema.safeParse(options.outputType);
       if (!typeResult.success) {
@@ -149,6 +149,25 @@ export class InitCommand {
         );
       }
       outputType = typeResult.data;
+    } else if (FOLDER_ONLY_FRAMEWORKS.has(framework)) {
+      outputType = strategy.preferredOutputType;
+    } else {
+      outputType = await prompts.select({
+        message: "Which output type do you want?",
+        options: [
+          {
+            value: "file" as const,
+            label: "File",
+            hint: "Single file with all icons",
+          },
+          {
+            value: "folder" as const,
+            label: "Folder",
+            hint: "One file per icon",
+          },
+        ],
+        initialValue: strategy.preferredOutputType,
+      });
     }
 
     // Reject file mode for folder-only frameworks

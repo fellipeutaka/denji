@@ -110,6 +110,7 @@ describe("InitCommand", () => {
       const result = await command.run({
         cwd: "/test/project",
         output: "./src/icons.tsx",
+        outputType: "file",
         framework: "react",
         typescript: true,
         a11y: "hidden",
@@ -130,6 +131,7 @@ describe("InitCommand", () => {
       await command.run({
         cwd: "/test/project",
         output: "./src/components/ui/icons.tsx",
+        outputType: "file",
         framework: "react",
         typescript: true,
         a11y: "hidden",
@@ -152,6 +154,7 @@ describe("InitCommand", () => {
       await command.run({
         cwd: "/test/project",
         output: "./src/icons.tsx",
+        outputType: "file",
         framework: "react",
         typescript: true,
         a11y: "hidden",
@@ -169,6 +172,7 @@ describe("InitCommand", () => {
       await command.run({
         cwd: "/test/project",
         output: "./src/icons.tsx",
+        outputType: "file",
         framework: "react",
         typescript: true,
         a11y: "hidden",
@@ -188,6 +192,7 @@ describe("InitCommand", () => {
       await command.run({
         cwd: "/test/project",
         output: "./src/icons.tsx",
+        outputType: "file",
         framework: "react",
         typescript: true,
         a11y: "hidden",
@@ -210,6 +215,7 @@ describe("InitCommand", () => {
       await command.run({
         cwd: "/test/project",
         output: "./src/icons.tsx",
+        outputType: "file",
         framework: "react",
         typescript: true,
         a11y: "hidden",
@@ -225,6 +231,7 @@ describe("InitCommand", () => {
     it("prompts for missing values", async () => {
       const selectMock = mock()
         .mockResolvedValueOnce("react")
+        .mockResolvedValueOnce("file")
         .mockResolvedValueOnce("hidden") as Prompter["select"];
       const confirmMock = mock<typeof deps.prompts.confirm>()
         .mockResolvedValueOnce(true)
@@ -247,6 +254,105 @@ describe("InitCommand", () => {
     });
   });
 
+  describe("output type", () => {
+    it("skips prompt when --output-type flag provided", async () => {
+      const selectMock = mock().mockResolvedValueOnce(
+        "hidden"
+      ) as Prompter["select"];
+      const deps = createInitDeps({
+        fs: createMockFs({ access: createAccessMock(["/test/project"]) }),
+        prompts: createMockPrompter({ select: selectMock }),
+      });
+      const command = new InitCommand(deps);
+
+      await command.run({
+        cwd: "/test/project",
+        output: "./src/icons.tsx",
+        framework: "react",
+        outputType: "file",
+        typescript: true,
+        trackSource: true,
+        forwardRef: false,
+      });
+
+      // select called once for a11y only (framework and output type provided via flags)
+      expect(selectMock).toHaveBeenCalledTimes(1);
+    });
+
+    it("skips prompt for folder-only framework", async () => {
+      const selectMock = mock().mockResolvedValueOnce(
+        "hidden"
+      ) as Prompter["select"];
+      const deps = createInitDeps({
+        fs: createMockFs({ access: createAccessMock(["/test/project"]) }),
+        prompts: createMockPrompter({ select: selectMock }),
+      });
+      const command = new InitCommand(deps);
+
+      await command.run({
+        cwd: "/test/project",
+        framework: "svelte",
+        output: "./src/icons",
+        typescript: true,
+        trackSource: true,
+      });
+
+      // select called once for a11y only (output type skipped for folder-only)
+      expect(selectMock).toHaveBeenCalledTimes(1);
+      expect(deps.initFolderMode).toHaveBeenCalled();
+    });
+
+    it("prompts when flag omitted for multi-mode framework", async () => {
+      const selectMock = mock()
+        .mockResolvedValueOnce("file")
+        .mockResolvedValueOnce("hidden") as Prompter["select"];
+      const deps = createInitDeps({
+        fs: createMockFs({ access: createAccessMock(["/test/project"]) }),
+        prompts: createMockPrompter({ select: selectMock }),
+      });
+      const command = new InitCommand(deps);
+
+      await command.run({
+        cwd: "/test/project",
+        framework: "react",
+        output: "./src/icons.tsx",
+        typescript: true,
+        trackSource: true,
+        forwardRef: false,
+      });
+
+      // select called twice: output type + a11y
+      expect(selectMock).toHaveBeenCalledTimes(2);
+    });
+
+    it("uses folder default output path when folder chosen", async () => {
+      const selectMock = mock()
+        .mockResolvedValueOnce("folder")
+        .mockResolvedValueOnce("hidden") as Prompter["select"];
+      const textMock = mock(() =>
+        Promise.resolve("./src/icons")
+      ) as Prompter["text"];
+      const deps = createInitDeps({
+        fs: createMockFs({ access: createAccessMock(["/test/project"]) }),
+        prompts: createMockPrompter({ select: selectMock, text: textMock }),
+      });
+      const command = new InitCommand(deps);
+
+      await command.run({
+        cwd: "/test/project",
+        framework: "react",
+        typescript: true,
+        trackSource: true,
+        forwardRef: false,
+      });
+
+      expect(textMock).toHaveBeenCalledWith(
+        expect.objectContaining({ defaultValue: "./src/icons" })
+      );
+      expect(deps.initFolderMode).toHaveBeenCalled();
+    });
+  });
+
   describe("config writing", () => {
     it("writes correct config structure", async () => {
       const deps = createInitDeps({
@@ -257,6 +363,7 @@ describe("InitCommand", () => {
       await command.run({
         cwd: "/test/project",
         output: "./src/icons.tsx",
+        outputType: "file",
         framework: "react",
         typescript: true,
         a11y: "hidden",
@@ -285,6 +392,7 @@ describe("InitCommand", () => {
       await command.run({
         cwd: "/test/project",
         output: "./src/icons.tsx",
+        outputType: "file",
         framework: "react",
         typescript: true,
         a11y: "hidden",
@@ -304,6 +412,7 @@ describe("InitCommand", () => {
       await command.run({
         cwd: "/test/project",
         output: "./src/icons.tsx",
+        outputType: "file",
         framework: "react",
         typescript: true,
         a11y: "hidden",
@@ -323,6 +432,7 @@ describe("InitCommand", () => {
       await command.run({
         cwd: "/test/project",
         output: "./src/icons.tsx",
+        outputType: "file",
         framework: "react",
         typescript: true,
         a11y: "hidden",
@@ -344,6 +454,7 @@ describe("InitCommand", () => {
       const result = await command.run({
         cwd: "/test/project",
         output: "./src/icons.tsx",
+        outputType: "file",
         framework: "angular",
         typescript: true,
         a11y: "hidden",
@@ -364,6 +475,7 @@ describe("InitCommand", () => {
       const result = await command.run({
         cwd: "/test/project",
         output: "./src/icons.tsx",
+        outputType: "file",
         framework: "react",
         typescript: true,
         a11y: "invalid",
@@ -389,6 +501,7 @@ describe("InitCommand", () => {
       const result = await command.run({
         cwd: "/test/project",
         output: "./src/icons.tsx",
+        outputType: "file",
         framework: "react",
         typescript: true,
         a11y: strategy,
@@ -400,6 +513,7 @@ describe("InitCommand", () => {
     it("accepts a11y: false via prompt", async () => {
       const selectMock = mock()
         .mockResolvedValueOnce("react")
+        .mockResolvedValueOnce("file")
         .mockResolvedValueOnce(false) as Prompter["select"];
       const deps = createInitDeps({
         fs: createMockFs({ access: createAccessMock(["/test/project"]) }),
@@ -410,6 +524,8 @@ describe("InitCommand", () => {
       const result = await command.run({
         cwd: "/test/project",
         output: "./src/icons.tsx",
+        typescript: true,
+        trackSource: true,
       });
 
       expect(result.isOk()).toBe(true);
@@ -428,6 +544,7 @@ describe("InitCommand", () => {
       const result = await command.run({
         cwd: "/test/project",
         output: "./src/icons.tsx",
+        outputType: "file",
         framework: "react",
         typescript: true,
         a11y: "hidden",
@@ -445,6 +562,7 @@ describe("InitCommand", () => {
       const result = await command.run({
         cwd: "/test/project",
         output: "./src/icons.jsx",
+        outputType: "file",
         framework: "react",
         typescript: false,
         a11y: "hidden",
@@ -462,6 +580,7 @@ describe("InitCommand", () => {
       const result = await command.run({
         cwd: "/test/project",
         output: "./src/icons.ts",
+        outputType: "file",
         framework: "react",
         typescript: true,
         a11y: "hidden",
@@ -482,6 +601,7 @@ describe("InitCommand", () => {
       const result = await command.run({
         cwd: "/test/project",
         output: "./src/icons.js",
+        outputType: "file",
         framework: "react",
         typescript: false,
         a11y: "hidden",
@@ -502,6 +622,7 @@ describe("InitCommand", () => {
       const result = await command.run({
         cwd: "/test/project",
         output: "./src/icons.tsx",
+        outputType: "file",
         framework: "react",
         typescript: false,
         a11y: "hidden",
@@ -522,6 +643,7 @@ describe("InitCommand", () => {
       const result = await command.run({
         cwd: "/test/project",
         output: "./src/icons.ts",
+        outputType: "file",
         framework: "vue",
         typescript: true,
         a11y: "hidden",
@@ -539,6 +661,7 @@ describe("InitCommand", () => {
       const result = await command.run({
         cwd: "/test/project",
         output: "./src/icons.js",
+        outputType: "file",
         framework: "vue",
         typescript: false,
         a11y: "hidden",
@@ -558,6 +681,7 @@ describe("InitCommand", () => {
       const result = await command.run({
         cwd: "/nonexistent",
         output: "./src/icons.tsx",
+        outputType: "file",
         framework: "react",
         typescript: true,
         a11y: "hidden",
@@ -583,6 +707,7 @@ describe("InitCommand", () => {
       const result = await command.run({
         cwd: "/test/project",
         output: "./src/icons.tsx",
+        outputType: "file",
         framework: "react",
         typescript: true,
         a11y: "hidden",
@@ -608,6 +733,7 @@ describe("InitCommand", () => {
       const result = await command.run({
         cwd: "/test/project",
         output: "./src/icons.tsx",
+        outputType: "file",
         framework: "react",
         typescript: true,
         a11y: "hidden",
@@ -634,6 +760,7 @@ describe("InitCommand", () => {
       const result = await command.run({
         cwd: "/test/project",
         output: "./src/icons.tsx",
+        outputType: "file",
         framework: "react",
         typescript: true,
         a11y: "hidden",
@@ -656,6 +783,7 @@ describe("InitCommand", () => {
       const result = await command.run({
         cwd: "/test/project",
         output: "./src/icons.tsx",
+        outputType: "file",
         framework: "react",
         typescript: true,
         a11y: "hidden",
@@ -675,6 +803,7 @@ describe("InitCommand", () => {
       const result = await command.run({
         cwd: "/test/project",
         output: "./src/icons.tsx",
+        outputType: "file",
         framework: "preact",
         typescript: true,
         a11y: "hidden",
@@ -695,6 +824,7 @@ describe("InitCommand", () => {
       const result = await command.run({
         cwd: "/test/project",
         output: "./src/icons.tsx",
+        outputType: "file",
         framework: "solid",
         typescript: true,
         a11y: "hidden",
@@ -714,6 +844,7 @@ describe("InitCommand", () => {
       const result = await command.run({
         cwd: "/test/project",
         output: "./src/icons.ts",
+        outputType: "file",
         framework: "vue",
         typescript: true,
         a11y: "hidden",
@@ -733,6 +864,7 @@ describe("InitCommand", () => {
       const result = await command.run({
         cwd: "/test/project",
         output: "./src/icons.tsx",
+        outputType: "file",
         framework: "angular",
         typescript: true,
         a11y: "hidden",
