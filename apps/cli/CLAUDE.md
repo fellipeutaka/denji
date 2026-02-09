@@ -1,6 +1,6 @@
 # Denji CLI
 
-CLI for managing SVG icons in React/Preact/Solid projects. Fetches from Iconify, converts to components.
+CLI for managing SVG icons in React/Preact/Solid/Vue/Svelte projects. Fetches from Iconify, converts to components.
 
 ## Architecture
 
@@ -11,7 +11,7 @@ Framework-specific logic is encapsulated in strategies:
 ```
 src/frameworks/
   types.ts          # FrameworkStrategy interface
-  factory.ts        # createFrameworkStrategy(name) - dynamic import
+  factory.ts        # createFrameworkStrategy(name) - dynamic import via strategyLoaders
   registry.ts       # Framework metadata for prompts
   react/
     schema.ts       # Zod Mini schema for react options
@@ -20,6 +20,12 @@ src/frameworks/
     schema.ts
     strategy.ts
   solid/
+    schema.ts
+    strategy.ts
+  vue/
+    schema.ts
+    strategy.ts
+  svelte/
     schema.ts
     strategy.ts
 src/utils/
@@ -34,22 +40,45 @@ interface FrameworkStrategy {
   fileExtensions: { typescript: string; javascript: string };
   optionsSchema: ZodMiniType;
   supportsRef: boolean;
+  preferredOutputType: OutputType;
   getIconsTemplate(config: TemplateConfig): string;
   getForwardRefImportSource(): string;
   isForwardRefEnabled(options: FrameworkOptions): boolean;
   promptOptions(context: PromptContext): Promise<FrameworkOptions>;
   getConfigKey(): string;
+  getTypesFileContent?(): string; // folder mode types.ts (optional)
+  transformSvg(svg: string, options: TransformSvgOptions, frameworkOptions: FrameworkOptions): Promise<string>;
 }
+```
+
+### Output Modes
+
+Two output modes: **file** (single icons file) and **folder** (one file per icon + barrel).
+
+- `preferredOutputType` on each strategy determines the default
+- Svelte is folder-only (`FOLDER_ONLY_FRAMEWORKS` set)
+- React/Preact/Solid/Vue default to file mode
+- Commands delegate to mode runners in `src/commands/modes/`:
+
+```
+src/commands/modes/
+  add-file.ts       add-folder.ts
+  remove-file.ts    remove-folder.ts
+  clear-file.ts     clear-folder.ts
+  list-file.ts      list-folder.ts
+  init-folder.ts
 ```
 
 ### Adding a New Framework
 
 1. Create `src/frameworks/<name>/schema.ts` with Zod Mini options schema
 2. Create `src/frameworks/<name>/strategy.ts` implementing `FrameworkStrategy` with inline template
-3. Add case to `src/frameworks/factory.ts` switch
+3. Add entry to `strategyLoaders` in `src/frameworks/factory.ts`
 4. Add entry to `src/frameworks/registry.ts`
 5. Add discriminated union variant in `src/schemas/config.ts`
 6. Update `frameworkSchema` enum in `src/schemas/config.ts`
+7. Add framework schema import to `src/schemas/config.ts`
+8. Add to `FOLDER_ONLY_FRAMEWORKS` if folder-only
 
 ### Commands with Dependency Injection
 
@@ -57,7 +86,7 @@ Commands use constructor-based DIP for testability:
 
 ```
 src/services/
-  deps.ts           # Dependency interfaces (FileSystem, ConfigLoader, etc.)
+  deps.ts           # Dependency interfaces (FileSystem, ConfigLoader, mode runners, etc.)
   defaults.ts       # Production implementations mapping to real utils
 src/commands/
   __tests__/
@@ -65,27 +94,30 @@ src/commands/
   list.ts, add.ts, clear.ts, remove.ts, init.ts
 ```
 
-Each command class accepts deps via constructor:
+Each command class accepts deps via constructor, including mode runners:
 
 ```typescript
-export class ListCommand {
-  constructor(private readonly deps: ListDeps) {}
-  async run(options: ListOptions) { /* uses this.deps */ }
+export class AddCommand {
+  constructor(private readonly deps: AddDeps) {}
+  async run(options: AddOptions) { /* delegates to runFileMode or runFolderMode */ }
 }
 ```
 
+Mode runner types (`AddModeRunner`, `RemoveModeRunner`, `ClearModeRunner`, etc.) are defined in `deps.ts` and injected into command deps.
+
 Commands:
-- `init.ts` - Creates config + icons file using strategy template
-- `add.ts` - Adds icons, uses strategy for forwardRef detection
-- `remove.ts` - Removes icons, resets to strategy template when empty
-- `clear.ts` - Resets to strategy template
-- `list.ts` - Lists existing icons
+- `init.ts` - Creates config + icons file/folder using strategy template
+- `add.ts` - Adds icons, delegates to file/folder mode runner
+- `remove.ts` - Removes icons, delegates to file/folder mode runner
+- `clear.ts` - Resets icons, delegates to file/folder mode runner
+- `list.ts` - Lists existing icons from file or folder
 
 ### Config Schema
 
 Discriminated union on `framework` field:
 - Base config (output, typescript, a11y, trackSource, hooks)
 - Framework-specific options (`react.forwardRef`, `preact.forwardRef`, etc.)
+- `output` accepts `string` (shorthand for file mode) or `{ type: "file" | "folder", path }` object
 
 ## Zod Mini
 
@@ -150,7 +182,7 @@ Tests use DIP with mock factories from `src/commands/__tests__/test-utils.ts`:
 ```typescript
 const deps = createListDeps({
   fs: createMockFs({ readFile: mock(() => Promise.resolve(new Ok("..."))) }),
-  config: withConfig({ output: "./icons.tsx" }),
+  config: withConfig({ output: { type: "file", path: "./icons.tsx" } }),
 });
 const command = new ListCommand(deps);
 const result = await command.run({ cwd: "/test" });
