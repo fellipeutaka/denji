@@ -104,7 +104,10 @@ export async function addFileMode(
       return new Err(`Failed to write icons file: ${cfg.output.path}`);
     }
 
-    const postAddResult = await hooks.runHooks(cfg.hooks?.postAdd, options.cwd);
+    const postAddResult = await hooks.runHooks(
+      cfg.hooks?.postAdd ?? [],
+      options.cwd
+    );
     if (postAddResult.isErr()) {
       return postAddResult;
     }

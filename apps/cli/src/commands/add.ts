@@ -61,7 +61,10 @@ export class AddCommand {
     const strategy = await frameworks.createStrategy(cfg.framework);
 
     // 7. Run preAdd hooks
-    const preAddResult = await hooks.runHooks(cfg.hooks?.preAdd, options.cwd);
+    const preAddResult = await hooks.runHooks(
+      cfg.hooks?.preAdd ?? [],
+      options.cwd
+    );
     if (preAddResult.isErr()) {
       return preAddResult;
     }

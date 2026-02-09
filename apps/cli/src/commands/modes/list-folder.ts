@@ -32,7 +32,10 @@ export async function listFolderMode(
   const ext = strategy.fileExtensions.typescript;
   const iconNames = getFolderIconNames(readdirResult.value, ext);
 
-  const preListResult = await hooks.runHooks(cfg.hooks?.preList, options.cwd);
+  const preListResult = await hooks.runHooks(
+    cfg.hooks?.preList ?? [],
+    options.cwd
+  );
   if (preListResult.isErr()) {
     return preListResult;
   }

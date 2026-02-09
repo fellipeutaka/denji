@@ -26,7 +26,10 @@ export async function listFileMode(
     return new Err(`Failed to read icons file: ${cfg.output.path}`);
   }
 
-  const preListResult = await hooks.runHooks(cfg.hooks?.preList, options.cwd);
+  const preListResult = await hooks.runHooks(
+    cfg.hooks?.preList ?? [],
+    options.cwd
+  );
   if (preListResult.isErr()) {
     return preListResult;
   }
@@ -59,7 +62,7 @@ export async function displayResults(
     };
     console.info(JSON.stringify(output, null, 2));
     const postListResult = await hooks.runHooks(
-      cfg.hooks?.postList,
+      cfg.hooks?.postList ?? [],
       options.cwd
     );
     if (postListResult.isErr()) {
@@ -71,7 +74,7 @@ export async function displayResults(
   if (parsedIcons.length === 0) {
     logger.info(`No icons found in ${cfg.output.path}`);
     const postListResult = await hooks.runHooks(
-      cfg.hooks?.postList,
+      cfg.hooks?.postList ?? [],
       options.cwd
     );
     if (postListResult.isErr()) {
@@ -92,7 +95,10 @@ export async function displayResults(
     }
   }
 
-  const postListResult = await hooks.runHooks(cfg.hooks?.postList, options.cwd);
+  const postListResult = await hooks.runHooks(
+    cfg.hooks?.postList ?? [],
+    options.cwd
+  );
   if (postListResult.isErr()) {
     return postListResult;
   }

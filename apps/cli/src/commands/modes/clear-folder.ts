@@ -52,7 +52,10 @@ export async function clearFolderMode(
     }
   }
 
-  const preClearResult = await hooks.runHooks(cfg.hooks?.preClear, options.cwd);
+  const preClearResult = await hooks.runHooks(
+    cfg.hooks?.preClear ?? [],
+    options.cwd
+  );
   if (preClearResult.isErr()) {
     return preClearResult;
   }
@@ -73,7 +76,7 @@ export async function clearFolderMode(
   }
 
   const postClearResult = await hooks.runHooks(
-    cfg.hooks?.postClear,
+    cfg.hooks?.postClear ?? [],
     options.cwd
   );
   if (postClearResult.isErr()) {

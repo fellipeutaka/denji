@@ -44,7 +44,7 @@ export async function removeFileMode(
   }
 
   const preRemoveResult = await hooks.runHooks(
-    cfg.hooks?.preRemove,
+    cfg.hooks?.preRemove ?? [],
     options.cwd
   );
   if (preRemoveResult.isErr()) {
@@ -67,7 +67,7 @@ export async function removeFileMode(
       logger.success(`Removed ${icon}`);
     }
     const postRemoveResult = await hooks.runHooks(
-      cfg.hooks?.postRemove,
+      cfg.hooks?.postRemove ?? [],
       options.cwd
     );
     if (postRemoveResult.isErr()) {
@@ -87,7 +87,7 @@ export async function removeFileMode(
   }
 
   const postRemoveResult = await hooks.runHooks(
-    cfg.hooks?.postRemove,
+    cfg.hooks?.postRemove ?? [],
     options.cwd
   );
   if (postRemoveResult.isErr()) {

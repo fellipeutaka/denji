@@ -32,10 +32,7 @@ export interface ConfigLoader {
 }
 
 export interface HooksRunner {
-  runHooks(
-    hooks: string[] | undefined,
-    cwd: string
-  ): Promise<ResultType<null, string>>;
+  runHooks(hooks: string[], cwd: string): Promise<ResultType<null, string>>;
 }
 
 export interface IconService {

@@ -47,7 +47,7 @@ export async function removeFolderMode(
   }
 
   const preRemoveResult = await hooks.runHooks(
-    cfg.hooks?.preRemove,
+    cfg.hooks?.preRemove ?? [],
     options.cwd
   );
   if (preRemoveResult.isErr()) {
@@ -75,7 +75,7 @@ export async function removeFolderMode(
   }
 
   const postRemoveResult = await hooks.runHooks(
-    cfg.hooks?.postRemove,
+    cfg.hooks?.postRemove ?? [],
     options.cwd
   );
   if (postRemoveResult.isErr()) {

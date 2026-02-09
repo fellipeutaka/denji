@@ -100,7 +100,10 @@ export async function addFolderMode(
       return new Err("Failed to write barrel file");
     }
 
-    const postAddResult = await hooks.runHooks(cfg.hooks?.postAdd, options.cwd);
+    const postAddResult = await hooks.runHooks(
+      cfg.hooks?.postAdd ?? [],
+      options.cwd
+    );
     if (postAddResult.isErr()) {
       return postAddResult;
     }
