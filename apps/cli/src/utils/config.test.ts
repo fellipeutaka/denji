@@ -3,7 +3,7 @@ import { Ok } from "~/utils/result";
 import { loadConfig } from "./config";
 
 // Mock fs functions used by loadConfig
-const { readFile: mockReadFile } = await (() => {
+const { readFile: mockReadFile } = (() => {
   const accessMock = mock(() => Promise.resolve(true));
   const readFileMock = mock(() => Promise.resolve(new Ok("{}")));
 

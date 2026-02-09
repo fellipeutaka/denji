@@ -2,8 +2,8 @@ import { spawn } from "node:child_process";
 import { logger } from "~/utils/logger";
 import { Err, Ok } from "~/utils/result";
 
-export async function runHooks(hooks: string[] | undefined, cwd: string) {
-  if (!hooks || hooks.length === 0) {
+export async function runHooks(hooks: string[], cwd: string) {
+  if (hooks.length === 0) {
     return new Ok(null);
   }
 
