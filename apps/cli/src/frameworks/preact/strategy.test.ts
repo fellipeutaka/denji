@@ -1,4 +1,4 @@
-import { describe, expect, it } from "bun:test";
+import { describe, expect, it, spyOn } from "bun:test";
 import { preactStrategy } from "./strategy";
 
 describe("Preact Strategy", () => {
@@ -176,6 +176,202 @@ describe("Preact Strategy", () => {
   describe("getForwardRefImportSource", () => {
     it("returns preact/compat", () => {
       expect(preactStrategy.getForwardRefImportSource()).toBe("preact/compat");
+    });
+  });
+
+  describe("transformSvg error handling", () => {
+    it("throws error when passing invalid SVG", () => {
+      const invalidSvg = "not an svg";
+
+      expect(
+        preactStrategy.transformSvg(
+          invalidSvg,
+          {
+            iconName: "test:invalid",
+            componentName: "Invalid",
+            trackSource: false,
+          },
+          { forwardRef: false }
+        )
+      ).rejects.toThrow();
+    });
+
+    it("throws error with specific message when SVG extraction fails", async () => {
+      // Spy on the transform function to return invalid JSX without SVG tags
+      const svgrCore = await import("@svgr/core");
+      const transformSpy = spyOn(svgrCore, "transform").mockResolvedValue(
+        "const Icon = () => <div>Invalid</div>;"
+      );
+
+      const svg =
+        '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M10 20v-6h4v6"/></svg>';
+
+      expect(
+        preactStrategy.transformSvg(
+          svg,
+          {
+            iconName: "test:invalid",
+            componentName: "Invalid",
+            trackSource: false,
+          },
+          { forwardRef: false }
+        )
+      ).rejects.toThrow("Failed to extract SVG from SVGR output");
+
+      // Restore original function
+      transformSpy.mockRestore();
+    });
+  });
+
+  describe("transformSvg with title mode", () => {
+    it("adds title element when a11y is title", async () => {
+      const svg =
+        '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M10 20v-6h4v6"/></svg>';
+
+      const result = await preactStrategy.transformSvg(
+        svg,
+        {
+          iconName: "mdi:home",
+          componentName: "HomeIcon",
+          a11y: "title",
+          trackSource: false,
+        },
+        { forwardRef: false }
+      );
+
+      expect(result).toContain("<title>Home Icon</title>");
+    });
+
+    it("adds title element with forwardRef when a11y is title", async () => {
+      const svg =
+        '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M10 20v-6h4v6"/></svg>';
+
+      const result = await preactStrategy.transformSvg(
+        svg,
+        {
+          iconName: "mdi:home",
+          componentName: "HomeIcon",
+          a11y: "title",
+          trackSource: false,
+        },
+        { forwardRef: true }
+      );
+
+      expect(result).toContain("<title>Home Icon</title>");
+      expect(result).toContain("ref={ref}");
+    });
+  });
+
+  describe("transformSvg folder mode", () => {
+    it("generates standalone named export for folder mode", async () => {
+      const svg =
+        '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg>';
+
+      const result = await preactStrategy.transformSvg(
+        svg,
+        {
+          iconName: "lucide:check",
+          componentName: "Check",
+          trackSource: false,
+          outputMode: "folder",
+        },
+        { forwardRef: false }
+      );
+
+      expect(result).toContain(
+        'import type { ComponentProps, JSX } from "preact"'
+      );
+      expect(result).toContain('export type IconProps = ComponentProps<"svg">');
+      expect(result).toContain(
+        "export function Check(props: IconProps): JSX.Element"
+      );
+      expect(result).not.toContain("Check: (props) =>");
+    });
+
+    it("generates standalone named export with forwardRef for folder mode", async () => {
+      const svg =
+        '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg>';
+
+      const result = await preactStrategy.transformSvg(
+        svg,
+        {
+          iconName: "lucide:check",
+          componentName: "Check",
+          trackSource: false,
+          outputMode: "folder",
+        },
+        { forwardRef: true }
+      );
+
+      expect(result).toContain(
+        'import { forwardRef, type ComponentProps, type ComponentRef } from "preact/compat"'
+      );
+      expect(result).toContain('export type IconProps = ComponentProps<"svg">');
+      expect(result).toContain(
+        "export const Check = forwardRef<SVGSVGElement, IconProps>"
+      );
+      expect(result).toContain("function Check(props, ref)");
+      expect(result).toContain('Check.displayName = "Check"');
+      expect(result).toContain("ref={ref}");
+    });
+
+    it("adds title element in folder mode when a11y is title", async () => {
+      const svg =
+        '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M10 20v-6h4v6"/></svg>';
+
+      const result = await preactStrategy.transformSvg(
+        svg,
+        {
+          iconName: "mdi:home",
+          componentName: "HomeIcon",
+          a11y: "title",
+          trackSource: false,
+          outputMode: "folder",
+        },
+        { forwardRef: false }
+      );
+
+      expect(result).toContain("<title>Home Icon</title>");
+      expect(result).toContain("export function HomeIcon");
+    });
+
+    it("adds title element in folder mode with forwardRef when a11y is title", async () => {
+      const svg =
+        '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M10 20v-6h4v6"/></svg>';
+
+      const result = await preactStrategy.transformSvg(
+        svg,
+        {
+          iconName: "mdi:home",
+          componentName: "HomeIcon",
+          a11y: "title",
+          trackSource: false,
+          outputMode: "folder",
+        },
+        { forwardRef: true }
+      );
+
+      expect(result).toContain("<title>Home Icon</title>");
+      expect(result).toContain("export const HomeIcon = forwardRef");
+      expect(result).toContain("ref={ref}");
+    });
+  });
+
+  describe("promptOptions", () => {
+    it("uses provided forwardRef value from context", async () => {
+      const result = await preactStrategy.promptOptions({
+        forwardRef: true,
+      });
+
+      expect(result).toEqual({ forwardRef: true });
+    });
+
+    it("uses provided false forwardRef value from context", async () => {
+      const result = await preactStrategy.promptOptions({
+        forwardRef: false,
+      });
+
+      expect(result).toEqual({ forwardRef: false });
     });
   });
 });
