@@ -49,7 +49,7 @@ function getIconsTemplate(config: TemplateConfig): string {
  * Transform SVG to Solid component
  * Uses native HTML attributes (kebab-case) since Solid supports them
  */
-function transformSvg(
+async function transformSvg(
   svg: string,
   options: TransformSvgOptions
 ): Promise<string> {
@@ -85,16 +85,14 @@ function transformSvg(
 
   if (isFolderMode) {
     // Folder mode: generate standalone named export
-    return Promise.resolve(
-      eta.render("@solid/folder", {
-        componentName,
-        svg: result,
-      })
-    );
+    return await eta.renderAsync("@solid/folder", {
+      componentName,
+      svg: result,
+    });
   }
 
   // File mode: generate object property
-  return Promise.resolve(`${componentName}: (props) => (${result})`);
+  return `${componentName}: (props) => (${result})`;
 }
 
 export const solidStrategy: FrameworkStrategy = {
@@ -127,9 +125,10 @@ export const solidStrategy: FrameworkStrategy = {
     return false;
   },
 
-  promptOptions() {
+  // biome-ignore lint/suspicious/useAwait: This needs to be async to match the FrameworkStrategy type, even though we don't have any async work here currently.
+  async promptOptions() {
     // Solid has no framework-specific options to prompt for
-    return Promise.resolve({});
+    return {};
   },
 
   getConfigKey() {

@@ -59,7 +59,8 @@ function processSvg(svg: string, options: TransformSvgOptions): string {
  * Transform SVG to Svelte 5 component (.svelte file).
  * TS mode adds typed $props(), JS mode uses untyped $props().
  */
-function transformSvg(
+// biome-ignore lint/suspicious/useAwait: This need to be async to match the FrameworkStrategy type, even though we don't have any async work here currently.
+async function transformSvg(
   svg: string,
   options: TransformSvgOptions,
   frameworkOptions: FrameworkOptions
@@ -87,7 +88,7 @@ function transformSvg(
     ].join("\n");
   }
 
-  return Promise.resolve(`${scriptBlock}\n\n${markup}\n`);
+  return `${scriptBlock}\n\n${markup}\n`;
 }
 
 export const svelteStrategy: FrameworkStrategy = {
@@ -118,8 +119,9 @@ export const svelteStrategy: FrameworkStrategy = {
     return false;
   },
 
-  promptOptions() {
-    return Promise.resolve({});
+  // biome-ignore lint/suspicious/useAwait: This needs to be async to match the FrameworkStrategy type, even though we don't have any async work here currently.
+  async promptOptions() {
+    return {};
   },
 
   getConfigKey() {

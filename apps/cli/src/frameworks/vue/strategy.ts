@@ -216,7 +216,7 @@ function svgToH(svg: string): string {
 /**
  * Transform SVG to Vue h() function component
  */
-function transformSvg(
+async function transformSvg(
   svg: string,
   options: TransformSvgOptions
 ): Promise<string> {
@@ -276,16 +276,14 @@ function transformSvg(
 
   if (isFolderMode) {
     // Folder mode: generate standalone named export
-    return Promise.resolve(
-      eta.render("@vue/folder", {
-        componentName,
-        hCall,
-      })
-    );
+    return await eta.renderAsync("@vue/folder", {
+      componentName,
+      hCall,
+    });
   }
 
   // File mode: generate object property
-  return Promise.resolve(`${componentName}: (props) => ${hCall}`);
+  return `${componentName}: (props) => ${hCall}`;
 }
 
 export const vueStrategy: FrameworkStrategy = {
@@ -318,9 +316,10 @@ export const vueStrategy: FrameworkStrategy = {
     return false;
   },
 
-  promptOptions() {
+  // biome-ignore lint/suspicious/useAwait: This needs to be async to match the FrameworkStrategy type, even though we don't have any async work here currently.
+  async promptOptions() {
     // No options to prompt for currently (syntax only has one value)
-    return Promise.resolve({ syntax: "h" as const });
+    return { syntax: "h" as const };
   },
 
   getConfigKey() {
