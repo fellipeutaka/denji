@@ -25,9 +25,19 @@ Specify output file path.
 denji init --output ./src/components/icons.tsx
 ```
 
+### --output-type
+
+**Type:** `"file" | "folder"`
+
+Output type. Defaults to `file` for React/Preact/Solid/Vue and `folder` for Svelte.
+
+```bash
+denji init --output-type folder
+```
+
 ### --framework
 
-**Type:** `"react" | "preact" | "solid"`
+**Type:** `"react" | "preact" | "solid" | "vue" | "svelte"`
 
 Target framework for generated components.
 
@@ -35,6 +45,8 @@ Target framework for generated components.
 denji init --framework react
 denji init --framework preact
 denji init --framework solid
+denji init --framework vue
+denji init --framework svelte
 ```
 
 ### --typescript
@@ -85,10 +97,9 @@ Running `denji init` creates:
    }
    ```
 
-2. **icons.tsx** - Template file for icons
-   ```tsx
-   export const Icons = {};
-   ```
+2. **Icons file or folder** depending on output type:
+   - **File mode**: a single template file (e.g., `icons.tsx`)
+   - **Folder mode**: an output directory with barrel file and types
 
 <Callout type="info">
 The init command is safe to run multiple times. It won't overwrite existing configs.

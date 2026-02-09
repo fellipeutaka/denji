@@ -248,6 +248,31 @@ const iconName: IconName = "Check"; // ✅ Type-safe
 const invalidIcon: IconName = "NonExistent"; // ❌ Type error
 ```
 
+## Folder Mode
+
+When using folder output mode, each icon is a standalone component file. You can import directly or use the barrel export:
+
+### Barrel Import
+
+```tsx
+import { Icons } from "./icons";
+
+// Same API as file mode
+<Icons.Check class="size-4" />
+```
+
+### Direct Import
+
+```tsx
+import { Check } from "./icons/Check";
+
+<Check class="size-4" />
+```
+
+<Callout type="info">
+Direct imports enable better tree-shaking. Barrel imports keep the same API as file mode.
+</Callout>
+
 ## Tips
 
 1. **Tree Shaking**: Only imported icons are bundled

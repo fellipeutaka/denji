@@ -27,10 +27,12 @@ Configuration is stored in `denji.json` at your project root.
 
 ### output
 
-**Type:** `string`  
+**Type:** `string | { type: "file" | "folder", path: string }`  
 **Required:** Yes
 
-Output file path for generated icons.
+Output path for generated icons. Accepts a string shorthand (defaults to file mode) or an object for explicit control.
+
+**File mode** (default) — all icons in a single file:
 
 ```json
 {
@@ -38,9 +40,24 @@ Output file path for generated icons.
 }
 ```
 
+**Folder mode** — one file per icon component + barrel export:
+
+```json
+{
+  "output": {
+    "type": "folder",
+    "path": "./src/icons"
+  }
+}
+```
+
+<Callout type="info">
+String format is shorthand for `{ "type": "file", "path": "..." }`.
+</Callout>
+
 ### framework
 
-**Type:** `"react" | "preact" | "solid"`  
+**Type:** `"react" | "preact" | "solid" | "vue" | "svelte"`  
 **Required:** Yes
 
 Target framework for generated components.
