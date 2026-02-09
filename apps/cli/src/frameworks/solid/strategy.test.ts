@@ -149,6 +149,44 @@ describe("Solid Strategy", () => {
 
       expect(result).toContain('data-icon="mdi:home"');
     });
+
+    it("adds title element when a11y is title", async () => {
+      const svg =
+        '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M10 20v-6h4v6"/></svg>';
+
+      const result = await solidStrategy.transformSvg(
+        svg,
+        {
+          iconName: "mdi:home",
+          componentName: "HomeIcon",
+          a11y: "title",
+          trackSource: false,
+        },
+        {}
+      );
+
+      expect(result).toContain("<title>Home Icon</title>");
+    });
+
+    it("generates folder mode output", async () => {
+      const svg =
+        '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M10 20v-6h4v6"/></svg>';
+
+      const result = await solidStrategy.transformSvg(
+        svg,
+        {
+          iconName: "mdi:home",
+          componentName: "Home",
+          outputMode: "folder",
+          trackSource: false,
+        },
+        {}
+      );
+
+      expect(result).toContain("export function Home");
+      expect(result).toContain("JSX.Element");
+      expect(result).toContain("{...props}");
+    });
   });
 
   describe("getImports", () => {
