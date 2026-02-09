@@ -305,11 +305,6 @@ export const vueStrategy: FrameworkStrategy = {
 
   getIconsTemplate,
 
-  getImports(_options: VueOptions) {
-    // Vue h() import is in the template
-    return [];
-  },
-
   getForwardRefImportSource() {
     return "vue";
   },

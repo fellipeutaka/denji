@@ -212,12 +212,6 @@ describe("Svelte Strategy", () => {
     });
   });
 
-  describe("getImports", () => {
-    it("returns empty array", () => {
-      expect(svelteStrategy.getImports({})).toEqual([]);
-    });
-  });
-
   describe("isForwardRefEnabled", () => {
     it("always returns false", () => {
       expect(svelteStrategy.isForwardRefEnabled({})).toBe(false);

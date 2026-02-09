@@ -112,11 +112,6 @@ export const solidStrategy: FrameworkStrategy = {
 
   getIconsTemplate,
 
-  getImports(_options: SolidOptions) {
-    // Solid doesn't need forwardRef import - refs work as regular props
-    return [];
-  },
-
   getForwardRefImportSource() {
     return "solid-js";
   },

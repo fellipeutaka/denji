@@ -35,7 +35,6 @@ interface FrameworkStrategy {
   optionsSchema: ZodMiniType;
   supportsRef: boolean;
   getIconsTemplate(config: TemplateConfig): string;
-  getImports(options: FrameworkOptions): string[];
   getForwardRefImportSource(): string;
   isForwardRefEnabled(options: FrameworkOptions): boolean;
   promptOptions(context: PromptContext): Promise<FrameworkOptions>;

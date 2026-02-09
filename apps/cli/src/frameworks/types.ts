@@ -83,11 +83,6 @@ export interface FrameworkStrategy {
   getIconsTemplate(config: TemplateConfig): string;
 
   /**
-   * Get required imports for the icons file
-   */
-  getImports(options: FrameworkOptions): string[];
-
-  /**
    * Get the import source for forwardRef (e.g., "react" or "preact/compat")
    */
   getForwardRefImportSource(): string;

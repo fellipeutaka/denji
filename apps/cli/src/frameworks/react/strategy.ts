@@ -164,13 +164,6 @@ export const reactStrategy: FrameworkStrategy = {
 
   getIconsTemplate,
 
-  getImports(options: ReactOptions) {
-    if (options?.forwardRef) {
-      return ['import { forwardRef } from "react";'];
-    }
-    return [];
-  },
-
   getForwardRefImportSource() {
     return "react";
   },

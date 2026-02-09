@@ -166,13 +166,6 @@ export const preactStrategy: FrameworkStrategy = {
 
   getIconsTemplate,
 
-  getImports(options: PreactOptions) {
-    if (options?.forwardRef) {
-      return ['import { forwardRef } from "preact/compat";'];
-    }
-    return [];
-  },
-
   getForwardRefImportSource() {
     return "preact/compat";
   },

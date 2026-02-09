@@ -147,18 +147,6 @@ describe("Preact Strategy", () => {
     });
   });
 
-  describe("getImports", () => {
-    it("returns forwardRef import from preact/compat when enabled", () => {
-      const imports = preactStrategy.getImports({ forwardRef: true });
-      expect(imports).toEqual(['import { forwardRef } from "preact/compat";']);
-    });
-
-    it("returns empty array when forwardRef disabled", () => {
-      const imports = preactStrategy.getImports({ forwardRef: false });
-      expect(imports).toEqual([]);
-    });
-  });
-
   describe("isForwardRefEnabled", () => {
     it("returns true when forwardRef is true", () => {
       expect(preactStrategy.isForwardRefEnabled({ forwardRef: true })).toBe(

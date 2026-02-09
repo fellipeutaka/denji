@@ -189,13 +189,6 @@ describe("Solid Strategy", () => {
     });
   });
 
-  describe("getImports", () => {
-    it("returns empty array (no forwardRef needed)", () => {
-      const imports = solidStrategy.getImports({});
-      expect(imports).toEqual([]);
-    });
-  });
-
   describe("isForwardRefEnabled", () => {
     it("always returns false (Solid refs work natively)", () => {
       expect(solidStrategy.isForwardRefEnabled({})).toBe(false);

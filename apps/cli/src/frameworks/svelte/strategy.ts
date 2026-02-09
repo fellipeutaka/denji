@@ -107,10 +107,6 @@ export const svelteStrategy: FrameworkStrategy = {
 
   getIconsTemplate,
 
-  getImports(_options: SvelteOptions) {
-    return [];
-  },
-
   getForwardRefImportSource() {
     return "svelte";
   },

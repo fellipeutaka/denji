@@ -269,12 +269,6 @@ describe("Vue Strategy", () => {
     });
   });
 
-  describe("getImports", () => {
-    it("returns empty array (h is in template)", () => {
-      expect(vueStrategy.getImports({ syntax: "h" })).toEqual([]);
-    });
-  });
-
   describe("isForwardRefEnabled", () => {
     it("always returns false", () => {
       expect(vueStrategy.isForwardRefEnabled({ syntax: "h" })).toBe(false);

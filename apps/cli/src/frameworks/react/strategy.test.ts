@@ -257,18 +257,6 @@ describe("React Strategy", () => {
     });
   });
 
-  describe("getImports", () => {
-    it("returns forwardRef import when enabled", () => {
-      const imports = reactStrategy.getImports({ forwardRef: true });
-      expect(imports).toEqual(['import { forwardRef } from "react";']);
-    });
-
-    it("returns empty array when forwardRef disabled", () => {
-      const imports = reactStrategy.getImports({ forwardRef: false });
-      expect(imports).toEqual([]);
-    });
-  });
-
   describe("isForwardRefEnabled", () => {
     it("returns true when forwardRef is true", () => {
       expect(reactStrategy.isForwardRefEnabled({ forwardRef: true })).toBe(
