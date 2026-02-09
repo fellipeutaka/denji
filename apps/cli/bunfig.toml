@@ -1,0 +1,2 @@
+[test]
+coveragePathIgnorePatterns = "src/commands/__tests__/*.ts"
