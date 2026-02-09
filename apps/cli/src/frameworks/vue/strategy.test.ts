@@ -169,6 +169,85 @@ describe("Vue Strategy", () => {
       expect(result).toContain('"stroke-linecap"');
     });
 
+    it("handles SVG with nested non-self-closing elements", async () => {
+      const svg =
+        '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><g clip-path="url(#a)"><path d="M10 20v-6h4v6"/><circle cx="12" cy="12" r="10"/></g><defs><clipPath id="a"><path d="M0 0h24v24H0z"/></clipPath></defs></svg>';
+
+      const result = await vueStrategy.transformSvg(
+        svg,
+        {
+          iconName: "mdi:clip",
+          componentName: "Clip",
+          trackSource: false,
+        },
+        { syntax: "h" }
+      );
+
+      expect(result).toContain('h("g"');
+      expect(result).toContain('h("defs"');
+      expect(result).toContain('h("clipPath"');
+      expect(result).toContain('h("path"');
+    });
+
+    it("handles SVG with grouped children", async () => {
+      const svg =
+        '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><g opacity=".5"><path d="M10 20v-6h4v6"/><circle cx="12" cy="12" r="10"/></g></svg>';
+
+      const result = await vueStrategy.transformSvg(
+        svg,
+        {
+          iconName: "mdi:group",
+          componentName: "Group",
+          trackSource: false,
+        },
+        { syntax: "h" }
+      );
+
+      expect(result).toContain('h("g"');
+      expect(result).toContain('opacity: ".5"');
+      expect(result).toContain('h("path"');
+      expect(result).toContain('h("circle"');
+    });
+
+    it("adds title element when a11y is title (no children)", async () => {
+      const svg =
+        '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"/>';
+
+      const result = await vueStrategy.transformSvg(
+        svg,
+        {
+          iconName: "mdi:dot",
+          componentName: "Dot",
+          a11y: "title",
+          trackSource: false,
+        },
+        { syntax: "h" }
+      );
+
+      expect(result).toContain('h("title"');
+      expect(result).toContain('"Dot"');
+    });
+
+    it("generates folder mode output", async () => {
+      const svg =
+        '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M10 20v-6h4v6"/></svg>';
+
+      const result = await vueStrategy.transformSvg(
+        svg,
+        {
+          iconName: "mdi:home",
+          componentName: "Home",
+          outputMode: "folder",
+          trackSource: false,
+        },
+        { syntax: "h" }
+      );
+
+      expect(result).toContain("export function Home");
+      expect(result).toContain("FunctionalComponent");
+      expect(result).toContain('h("svg"');
+    });
+
     it("spreads props after default attributes", async () => {
       const svg =
         '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M1"/></svg>';

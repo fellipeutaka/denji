@@ -49,6 +49,7 @@ function getIconsTemplate(config: TemplateConfig): string {
  * Transform SVG to Solid component
  * Uses native HTML attributes (kebab-case) since Solid supports them
  */
+// biome-ignore lint/suspicious/useAwait: This need to be async to match the FrameworkStrategy type, even though we don't have any async work here currently.
 async function transformSvg(
   svg: string,
   options: TransformSvgOptions
@@ -85,7 +86,7 @@ async function transformSvg(
 
   if (isFolderMode) {
     // Folder mode: generate standalone named export
-    return await eta.renderAsync("@solid/folder", {
+    return eta.render("@solid/folder", {
       componentName,
       svg: result,
     });

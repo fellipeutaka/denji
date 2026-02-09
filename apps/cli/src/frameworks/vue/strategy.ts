@@ -94,7 +94,9 @@ function findMatchingCloseTag(content: string, tagName: string): number {
   const openRegex = new RegExp(`<${tagName}(?:\\s|>)`, "g");
   const closeRegex = new RegExp(`</${tagName}>`, "g");
 
-  let pos = 0;
+  // Skip past the initial opening tag so it isn't counted as nesting
+  const firstTagEnd = content.indexOf(">");
+  let pos = firstTagEnd === -1 ? 0 : firstTagEnd + 1;
   while (pos < content.length) {
     openRegex.lastIndex = pos;
     closeRegex.lastIndex = pos;
@@ -216,6 +218,7 @@ function svgToH(svg: string): string {
 /**
  * Transform SVG to Vue h() function component
  */
+// biome-ignore lint/suspicious/useAwait: This need to be async to match the FrameworkStrategy type, even though we don't have any async work here currently.
 async function transformSvg(
   svg: string,
   options: TransformSvgOptions
@@ -276,7 +279,7 @@ async function transformSvg(
 
   if (isFolderMode) {
     // Folder mode: generate standalone named export
-    return await eta.renderAsync("@vue/folder", {
+    return eta.render("@vue/folder", {
       componentName,
       hCall,
     });
