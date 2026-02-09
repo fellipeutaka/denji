@@ -1,4 +1,4 @@
-import { describe, expect, it } from "bun:test";
+import { describe, expect, it, spyOn } from "bun:test";
 import { reactStrategy } from "./strategy";
 
 describe("React Strategy", () => {
@@ -290,6 +290,88 @@ describe("React Strategy", () => {
   describe("getForwardRefImportSource", () => {
     it("returns react", () => {
       expect(reactStrategy.getForwardRefImportSource()).toBe("react");
+    });
+  });
+
+  describe("transformSvg error handling", () => {
+    it("throws error when passing invalid SVG", () => {
+      const invalidSvg = "not an svg";
+
+      expect(
+        reactStrategy.transformSvg(
+          invalidSvg,
+          {
+            iconName: "test:invalid",
+            componentName: "Invalid",
+            trackSource: false,
+          },
+          { forwardRef: false }
+        )
+      ).rejects.toThrow();
+    });
+
+    it("throws error with specific message when SVG extraction fails", async () => {
+      // Spy on the transform function to return invalid JSX without SVG tags
+      const svgrCore = await import("@svgr/core");
+      const transformSpy = spyOn(svgrCore, "transform").mockResolvedValue(
+        "const Icon = () => <div>Invalid</div>;"
+      );
+
+      const svg =
+        '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M10 20v-6h4v6"/></svg>';
+
+      expect(
+        reactStrategy.transformSvg(
+          svg,
+          {
+            iconName: "test:invalid",
+            componentName: "Invalid",
+            trackSource: false,
+          },
+          { forwardRef: false }
+        )
+      ).rejects.toThrow("Failed to extract SVG from SVGR output");
+
+      // Restore original function
+      transformSpy.mockRestore();
+    });
+  });
+
+  describe("transformSvg with title mode", () => {
+    it("adds title element when a11y is title", async () => {
+      const svg =
+        '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M10 20v-6h4v6"/></svg>';
+
+      const result = await reactStrategy.transformSvg(
+        svg,
+        {
+          iconName: "mdi:home",
+          componentName: "HomeIcon",
+          a11y: "title",
+          trackSource: false,
+        },
+        { forwardRef: false }
+      );
+
+      expect(result).toContain("<title>Home Icon</title>");
+    });
+  });
+
+  describe("promptOptions", () => {
+    it("uses provided forwardRef value from context", async () => {
+      const result = await reactStrategy.promptOptions({
+        forwardRef: true,
+      });
+
+      expect(result).toEqual({ forwardRef: true });
+    });
+
+    it("uses provided false forwardRef value from context", async () => {
+      const result = await reactStrategy.promptOptions({
+        forwardRef: false,
+      });
+
+      expect(result).toEqual({ forwardRef: false });
     });
   });
 });
