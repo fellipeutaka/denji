@@ -221,6 +221,25 @@
           "properties": {
             "framework": {
               "type": "string",
+              "const": "qwik",
+              "description": "Qwik framework"
+            },
+            "qwik": {
+              "type": "object",
+              "properties": {},
+              "additionalProperties": false,
+              "description": "Qwik-specific configuration options"
+            }
+          },
+          "required": [
+            "framework"
+          ]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "framework": {
+              "type": "string",
               "const": "vue",
               "description": "Vue framework"
             },

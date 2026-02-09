@@ -1,0 +1,7 @@
+{
+  "root": true,
+  "title": "Qwik",
+  "description": "Qwik framework docs",
+  "icon": "Qwik",
+  "pages": ["index", "installation", "configuration", "usage"]
+}

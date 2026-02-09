@@ -1,0 +1,89 @@
+---
+title: Introduction
+description: CLI tool for managing SVG icons in frontend projects
+---
+
+import { Step, Steps } from "fumadocs-ui/components/steps";
+import { getPageTreePeers } from "fumadocs-core/page-tree";
+import { source } from "@/lib/source";
+
+Denji is a CLI tool that simplifies icon management in frontend projects. It fetches icons from Iconify's vast library, converts them to optimized components, and maintains a centralized icons file.
+
+## Features
+
+- **200,000+ icons** - Access icons from Iconify's collection (Lucide, Material Design, Heroicons, etc.)
+- **Type-safe** - Full TypeScript support with auto-completion
+- **Multi-framework** - Supports React, Preact, Solid, Qwik, and Vue
+- **Optimized** - Generates clean, tree-shakeable components
+- **Accessible** - Built-in accessibility strategies (ARIA attributes, titles, roles)
+- **Customizable** - Lifecycle hooks for custom transformations
+- **Zero dependencies** - Lightweight CLI with no runtime overhead
+
+## About the Name
+
+Named after Denji from Chainsaw Man. Short, memorable, perfect for CLI commands.
+
+![Denji from Chainsaw Man](https://media1.tenor.com/m/9TCYYMfVlYAAAAAd/denji-chainsaw-man.gif)
+
+## Quick Start
+
+<Steps>
+<Step>
+
+### Install Denji
+
+```npm
+npm i -D denji
+```
+
+</Step>
+
+<Step>
+
+### Initialize project
+
+```bash
+denji init
+```
+
+Creates `denji.json` config and icons template file.
+
+</Step>
+
+<Step>
+
+### Add icons
+
+```bash
+denji add lucide:check mdi:home
+```
+
+Fetches icons from Iconify and adds to your project.
+
+</Step>
+
+<Step>
+
+### Use in your app
+
+```tsx
+import { Icons } from "./icons";
+import { component$ } from "@builder.io/qwik";
+
+export const App = component$(() => {
+  return <Icons.Check class="size-4" />;
+});
+```
+
+</Step>
+</Steps>
+
+## Next Steps
+
+<Cards>
+  {getPageTreePeers(source.getPageTree(), "/docs/qwik").map((peer) => (
+    <Card key={peer.url} title={peer.name} href={peer.url}>
+      {peer.description}
+    </Card>
+  ))}
+</Cards>

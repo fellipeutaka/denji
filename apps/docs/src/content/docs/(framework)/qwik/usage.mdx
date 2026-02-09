@@ -1,0 +1,298 @@
+---
+title: Usage
+description: Usage examples and patterns for Qwik
+---
+
+import { Callout } from "fumadocs-ui/components/callout";
+
+Learn how to use Denji icons in your Qwik components.
+
+## Basic Usage
+
+Import and use icons as Qwik components:
+
+```tsx
+import { component$ } from "@builder.io/qwik";
+import { Icons } from "./icons";
+
+export const App = component$(() => {
+  return (
+    <div>
+      <Icons.Check class="size-4" />
+    </div>
+  );
+});
+```
+
+<Callout type="info">
+Qwik uses `class` instead of `className` for CSS classes.
+</Callout>
+
+## Styling
+
+### With Tailwind
+
+```tsx
+<Icons.Check class="size-6 text-green-500" />
+<Icons.X class="size-4 text-red-500" />
+```
+
+### With CSS
+
+```tsx
+<Icons.Check class="icon" />
+```
+
+```css
+.icon {
+  width: 1rem;
+  height: 1rem;
+  color: currentColor;
+}
+```
+
+### Inline Styles
+
+```tsx
+<Icons.Check 
+  style={{ 
+    width: "24px", 
+    height: "24px", 
+    color: "green" 
+  }} 
+/>
+```
+
+## Accessibility
+
+Icons inherit a11y strategy from config, but can be customized per use:
+
+### Decorative Icons
+
+For icons that are purely decorative:
+
+```tsx
+<button>
+  <Icons.Check aria-hidden="true" />
+  Save Changes
+</button>
+```
+
+### Semantic Icons
+
+For icons with meaning:
+
+```tsx
+<Icons.Check 
+  role="img" 
+  aria-label="Success" 
+/>
+```
+
+### With Text Alternative
+
+```tsx
+<button aria-label="Close dialog">
+  <Icons.X aria-hidden="true" />
+</button>
+```
+
+<Callout type="info">
+Configure default a11y in `denji.json` or per icon with `--a11y` flag.
+</Callout>
+
+## Common Patterns
+
+### Button Icons
+
+```tsx
+import { component$ } from "@builder.io/qwik";
+import { Icons } from "./icons";
+
+export const SaveButton = component$(() => {
+  return (
+    <button class="flex items-center gap-2">
+      <Icons.Check class="size-4" />
+      <span>Save</span>
+    </button>
+  );
+});
+```
+
+### Icon-Only Button
+
+```tsx
+import { component$ } from "@builder.io/qwik";
+import { Icons } from "./icons";
+
+export const CloseButton = component$(() => {
+  return (
+    <button 
+      aria-label="Close"
+      class="p-2 rounded hover:bg-gray-100"
+    >
+      <Icons.X class="size-5" aria-hidden="true" />
+    </button>
+  );
+});
+```
+
+### Status Icons
+
+```tsx
+import { component$ } from "@builder.io/qwik";
+import type { PropsOf } from "@builder.io/qwik";
+import { Icons, type IconProps } from "./icons";
+
+const status = {
+  success: { icon: Icons.Check, color: "text-green-500" },
+  error: { icon: Icons.X, color: "text-red-500" },
+  warning: { icon: Icons.AlertTriangle, color: "text-yellow-500" },
+};
+
+interface StatusIconProps extends IconProps {
+  type: keyof typeof status;
+}
+
+export const StatusIcon = component$<StatusIconProps>(({ type, ...rest }) => {
+  const statusConfig = status[type];
+
+  if (!statusConfig) {
+    throw new Error(`Invalid status type: "${type}".`);
+  }
+
+  const Icon = statusConfig.icon;
+
+  return <Icon class={`${statusConfig.color} size-5`} {...rest} />;
+});
+
+// Usage
+// <StatusIcon type="warning" />
+```
+
+### Loading Spinner
+
+```tsx
+import { component$ } from "@builder.io/qwik";
+import { Icons } from "./icons";
+
+export const LoadingSpinner = component$(() => {
+  return (
+    <Icons.Loader 
+      class="size-6 animate-spin"
+      aria-label="Loading"
+    />
+  );
+});
+```
+
+### Dynamic Icons
+
+<Callout type="warn">
+Dynamic icon patterns should only be used when icon names come from external sources (CMS, database, API). For static use cases, prefer direct imports like `<Icons.Check />` - this enables better tree-shaking and smaller bundles.
+</Callout>
+
+```tsx
+import { component$ } from "@builder.io/qwik";
+import { Icons, type IconProps } from "./icons";
+
+interface DynamicIconProps extends IconProps {
+  name: keyof typeof Icons;
+}
+
+export const DynamicIcon = component$<DynamicIconProps>(({ name, ...rest }) => {
+  const Icon = Icons[name];
+
+  if (!Icon) {
+    throw new Error(`Icon with name "${name}" does not exist.`);
+  }
+
+  return <Icon {...rest} />;
+});
+
+// Usage
+// <DynamicIcon name="Check" class="size-4" />
+```
+
+### Animations
+
+```tsx
+import { component$ } from "@builder.io/qwik";
+import { Icons } from "./icons";
+
+export const AnimatedCheck = component$(() => {
+  return (
+    <Icons.Check 
+      class="size-6 animate-bounce text-green-500"
+    />
+  );
+});
+```
+
+With custom animation:
+
+```css
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.spin {
+  animation: spin 1s linear infinite;
+}
+```
+
+```tsx
+<Icons.Loader class="size-6 spin" />
+```
+
+## TypeScript
+
+Icons are fully typed. Import the types you need:
+
+```tsx
+import type { IconProps, Icon, IconName } from "./icons";
+
+// All available types:
+// IconProps = PropsOf<"svg">
+// Icon = (props: IconProps) => JSX.Element
+// IconName = keyof typeof Icons
+
+// Example usage
+const iconName: IconName = "Check"; // Type-safe
+const invalidIcon: IconName = "NonExistent"; // Type error
+```
+
+## Folder Mode
+
+When using folder output mode, each icon is a standalone `component$()` wrapped component. You can import directly or use the barrel export:
+
+### Barrel Import
+
+```tsx
+import { Icons } from "./icons";
+
+// Same API as file mode
+<Icons.Check class="size-4" />
+```
+
+### Direct Import
+
+```tsx
+import { Check } from "./icons/Check";
+
+<Check class="size-4" />
+```
+
+<Callout type="info">
+Direct imports enable better tree-shaking. Barrel imports keep the same API as file mode.
+</Callout>
+
+## Tips
+
+1. **Tree Shaking**: Only imported icons are bundled
+2. **Naming**: Use descriptive names with `--name` flag
+3. **Organization**: Group related icons in separate files if needed
+4. **Performance**: Icons are lightweight SVG components
+5. **Consistency**: Use same icon library for cohesive design
+6. **Refs**: In Qwik, refs are passed as regular props - no `forwardRef` needed
+7. **Folder Mode**: Icons use `component$()` for full Qwik lazy-loading support

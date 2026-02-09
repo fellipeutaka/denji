@@ -16,6 +16,7 @@ import {
   enum as zodEnum,
 } from "zod/mini";
 import { preactOptionsSchema } from "~/frameworks/preact/schema";
+import { qwikOptionsSchema } from "~/frameworks/qwik/schema";
 import { reactOptionsSchema } from "~/frameworks/react/schema";
 import { solidOptionsSchema } from "~/frameworks/solid/schema";
 import { svelteOptionsSchema } from "~/frameworks/svelte/schema";
@@ -134,6 +135,12 @@ const solidConfigSchema = object({
   solid: optional(solidOptionsSchema),
 });
 
+// Qwik-specific config
+const qwikConfigSchema = object({
+  framework: literal("qwik").check(describe("Qwik framework")),
+  qwik: optional(qwikOptionsSchema),
+});
+
 // Vue-specific config
 const vueConfigSchema = object({
   framework: literal("vue").check(describe("Vue framework")),
@@ -151,6 +158,7 @@ const frameworkConfigSchema = discriminatedUnion("framework", [
   reactConfigSchema,
   preactConfigSchema,
   solidConfigSchema,
+  qwikConfigSchema,
   vueConfigSchema,
   svelteConfigSchema,
 ]);
@@ -181,6 +189,7 @@ export const frameworkSchema = zodEnum([
   "react",
   "preact",
   "solid",
+  "qwik",
   "vue",
   "svelte",
 ]);

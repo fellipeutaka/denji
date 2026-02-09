@@ -18,6 +18,7 @@ const FRAMEWORK_EXTENSIONS: Record<
   react: { typescript: ".tsx", javascript: ".jsx" },
   preact: { typescript: ".tsx", javascript: ".jsx" },
   solid: { typescript: ".tsx", javascript: ".jsx" },
+  qwik: { typescript: ".tsx", javascript: ".jsx" },
   vue: { typescript: ".ts", javascript: ".js" },
   svelte: { typescript: ".svelte", javascript: ".svelte" },
 };

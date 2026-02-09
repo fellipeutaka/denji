@@ -5,6 +5,7 @@ const strategyLoaders: Record<Framework, () => Promise<FrameworkStrategy>> = {
   react: async () => (await import("./react/strategy")).reactStrategy,
   preact: async () => (await import("./preact/strategy")).preactStrategy,
   solid: async () => (await import("./solid/strategy")).solidStrategy,
+  qwik: async () => (await import("./qwik/strategy")).qwikStrategy,
   vue: async () => (await import("./vue/strategy")).vueStrategy,
   svelte: async () => (await import("./svelte/strategy")).svelteStrategy,
 };
