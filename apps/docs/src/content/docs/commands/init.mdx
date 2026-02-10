@@ -97,6 +97,16 @@ Running `denji init` creates:
    }
    ```
 
+<Callout type="info">
+If Denji is not installed locally (e.g., using `npx`, `bunx`, `pnpx`, `yarn dlx`), use the remote schema URL instead:
+
+```json
+{
+  "$schema": "https://denji-docs.vercel.app/configuration_schema.json"
+}
+```
+</Callout>
+
 2. **Icons file or folder** depending on output type:
    - **File mode**: a single template file (e.g., `icons.tsx`)
    - **Folder mode**: an output directory with barrel file and types

@@ -163,11 +163,21 @@ Lifecycle hooks to run shell commands at specific points:
 
 ## Schema Validation
 
-The config includes JSON schema for editor validation and auto-completion:
+The config includes JSON schema for editor validation and auto-completion.
+
+If Denji is installed locally:
 
 ```json
 {
   "$schema": "./node_modules/denji/configuration_schema.json"
+}
+```
+
+If using Denji without a local install (e.g., `npx`, `bunx`, `pnpx`, `yarn dlx`):
+
+```json
+{
+  "$schema": "https://denji-docs.vercel.app/configuration_schema.json"
 }
 ```
 
