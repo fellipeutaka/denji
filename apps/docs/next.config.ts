@@ -6,6 +6,7 @@ const withMDX = createMDX();
 
 const config: NextConfig = {
   reactStrictMode: true,
+  reactCompiler: true,
   typescript: {
     ignoreBuildErrors: true,
   },
@@ -49,6 +50,7 @@ const config: NextConfig = {
     turbopackFileSystemCacheForDev: true,
     turbopackFileSystemCacheForBuild: true,
   },
+  cacheComponents: true,
 };
 
 export default withMDX(config);

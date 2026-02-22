@@ -23,6 +23,19 @@
     "configuration_schema.json",
     "README.md"
   ],
+  "keywords": [
+    "svg",
+    "icons",
+    "frontend",
+    "cli",
+    "react",
+    "preact",
+    "solid",
+    "vue",
+    "svelte",
+    "qwik",
+    "iconify"
+  ],
   "sideEffects": false,
   "publishConfig": {
     "access": "public"

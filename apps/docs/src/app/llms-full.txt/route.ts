@@ -1,10 +1,16 @@
+import { cacheLife } from "next/cache";
 import { getLLMText, source } from "@/lib/source";
 
-export const revalidate = false;
-
 export async function GET() {
-  const scan = source.getPages().map(getLLMText);
-  const scanned = await Promise.all(scan);
+  const scanned = await getScanned();
 
   return new Response(scanned.join("\n\n"));
+}
+
+async function getScanned() {
+  "use cache";
+  cacheLife("max");
+
+  const scan = source.getPages().map(getLLMText);
+  return await Promise.all(scan);
 }

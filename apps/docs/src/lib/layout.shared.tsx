@@ -6,6 +6,12 @@ export function baseOptions(): BaseLayoutProps {
     nav: {
       title: siteConfig.name,
     },
+    links: [
+      {
+        text: "Icons",
+        url: "/icons",
+      },
+    ],
     githubUrl: siteConfig.links.github,
   };
 }

@@ -6,6 +6,7 @@
     "build": "next build",
     "dev": "next dev",
     "start": "next start",
+    "preview": "next build && next start",
     "type-check": "next typegen && fumadocs-mdx && tsc --noEmit",
     "lint": "biome check",
     "lint:fix": "biome check --write",
@@ -13,12 +14,29 @@
     "postinstall": "fumadocs-mdx"
   },
   "dependencies": {
+    "@base-ui/react": "^1.1.0",
+    "@iconify/json": "^2.2.438",
+    "@iconify/react": "^6.0.2",
+    "@iconify/types": "^2.0.0",
+    "@iconify/utils": "^3.1.0",
+    "@react-stately/layout": "^4.5.3",
+    "@react-stately/virtualizer": "^4.4.5",
+    "@tanstack/react-hotkeys": "^0.2.0",
+    "@tanstack/react-pacer": "^0.20.0",
+    "@tanstack/react-query": "^5.90.20",
+    "cva": "^1.0.0-beta.4",
     "fumadocs-core": "16.5.0",
     "fumadocs-mdx": "14.2.6",
     "fumadocs-ui": "16.5.0",
+    "iconify-icon": "^3.0.2",
+    "lucide-react": "^0.563.0",
     "next": "16.1.6",
+    "next-themes": "^0.4.6",
+    "nuqs": "^2.8.8",
     "react": "^19.2.4",
+    "react-aria-components": "^1.15.1",
     "react-dom": "^19.2.4",
+    "sonner": "^2.0.7",
     "tailwind-merge": "^3.4.0"
   },
   "devDependencies": {
@@ -27,7 +45,11 @@
     "@types/node": "^25.2.0",
     "@types/react": "^19.2.8",
     "@types/react-dom": "^19.2.3",
+    "babel-plugin-react-compiler": "^1.0.0",
     "postcss": "^8.5.6",
-    "tailwindcss": "^4.1.18"
+    "shadcn": "^3.8.4",
+    "tailwindcss": "^4.1.18",
+    "tailwindcss-motion": "^1.1.1",
+    "tailwindcss-react-aria-components": "^2.0.1"
   }
 }

@@ -31,7 +31,7 @@ describe("Qwik Strategy", () => {
       });
 
       expect(template).toContain(
-        'import type { PropsOf } from "@builder.io/qwik"'
+        'import type { PropsOf, JSX } from "@builder.io/qwik"'
       );
       expect(template).toContain('export type IconProps = PropsOf<"svg">');
       expect(template).toContain(
