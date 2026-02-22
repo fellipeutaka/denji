@@ -23,17 +23,6 @@ export interface TransformSvgOptions {
 }
 
 /**
- * Options for generating an icon component
- * @deprecated Use TransformSvgOptions instead
- */
-export interface ComponentOptions {
-  a11y?: A11y;
-  forwardRef: boolean;
-  iconName: string;
-  trackSource?: boolean;
-}
-
-/**
  * Configuration passed to template generation
  */
 export interface TemplateConfig {
