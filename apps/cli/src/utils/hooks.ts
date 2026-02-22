@@ -1,22 +1,24 @@
 import { spawn } from "node:child_process";
-import { logger } from "~/utils/logger";
+import type { Logger } from "~/services/deps";
 import { Err, Ok } from "~/utils/result";
 
-export async function runHooks(hooks: string[], cwd: string) {
-  if (hooks.length === 0) {
-    return new Ok(null);
-  }
-
-  for (const hook of hooks) {
-    logger.info(`Running: ${hook}`);
-
-    const result = await runCommand(hook, cwd);
-    if (result.isErr()) {
-      return result;
+export function createRunHooks(logger: Logger) {
+  return async (hooks: string[], cwd: string) => {
+    if (hooks.length === 0) {
+      return new Ok(null);
     }
-  }
 
-  return new Ok(null);
+    for (const hook of hooks) {
+      logger.info(`Running: ${hook}`);
+
+      const result = await runCommand(hook, cwd);
+      if (result.isErr()) {
+        return result;
+      }
+    }
+
+    return new Ok(null);
+  };
 }
 
 function runCommand(

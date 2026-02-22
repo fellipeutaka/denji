@@ -8,7 +8,7 @@ import {
   unlink,
   writeFile,
 } from "~/utils/fs";
-import { runHooks } from "~/utils/hooks";
+import { createRunHooks } from "~/utils/hooks";
 import {
   fetchIcon,
   getExistingIconNames,
@@ -59,7 +59,7 @@ export const defaultConfig: ConfigLoader = {
 };
 
 export const defaultHooks: HooksRunner = {
-  runHooks,
+  runHooks: createRunHooks(logger),
 };
 
 export const defaultIcons: IconService = {
