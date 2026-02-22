@@ -5,6 +5,7 @@ import { type A11y, a11ySchema, type Config } from "~/schemas/config";
 import { addDefaults } from "~/services/defaults";
 import type { AddDeps } from "~/services/deps";
 import { handleError } from "~/utils/handle-error";
+import { resolveContext } from "~/utils/resolve-context";
 import { Err } from "~/utils/result";
 
 export interface AddOptions {
@@ -17,19 +18,14 @@ export class AddCommand {
   constructor(private readonly deps: AddDeps) {}
 
   async run(icons: string[], options: AddOptions) {
-    const { fs, config, hooks, icons: iconUtils, frameworks } = this.deps;
+    const { hooks, icons: iconUtils } = this.deps;
 
-    // 1. Validate cwd exists
-    if (!(await fs.access(options.cwd))) {
-      return new Err(`Directory does not exist: ${options.cwd}`);
-    }
-
-    // 2. Validate --name with multiple icons
+    // 1. Validate --name with multiple icons
     if (options.name && icons.length > 1) {
       return new Err("--name can only be used with a single icon");
     }
 
-    // 3. Validate all icon names
+    // 2. Validate all icon names
     for (const icon of icons) {
       const validation = iconUtils.validateIconName(icon);
       if (validation.isErr()) {
@@ -37,7 +33,7 @@ export class AddCommand {
       }
     }
 
-    // 4. Validate --a11y if provided
+    // 3. Validate --a11y if provided
     let a11yOverride: A11y | undefined;
     if (options.a11y !== undefined) {
       const a11yInput = options.a11y === "false" ? false : options.a11y;
@@ -50,17 +46,14 @@ export class AddCommand {
       a11yOverride = a11yResult.data;
     }
 
-    // 5. Load config
-    const configResult = await config.loadConfig(options.cwd);
-    if (configResult.isErr()) {
-      return configResult;
+    // 4. Resolve config + strategy
+    const ctxResult = await resolveContext(this.deps, options.cwd);
+    if (ctxResult.isErr()) {
+      return ctxResult;
     }
-    const cfg = configResult.value;
+    const { cfg, strategy } = ctxResult.value;
 
-    // 6. Load framework strategy
-    const strategy = await frameworks.createStrategy(cfg.framework);
-
-    // 7. Run preAdd hooks
+    // 5. Run preAdd hooks
     const preAddResult = await hooks.runHooks(
       cfg.hooks?.preAdd ?? [],
       options.cwd
@@ -79,12 +72,14 @@ export class AddCommand {
         : this.deps.runFileMode;
 
     return runMode(
-      icons,
-      options,
-      cfg,
-      strategy,
-      frameworkOptions,
-      a11yOverride,
+      {
+        icons,
+        options,
+        cfg,
+        strategy,
+        frameworkOptions,
+        a11yOverride,
+      },
       this.deps
     );
   }

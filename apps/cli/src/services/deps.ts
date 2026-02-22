@@ -81,13 +81,17 @@ export interface FrameworkFactory {
 // Mode Runner Types
 // ============================================================================
 
+export interface AddModeContext {
+  a11yOverride: A11y | undefined;
+  cfg: Config;
+  frameworkOptions: FrameworkOptions;
+  icons: string[];
+  options: { cwd: string; name?: string };
+  strategy: FrameworkStrategy;
+}
+
 export type AddModeRunner = (
-  icons: string[],
-  options: { cwd: string; name?: string },
-  cfg: Config,
-  strategy: FrameworkStrategy,
-  frameworkOptions: FrameworkOptions,
-  a11yOverride: A11y | undefined,
+  ctx: AddModeContext,
   deps: Pick<AddDeps, "fs" | "hooks" | "icons" | "prompts" | "logger">
 ) => Promise<ResultType<null, string>>;
 

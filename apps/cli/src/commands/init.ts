@@ -118,7 +118,72 @@ export class InitCommand {
   }
 
   async resolveConfig(options: InitOptions) {
-    const { prompts, frameworks } = this.deps;
+    const { frameworks } = this.deps;
+
+    const frameworkResult = await this.resolveFramework(options);
+    if (frameworkResult.isErr()) {
+      return frameworkResult;
+    }
+    const framework = frameworkResult.value;
+
+    const strategy = await frameworks.createStrategy(framework);
+
+    const outputResult = await this.resolveOutputType(
+      options,
+      framework,
+      strategy
+    );
+    if (outputResult.isErr()) {
+      return outputResult;
+    }
+    const output = outputResult.value;
+
+    const typescript =
+      options.typescript ??
+      (await this.deps.prompts.confirm({
+        message: "Use TypeScript?",
+        initialValue: true,
+      }));
+
+    const a11yResult = await this.resolveA11y(options);
+    if (a11yResult.isErr()) {
+      return a11yResult;
+    }
+    const a11y = a11yResult.value;
+
+    const trackSource =
+      options.trackSource ??
+      (await this.deps.prompts.confirm({
+        message:
+          "Track Iconify source names? (for update command, debugging, identifying collections)",
+        initialValue: true,
+      }));
+
+    // Get framework-specific options using strategy
+    const frameworkOptions = await strategy.promptOptions({
+      forwardRef: options.forwardRef,
+    });
+
+    const raw = configSchema.parse({
+      output,
+      framework,
+      typescript,
+      a11y,
+      trackSource,
+      [strategy.getConfigKey()]: frameworkOptions,
+    });
+
+    // Normalize to Config with OutputConfig
+    const config: Config = {
+      ...raw,
+      output,
+    };
+
+    return new Ok({ config, strategy });
+  }
+
+  private async resolveFramework(options: InitOptions) {
+    const { prompts } = this.deps;
 
     const frameworkInput =
       options.framework ??
@@ -134,12 +199,17 @@ export class InitCommand {
         `Invalid framework: ${frameworkInput}. Use: react, preact, solid, vue, svelte`
       );
     }
-    const framework = frameworkResult.data;
 
-    // Load framework strategy
-    const strategy = await frameworks.createStrategy(framework);
+    return new Ok(frameworkResult.data);
+  }
 
-    // Resolve output type
+  private async resolveOutputType(
+    options: InitOptions,
+    framework: Config["framework"],
+    strategy: FrameworkStrategy
+  ) {
+    const { prompts } = this.deps;
+
     let outputType: OutputType;
     if (options.outputType !== undefined) {
       const typeResult = outputTypeSchema.safeParse(options.outputType);
@@ -189,12 +259,11 @@ export class InitCommand {
 
     const output: OutputConfig = { type: outputType, path: outputPath };
 
-    const typescript =
-      options.typescript ??
-      (await prompts.confirm({
-        message: "Use TypeScript?",
-        initialValue: true,
-      }));
+    return new Ok(output);
+  }
+
+  private async resolveA11y(options: InitOptions) {
+    const { prompts } = this.deps;
 
     const a11yInput =
       options.a11y ??
@@ -232,37 +301,8 @@ export class InitCommand {
         `Invalid a11y strategy: ${a11yInput}. Use: hidden, img, title, presentation, false`
       );
     }
-    const a11y = a11yResult.data;
 
-    const trackSource =
-      options.trackSource ??
-      (await prompts.confirm({
-        message:
-          "Track Iconify source names? (for update command, debugging, identifying collections)",
-        initialValue: true,
-      }));
-
-    // Get framework-specific options using strategy
-    const frameworkOptions = await strategy.promptOptions({
-      forwardRef: options.forwardRef,
-    });
-
-    const raw = configSchema.parse({
-      output,
-      framework,
-      typescript,
-      a11y,
-      trackSource,
-      [strategy.getConfigKey()]: frameworkOptions,
-    });
-
-    // Normalize to Config with OutputConfig
-    const config: Config = {
-      ...raw,
-      output,
-    };
-
-    return new Ok({ config, strategy });
+    return new Ok(a11yResult.data);
   }
 
   validateExtension(config: Config, strategy: FrameworkStrategy) {

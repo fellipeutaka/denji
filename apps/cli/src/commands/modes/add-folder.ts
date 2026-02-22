@@ -1,26 +1,15 @@
 import path from "node:path";
-import type { FrameworkOptions } from "~/frameworks/types";
-import type { A11y, Config } from "~/schemas/config";
-import type { AddDeps } from "~/services/deps";
+import type { AddDeps, AddModeContext } from "~/services/deps";
 import {
   generateBarrel,
   getExistingIconNames as getFolderIconNames,
 } from "~/utils/icons-folder";
 import { Err, Ok } from "~/utils/result";
 
-import type { AddOptions } from "../add";
-
 type Deps = Pick<AddDeps, "fs" | "hooks" | "icons" | "prompts" | "logger">;
 
-export async function addFolderMode(
-  icons: string[],
-  options: AddOptions,
-  cfg: Config,
-  strategy: Awaited<ReturnType<AddDeps["frameworks"]["createStrategy"]>>,
-  frameworkOptions: FrameworkOptions,
-  a11yOverride: A11y | undefined,
-  deps: Deps
-) {
+export async function addFolderMode(ctx: AddModeContext, deps: Deps) {
+  const { icons, options, cfg, strategy, frameworkOptions, a11yOverride } = ctx;
   const { fs, hooks, icons: iconUtils, prompts, logger } = deps;
 
   const outputDir = path.resolve(options.cwd, cfg.output.path);

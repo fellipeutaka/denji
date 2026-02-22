@@ -3,7 +3,7 @@ import { Command } from "commander";
 import { listDefaults } from "~/services/defaults";
 import type { ListDeps } from "~/services/deps";
 import { handleError } from "~/utils/handle-error";
-import { Err } from "~/utils/result";
+import { resolveContext } from "~/utils/resolve-context";
 
 export interface ListOptions {
   cwd: string;
@@ -14,22 +14,11 @@ export class ListCommand {
   constructor(private readonly deps: ListDeps) {}
 
   async run(options: ListOptions) {
-    const { fs, config, frameworks } = this.deps;
-
-    // 1. Validate cwd exists
-    if (!(await fs.access(options.cwd))) {
-      return new Err(`Directory does not exist: ${options.cwd}`);
+    const ctxResult = await resolveContext(this.deps, options.cwd);
+    if (ctxResult.isErr()) {
+      return ctxResult;
     }
-
-    // 2. Load config
-    const configResult = await config.loadConfig(options.cwd);
-    if (configResult.isErr()) {
-      return configResult;
-    }
-    const cfg = configResult.value;
-
-    // 3. Load framework strategy
-    const strategy = await frameworks.createStrategy(cfg.framework);
+    const { cfg, strategy } = ctxResult.value;
 
     if (cfg.output.type === "folder") {
       return this.deps.runFolderMode(options, cfg, strategy, this.deps);

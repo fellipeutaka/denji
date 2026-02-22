@@ -3,7 +3,7 @@ import { Command } from "commander";
 import { clearDefaults } from "~/services/defaults";
 import type { ClearDeps } from "~/services/deps";
 import { handleError } from "~/utils/handle-error";
-import { Err } from "~/utils/result";
+import { resolveContext } from "~/utils/resolve-context";
 
 export interface ClearOptions {
   cwd: string;
@@ -14,22 +14,11 @@ export class ClearCommand {
   constructor(private readonly deps: ClearDeps) {}
 
   async run(options: ClearOptions) {
-    const { fs, config, frameworks } = this.deps;
-
-    // 1. Validate cwd exists
-    if (!(await fs.access(options.cwd))) {
-      return new Err(`Directory does not exist: ${options.cwd}`);
+    const ctxResult = await resolveContext(this.deps, options.cwd);
+    if (ctxResult.isErr()) {
+      return ctxResult;
     }
-
-    // 2. Load config
-    const configResult = await config.loadConfig(options.cwd);
-    if (configResult.isErr()) {
-      return configResult;
-    }
-    const cfg = configResult.value;
-
-    // 3. Load framework strategy
-    const strategy = await frameworks.createStrategy(cfg.framework);
+    const { cfg, strategy } = ctxResult.value;
 
     const runMode =
       cfg.output.type === "folder"

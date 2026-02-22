@@ -3,7 +3,7 @@ import { Command } from "commander";
 import { removeDefaults } from "~/services/defaults";
 import type { RemoveDeps } from "~/services/deps";
 import { handleError } from "~/utils/handle-error";
-import { Err } from "~/utils/result";
+import { resolveContext } from "~/utils/resolve-context";
 
 export interface RemoveOptions {
   cwd: string;
@@ -13,22 +13,11 @@ export class RemoveCommand {
   constructor(private readonly deps: RemoveDeps) {}
 
   async run(icons: string[], options: RemoveOptions) {
-    const { fs, config, frameworks } = this.deps;
-
-    // 1. Validate cwd exists
-    if (!(await fs.access(options.cwd))) {
-      return new Err(`Directory does not exist: ${options.cwd}`);
+    const ctxResult = await resolveContext(this.deps, options.cwd);
+    if (ctxResult.isErr()) {
+      return ctxResult;
     }
-
-    // 2. Load config
-    const configResult = await config.loadConfig(options.cwd);
-    if (configResult.isErr()) {
-      return configResult;
-    }
-    const cfg = configResult.value;
-
-    // 3. Load framework strategy
-    const strategy = await frameworks.createStrategy(cfg.framework);
+    const { cfg, strategy } = ctxResult.value;
 
     const runMode =
       cfg.output.type === "folder"
