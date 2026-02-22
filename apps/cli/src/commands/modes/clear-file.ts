@@ -46,6 +46,7 @@ export async function clearFileMode(
 
     if (!shouldContinue) {
       cancel(CANCEL_MESSAGE);
+      return new Ok(null);
     }
   }
 

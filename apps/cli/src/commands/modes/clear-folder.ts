@@ -49,6 +49,7 @@ export async function clearFolderMode(
 
     if (!shouldContinue) {
       cancel(CANCEL_MESSAGE);
+      return new Ok(null);
     }
   }
 
