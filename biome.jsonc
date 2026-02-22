@@ -2,7 +2,12 @@
   "$schema": "./node_modules/@biomejs/biome/configuration_schema.json",
   "extends": ["ultracite/biome/core", "ultracite/biome/react"],
   "files": {
-    "includes": ["!.agents/**/*", "!icones/**/*"]
+    "includes": [
+      "!.agents/**/*",
+      "!icones/**/*",
+      "!apps/cli/configuration_schema.json",
+      "!apps/docs/public/configuration_schema.json"
+    ]
   },
   "linter": {
     "rules": {
@@ -29,22 +34,5 @@
   },
   "javascript": {
     "globals": ["Bun"]
-  },
-  "overrides": [
-    {
-      "includes": [
-        "apps/cli/configuration_schema.json",
-        "apps/docs/public/configuration_schema.json"
-      ],
-      "assist": {
-        "enabled": false
-      },
-      "linter": {
-        "enabled": false
-      },
-      "formatter": {
-        "enabled": false
-      }
-    }
-  ]
+  }
 }
