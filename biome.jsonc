@@ -1,6 +1,9 @@
 {
   "$schema": "./node_modules/@biomejs/biome/configuration_schema.json",
   "extends": ["ultracite/biome/core", "ultracite/biome/react"],
+  "files": {
+    "includes": ["!.agents/**/*", "!icones/**/*"]
+  },
   "linter": {
     "rules": {
       "style": {
@@ -8,7 +11,8 @@
         "useBlockStatements": {
           "level": "error",
           "fix": "safe"
-        }
+        },
+        "noExportedImports": "off"
       },
       "complexity": {
         "noExcessiveCognitiveComplexity": {
@@ -17,6 +21,9 @@
             "maxAllowedComplexity": 41
           }
         }
+      },
+      "performance": {
+        "noBarrelFile": "off"
       }
     }
   },

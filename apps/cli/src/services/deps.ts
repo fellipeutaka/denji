@@ -14,17 +14,17 @@ import type { ResultType } from "~/utils/result";
 
 export interface FileSystem {
   access(path: string): Promise<boolean>;
-  readFile(
-    path: string,
-    encoding?: BufferEncoding
-  ): Promise<ResultType<string, string>>;
-  writeFile(file: string, data: string): Promise<ResultType<null, string>>;
   mkdir(
     path: string,
     options?: { recursive?: boolean }
   ): Promise<ResultType<null, string>>;
   readdir(path: string): Promise<ResultType<string[], string>>;
+  readFile(
+    path: string,
+    encoding?: BufferEncoding
+  ): Promise<ResultType<string, string>>;
   unlink(path: string): Promise<ResultType<null, string>>;
+  writeFile(file: string, data: string): Promise<ResultType<null, string>>;
 }
 
 export interface ConfigLoader {
@@ -37,40 +37,40 @@ export interface HooksRunner {
 
 export interface IconService {
   fetchIcon(iconName: string): Promise<ResultType<string, string>>;
-  validateIconName(
-    icon: string
-  ): ResultType<{ prefix: string; name: string }, string>;
-  toComponentName(icon: string): string;
-  parseIconsFile(content: string): {
-    icons: { name: string; start: number; end: number }[];
-    objectStart: number;
-    objectEnd: number;
-  };
   getExistingIconNames(content: string): string[];
   insertIconAlphabetically(
     content: string,
     name: string,
     component: string
   ): string;
-  replaceIcon(content: string, name: string, component: string): string;
+  parseIconsFile(content: string): {
+    icons: { name: string; start: number; end: number }[];
+    objectStart: number;
+    objectEnd: number;
+  };
   removeIcon(content: string, name: string): string;
+  replaceIcon(content: string, name: string, component: string): string;
+  toComponentName(icon: string): string;
+  validateIconName(
+    icon: string
+  ): ResultType<{ prefix: string; name: string }, string>;
 }
 
 export interface Prompter {
   confirm(opts: ConfirmOptions): Promise<boolean>;
+  multiselect<const Value>(opts: MultiSelectOptions<Value>): Promise<Value[]>;
   select<const Options extends Option<Value>[], const Value>(
     opts: SelectOptions<Options, Value>
   ): Promise<Options[number]["value"]>;
   text(opts: TextOptions): Promise<string>;
-  multiselect<const Value>(opts: MultiSelectOptions<Value>): Promise<Value[]>;
 }
 
 export interface Logger {
+  break(): void;
   error(msg: string): void;
-  warn(msg: string): void;
   info(msg: string): void;
   success(msg: string): void;
-  break(): void;
+  warn(msg: string): void;
 }
 
 export interface FrameworkFactory {
@@ -132,57 +132,58 @@ export type InitFolderModeRunner = (
 // ============================================================================
 
 export interface ListDeps {
-  fs: Pick<FileSystem, "access" | "readFile" | "readdir">;
   config: ConfigLoader;
+  frameworks: FrameworkFactory;
+  fs: Pick<FileSystem, "access" | "readFile" | "readdir">;
   hooks: HooksRunner;
   icons: Pick<IconService, "parseIconsFile">;
   logger: Logger;
-  frameworks: FrameworkFactory;
   runFileMode: ListFileModeRunner;
   runFolderMode: ListFolderModeRunner;
 }
 
 export interface ClearDeps {
+  config: ConfigLoader;
+  frameworks: FrameworkFactory;
   fs: Pick<
     FileSystem,
     "access" | "readFile" | "writeFile" | "readdir" | "unlink"
   >;
-  config: ConfigLoader;
   hooks: HooksRunner;
   icons: Pick<IconService, "getExistingIconNames">;
-  prompts: Pick<Prompter, "confirm">;
   logger: Logger;
-  frameworks: FrameworkFactory;
+  prompts: Pick<Prompter, "confirm">;
   runFileMode: ClearModeRunner;
   runFolderMode: ClearModeRunner;
 }
 
 export interface RemoveDeps {
+  config: ConfigLoader;
+  frameworks: FrameworkFactory;
   fs: Pick<
     FileSystem,
     "access" | "readFile" | "writeFile" | "readdir" | "unlink"
   >;
-  config: ConfigLoader;
   hooks: HooksRunner;
   icons: Pick<IconService, "getExistingIconNames" | "removeIcon">;
-  prompts: Pick<Prompter, "multiselect">;
   logger: Logger;
-  frameworks: FrameworkFactory;
+  prompts: Pick<Prompter, "multiselect">;
   runFileMode: RemoveModeRunner;
   runFolderMode: RemoveModeRunner;
 }
 
 export interface InitDeps {
-  fs: Pick<FileSystem, "access" | "mkdir" | "writeFile" | "readdir">;
-  prompts: Prompter;
-  logger: Logger;
   frameworks: FrameworkFactory;
+  fs: Pick<FileSystem, "access" | "mkdir" | "writeFile" | "readdir">;
   initFolderMode: InitFolderModeRunner;
+  logger: Logger;
+  prompts: Prompter;
 }
 
 export interface AddDeps {
-  fs: Pick<FileSystem, "access" | "readFile" | "writeFile" | "readdir">;
   config: ConfigLoader;
+  frameworks: FrameworkFactory;
+  fs: Pick<FileSystem, "access" | "readFile" | "writeFile" | "readdir">;
   hooks: HooksRunner;
   icons: Pick<
     IconService,
@@ -193,9 +194,8 @@ export interface AddDeps {
     | "insertIconAlphabetically"
     | "replaceIcon"
   >;
-  prompts: Pick<Prompter, "confirm">;
   logger: Logger;
-  frameworks: FrameworkFactory;
+  prompts: Pick<Prompter, "confirm">;
   runFileMode: AddModeRunner;
   runFolderMode: AddModeRunner;
 }

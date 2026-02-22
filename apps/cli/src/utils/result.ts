@@ -1,6 +1,6 @@
 interface Result<T, E> {
-  isOk(): this is Ok<T, E>;
   isErr(): this is Err<T, E>;
+  isOk(): this is Ok<T, E>;
 }
 
 export class Ok<T, E> implements Result<T, E> {

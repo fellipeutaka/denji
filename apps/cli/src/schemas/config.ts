@@ -61,8 +61,8 @@ const outputSchema = union([
 ]);
 
 export interface OutputConfig {
-  type: OutputType;
   path: string;
+  type: OutputType;
 }
 
 // Base config (shared across all frameworks)

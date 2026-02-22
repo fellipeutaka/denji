@@ -8,9 +8,9 @@ import { handleError } from "~/utils/handle-error";
 import { Err } from "~/utils/result";
 
 export interface AddOptions {
+  a11y?: string | boolean;
   cwd: string;
   name?: string;
-  a11y?: string | boolean;
 }
 
 export class AddCommand {

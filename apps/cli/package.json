@@ -51,20 +51,20 @@
     "lint:doctor": "ultracite doctor"
   },
   "dependencies": {
-    "@clack/prompts": "^1.0.0",
+    "@clack/prompts": "^1.0.1",
     "@svgr/core": "^8.1.0",
     "@svgr/plugin-jsx": "^8.1.0",
     "@svgr/plugin-svgo": "^8.1.0",
     "commander": "^14.0.3",
-    "eta": "^4.5.0",
+    "eta": "^4.5.1",
     "iconify-icon": "^3.0.2",
-    "oxc-parser": "^0.112.0",
+    "oxc-parser": "^0.114.0",
     "picocolors": "^1.1.1",
     "svgo": "^4.0.0",
     "zod": "^4.3.6"
   },
   "devDependencies": {
     "@iconify/types": "^2.0.0",
-    "tsdown": "^0.20.1"
+    "tsdown": "^0.20.3"
   }
 }

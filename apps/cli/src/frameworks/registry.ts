@@ -4,8 +4,8 @@ import type { Framework } from "~/schemas/config";
  * Metadata for framework selection in prompts
  */
 export interface FrameworkMeta {
-  value: Framework;
   label: string;
+  value: Framework;
 }
 
 /**

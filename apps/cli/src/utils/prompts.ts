@@ -36,10 +36,10 @@ export type Option<Value> = Value extends Primitive
       hint?: string;
     };
 export interface SelectOptions<Options extends Option<Value>[], Value> {
-  message: string;
-  options: Options;
   initialValue?: Options[number]["value"];
   maxItems?: number;
+  message: string;
+  options: Options;
 }
 
 export async function enhancedSelect<
@@ -58,11 +58,11 @@ export async function enhancedSelect<
 }
 
 export interface MultiSelectOptions<Value> {
+  cursorAt?: Value;
+  initialValues?: Value[];
   message: string;
   options: Option<Value>[];
-  initialValues?: Value[];
   required?: boolean;
-  cursorAt?: Value;
 }
 
 export async function enhancedMultiselect<const Value>(

@@ -98,10 +98,10 @@ export async function fetchIcon(iconName: string) {
 const DATA_ICON_REGEX = /data-icon="([^"]+)"/;
 
 interface IconEntry {
-  name: string;
-  start: number;
   end: number;
+  name: string;
   source?: string;
+  start: number;
 }
 
 export function parseIconsFile(content: string): {

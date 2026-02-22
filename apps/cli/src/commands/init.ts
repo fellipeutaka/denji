@@ -23,14 +23,14 @@ import { handleError } from "~/utils/handle-error";
 import { Err, Ok } from "~/utils/result";
 
 export interface InitOptions {
+  a11y?: string;
   cwd: string;
+  forwardRef?: boolean;
+  framework?: string;
   output?: string;
   outputType?: string;
-  framework?: string;
-  typescript?: boolean;
-  a11y?: string;
   trackSource?: boolean;
-  forwardRef?: boolean;
+  typescript?: boolean;
 }
 
 export class InitCommand {

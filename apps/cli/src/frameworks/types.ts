@@ -12,14 +12,14 @@ export type FrameworkOptions = Record<string, unknown>;
 export interface TransformSvgOptions {
   /** Accessibility strategy */
   a11y?: A11y;
-  /** Add data-icon attribute with source name */
-  trackSource?: boolean;
-  /** Original icon name (e.g., "mdi:home") */
-  iconName: string;
   /** Component name (e.g., "Home") */
   componentName: string;
+  /** Original icon name (e.g., "mdi:home") */
+  iconName: string;
   /** Output mode: "file" for object properties, "folder" for standalone exports */
   outputMode?: OutputType;
+  /** Add data-icon attribute with source name */
+  trackSource?: boolean;
 }
 
 /**
@@ -28,17 +28,17 @@ export interface TransformSvgOptions {
  */
 export interface ComponentOptions {
   a11y?: A11y;
-  trackSource?: boolean;
-  iconName: string;
   forwardRef: boolean;
+  iconName: string;
+  trackSource?: boolean;
 }
 
 /**
  * Configuration passed to template generation
  */
 export interface TemplateConfig {
-  typescript: boolean;
   frameworkOptions: FrameworkOptions;
+  typescript: boolean;
 }
 
 /**
@@ -59,43 +59,11 @@ export interface PromptContext {
  * - User prompts
  */
 export interface FrameworkStrategy {
-  /** Framework identifier */
-  name: string;
-
   /** File extensions for TypeScript and JavaScript */
   fileExtensions: {
     typescript: string;
     javascript: string;
   };
-
-  /** Zod schema for framework-specific options */
-  optionsSchema: ZodMiniType;
-
-  /** Whether this framework supports ref forwarding */
-  supportsRef: boolean;
-
-  /** Preferred output type for this framework */
-  preferredOutputType: OutputType;
-
-  /**
-   * Generate the initial icons file template
-   */
-  getIconsTemplate(config: TemplateConfig): string;
-
-  /**
-   * Get the import source for forwardRef (e.g., "react" or "preact/compat")
-   */
-  getForwardRefImportSource(): string;
-
-  /**
-   * Check if forwardRef is enabled in framework options
-   */
-  isForwardRefEnabled(options: FrameworkOptions): boolean;
-
-  /**
-   * Prompt user for framework-specific options
-   */
-  promptOptions(context: PromptContext): Promise<FrameworkOptions>;
 
   /**
    * Get the config key for framework options (e.g., "react" or "preact")
@@ -103,10 +71,41 @@ export interface FrameworkStrategy {
   getConfigKey(): string;
 
   /**
+   * Get the import source for forwardRef (e.g., "react" or "preact/compat")
+   */
+  getForwardRefImportSource(): string;
+
+  /**
+   * Generate the initial icons file template
+   */
+  getIconsTemplate(config: TemplateConfig): string;
+
+  /**
    * Generate types.ts content for folder mode (optional).
    * Only needed for folder-mode frameworks.
    */
   getTypesFileContent?(): string;
+
+  /**
+   * Check if forwardRef is enabled in framework options
+   */
+  isForwardRefEnabled(options: FrameworkOptions): boolean;
+  /** Framework identifier */
+  name: string;
+
+  /** Zod schema for framework-specific options */
+  optionsSchema: ZodMiniType;
+
+  /** Preferred output type for this framework */
+  preferredOutputType: OutputType;
+
+  /**
+   * Prompt user for framework-specific options
+   */
+  promptOptions(context: PromptContext): Promise<FrameworkOptions>;
+
+  /** Whether this framework supports ref forwarding */
+  supportsRef: boolean;
 
   /**
    * Transform raw SVG string into framework-specific component code
