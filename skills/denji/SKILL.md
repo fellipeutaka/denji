@@ -50,7 +50,7 @@ npx denji init --a11y hidden --forward-ref
 | `--output <path>` | Output path for icons file/folder |
 | `--output-type <type>` | `file` (single file) or `folder` (one file per icon) |
 | `--typescript` / `--no-typescript` | TypeScript or JavaScript (default: TS) |
-| `--a11y <strategy>` | `hidden`, `img`, `title`, `presentation`, or `false` |
+| `--a11y <strategy>` | `hidden`, `img`, `title`, `presentation`, or `false` (no a11y attrs) |
 | `--forward-ref` / `--no-forward-ref` | Use forwardRef (React/Preact only) |
 | `--track-source` / `--no-track-source` | Track Iconify source via `data-icon` attr |
 | `-c, --cwd <path>` | Working directory |
@@ -102,10 +102,33 @@ npx denji list --json
 
 | Flag | Description |
 |------|-------------|
-| `--json` | Output as JSON |
+| `--json` | Output as JSON (fields: `count`, `output`, `icons`) |
 | `-c, --cwd <path>` | Working directory |
 
 Shows component names and Iconify source (if `trackSource: true`).
+
+Human-readable output:
+```
+Found 3 icon(s) in ./src/icons.tsx
+
+Icons:
+  • Check (lucide:check)
+  • HomeOutline (mdi:home-outline)
+  • ArrowRight (lucide:arrow-right)
+```
+
+JSON output (`--json`):
+```json
+{
+  "count": 3,
+  "output": "./src/icons.tsx",
+  "icons": [
+    { "name": "Check", "source": "lucide:check" },
+    { "name": "HomeOutline", "source": "mdi:home-outline" },
+    { "name": "ArrowRight", "source": "lucide:arrow-right" }
+  ]
+}
+```
 
 ### `denji clear`
 
@@ -195,9 +218,9 @@ Run shell commands at lifecycle points:
 ### Dynamic Icons
 
 ```tsx
-import { Icons, type IconName } from "./icons";
+import { Icons, type IconName, type IconProps } from "./icons";
 
-function DynamicIcon({ name, ...props }: { name: IconName } & Icons.IconProps) {
+function DynamicIcon({ name, ...props }: { name: IconName } & IconProps) {
   const Icon = Icons[name];
   return <Icon {...props} />;
 }
