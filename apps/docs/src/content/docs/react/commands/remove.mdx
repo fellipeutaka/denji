@@ -1,0 +1,63 @@
+---
+title: denji remove
+description: Remove icons from your project
+---
+
+Remove icons by their component name.
+
+## Usage
+
+```bash
+denji remove <icons...>
+```
+
+## Arguments
+
+### icons
+
+Component names to remove (not Iconify IDs).
+
+```bash
+denji remove Check Home
+```
+
+## Examples
+
+Remove single icon:
+```bash
+denji remove Check
+```
+
+Remove multiple icons:
+```bash
+denji remove Check ArrowRight HomeOutline
+```
+
+## How It Works
+
+1. Reads icons file
+2. Removes specified components
+3. Updates icons file
+4. Runs `postRemove` hooks (if configured)
+
+## Finding Component Names
+
+List all icons to see component names:
+
+```bash
+denji list
+```
+
+Output:
+```
+Found 5 icon(s) in ./src/icons.tsx
+
+Icons:
+  • Check
+  • ChevronDown
+  • Copy
+  • ExternalLink
+  • MessageCircle
+```
+
+Use the component name for removal, not the Iconify ID.

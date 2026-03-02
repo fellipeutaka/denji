@@ -1,7 +1,0 @@
-{
-  "root": true,
-  "title": "Svelte",
-  "description": "Svelte framework docs",
-  "icon": "Svelte",
-  "pages": ["index", "installation", "configuration", "usage"]
-}

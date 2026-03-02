@@ -1,0 +1,228 @@
+---
+title: Configuration
+description: Configure Denji options and hooks for React
+---
+
+import { Callout } from "fumadocs-ui/components/callout";
+
+Configuration is stored in `denji.json` at your project root.
+
+## Example Config
+
+```json
+{
+  "$schema": "./node_modules/denji/configuration_schema.json",
+  "output": "./src/icons.tsx",
+  "framework": "react",
+  "typescript": true,
+  "a11y": "hidden",
+  "trackSource": true,
+  "hooks": {
+    "postAdd": ["npx biome check --write ./src/icons.tsx"]
+  }
+}
+```
+
+## Options
+
+### output
+
+**Type:** `string | { type: "file" | "folder", path: string }`  
+**Required:** Yes
+
+Output path for generated icons. Accepts a string shorthand (defaults to file mode) or an object for explicit control.
+
+**File mode** (default) — all icons in a single file:
+
+```json
+{
+  "output": "./src/icons.tsx"
+}
+```
+
+**Folder mode** — one file per icon component + barrel export:
+
+```json
+{
+  "output": {
+    "type": "folder",
+    "path": "./src/icons"
+  }
+}
+```
+
+<Callout type="info">
+String format is shorthand for `{ "type": "file", "path": "..." }`.
+</Callout>
+
+### framework
+
+**Type:** `"react" | "preact" | "solid" | "qwik" | "vue" | "svelte"`  
+**Required:** Yes
+
+Target framework for generated components.
+
+```json
+{
+  "framework": "react"
+}
+```
+
+### typescript
+
+**Type:** `boolean`  
+**Default:** `true`
+
+Generate TypeScript or JavaScript output.
+
+```json
+{
+  "typescript": true
+}
+```
+
+### a11y
+
+**Type:** `"hidden" | "img" | "title" | "presentation" | false`  
+**Default:** `undefined`
+
+SVG accessibility strategy:
+
+#### `hidden`
+Adds `aria-hidden="true"` - for decorative icons that should be hidden from screen readers.
+
+```tsx
+<svg aria-hidden="true">...</svg>
+```
+
+#### `img`
+Adds `role="img"` with `aria-label` - for icons with semantic meaning.
+
+```tsx
+<svg role="img" aria-label="Check">...</svg>
+```
+
+#### `title`
+Adds `<title>` element inside SVG - provides accessible name.
+
+```tsx
+<svg>
+  <title>Check</title>
+  ...
+</svg>
+```
+
+#### `presentation`
+Adds `role="presentation"` - marks icon as presentational.
+
+```tsx
+<svg role="presentation">...</svg>
+```
+
+#### `false`
+No accessibility attributes added.
+
+<Callout type="info">
+You can override a11y per icon using the `--a11y` flag:
+
+```bash
+denji add lucide:check --a11y img
+```
+</Callout>
+
+### trackSource
+
+**Type:** `boolean`  
+**Default:** `true`
+
+Add `data-icon` attribute with the original Iconify source name. Useful for debugging, identifying icon collections, and enabling future `update` command.
+
+```json
+{
+  "trackSource": true
+}
+```
+
+When enabled, icons include the source attribute:
+
+```tsx
+<svg data-icon="lucide:check">...</svg>
+```
+
+### react
+
+**Type:** `object`  
+**Default:** `{}`
+
+React-specific options:
+
+```json
+{
+  "react": {
+    "forwardRef": true
+  }
+}
+```
+
+#### `forwardRef`
+Wrap icon components with `forwardRef` for ref forwarding support.
+
+### hooks
+
+**Type:** `object`  
+**Default:** `{}`
+
+Lifecycle hooks to run shell commands at specific points:
+
+```json
+{
+  "hooks": {
+    "preAdd": ["echo 'Adding icons...'"],
+    "postAdd": ["npx biome check --write ./src/icons.tsx"],
+    "preRemove": [],
+    "postRemove": ["echo 'Removed icons'"],
+    "preClear": [],
+    "postClear": [],
+    "preList": [],
+    "postList": []
+  }
+}
+```
+
+Available hooks:
+- `preAdd` - Before adding icons
+- `postAdd` - After adding icons
+- `preRemove` - Before removing icons
+- `postRemove` - After removing icons
+- `preClear` - Before clearing all icons
+- `postClear` - After clearing all icons
+- `preList` - Before listing icons
+- `postList` - After listing icons
+
+Common use cases:
+- Format code after adding icons
+- Run type checking
+- Update icon registry
+- Trigger builds
+
+## Schema Validation
+
+The config includes JSON schema for editor validation and auto-completion.
+
+If Denji is installed locally:
+
+```json
+{
+  "$schema": "./node_modules/denji/configuration_schema.json"
+}
+```
+
+If using Denji without a local install (e.g., `npx`, `bunx`, `pnpx`, `yarn dlx`):
+
+```json
+{
+  "$schema": "https://denji-docs.vercel.app/configuration_schema.json"
+}
+```
+
+This enables IntelliSense in VS Code and other editors.

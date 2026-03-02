@@ -1,0 +1,146 @@
+---
+title: denji init
+description: Initialize a new Denji project
+---
+
+import { Callout } from "fumadocs-ui/components/callout";
+
+Initialize a new project with config file and icons template.
+
+## Usage
+
+```bash
+denji init [options]
+```
+
+## Options
+
+### --output
+
+**Type:** `string`
+
+Specify output file path.
+
+```bash
+denji init --output ./src/components/icons.tsx
+```
+
+### --output-type
+
+**Type:** `"file" | "folder"`
+
+Output type. Defaults to `file` for React/Preact/Solid/Qwik/Vue and `folder` for Svelte.
+
+```bash
+denji init --output-type folder
+```
+
+### --framework
+
+**Type:** `"react" | "preact" | "solid" | "qwik" | "vue" | "svelte"`
+
+Target framework for generated components.
+
+```bash
+denji init --framework react
+denji init --framework preact
+denji init --framework solid
+denji init --framework qwik
+denji init --framework vue
+denji init --framework svelte
+```
+
+### --typescript
+
+**Type:** `boolean`  
+**Default:** `true`
+
+Generate TypeScript output.
+
+```bash
+denji init --typescript
+```
+
+### --a11y
+
+**Type:** `"hidden" | "img" | "title" | "presentation" | "false"`
+
+Set default accessibility strategy.
+
+```bash
+denji init --a11y hidden
+```
+
+### --forward-ref
+
+**Type:** `boolean`  
+**Default:** `false`
+
+Use `forwardRef` for icon components (React and Preact only).
+
+```bash
+denji init --forward-ref
+denji init --no-forward-ref
+```
+
+### --track-source / --no-track-source
+
+**Type:** `boolean`  
+**Default:** `true`
+
+Track Iconify source names by adding `data-icon` attribute to icons.
+
+```bash
+denji init --track-source
+denji init --no-track-source
+```
+
+## What Gets Created
+
+Running `denji init` creates:
+
+1. **denji.json** - Configuration file
+   ```json
+   {
+     "$schema": "./node_modules/denji/configuration_schema.json",
+     "output": "./src/icons.tsx",
+     "framework": "react",
+     "typescript": true,
+     "trackSource": true
+   }
+   ```
+
+<Callout type="info">
+If Denji is not installed locally (e.g., using `npx`, `bunx`, `pnpx`, `yarn dlx`), use the remote schema URL instead:
+
+```json
+{
+  "$schema": "https://denji-docs.vercel.app/configuration_schema.json"
+}
+```
+</Callout>
+
+2. **Icons file or folder** depending on output type:
+   - **File mode**: a single template file (e.g., `icons.tsx`)
+   - **Folder mode**: an output directory with barrel file and types
+
+<Callout type="info">
+The init command is safe to run multiple times. It won't overwrite existing configs.
+</Callout>
+
+## Examples
+
+Basic initialization:
+```bash
+denji init
+```
+
+Custom output path:
+```bash
+denji init --output ./components/icons.tsx
+```
+
+With accessibility:
+```bash
+denji init --a11y hidden --output ./src/icons.tsx
+```
