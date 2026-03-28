@@ -4,6 +4,7 @@ import type { ListDeps } from "~/services/deps";
 import { Err, Ok } from "~/utils/result";
 
 import type { ListOptions } from "../list";
+import { createDisplayStrategy } from "./display-strategies";
 
 type Deps = Pick<ListDeps, "fs" | "hooks" | "icons" | "logger">;
 
@@ -47,20 +48,11 @@ export async function displayResults(
   deps: Pick<Deps, "hooks" | "logger">
 ) {
   const { hooks, logger } = deps;
-  const trackSource = cfg.trackSource ?? true;
+  const display = options.display ?? "default";
+  const strategy = await createDisplayStrategy(display);
 
-  if (options.json) {
-    const output = {
-      count: parsedIcons.length,
-      output: cfg.output.path,
-      icons: trackSource
-        ? parsedIcons.map((icon) => ({
-            name: icon.name,
-            source: icon.source ?? null,
-          }))
-        : parsedIcons.map((icon) => icon.name),
-    };
-    console.info(JSON.stringify(output, null, 2));
+  if (display !== "default") {
+    strategy.render({ cfg, icons: parsedIcons, log: console.info });
     const postListResult = await hooks.runHooks(
       cfg.hooks?.postList ?? [],
       options.cwd
@@ -86,14 +78,7 @@ export async function displayResults(
   logger.success(`Found ${parsedIcons.length} icon(s) in ${cfg.output.path}`);
   logger.break();
   logger.info("Icons:");
-  for (const icon of parsedIcons) {
-    if (trackSource) {
-      const sourceInfo = icon.source ? `(${icon.source})` : "(⚠️  Unknown)";
-      logger.info(`  • ${icon.name} ${sourceInfo}`);
-    } else {
-      logger.info(`  • ${icon.name}`);
-    }
-  }
+  strategy.render({ cfg, icons: parsedIcons, log: logger.info });
 
   const postListResult = await hooks.runHooks(
     cfg.hooks?.postList ?? [],

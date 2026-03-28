@@ -111,13 +111,13 @@ export type ClearModeRunner = (
 ) => Promise<ResultType<null, string>>;
 
 export type ListFileModeRunner = (
-  options: { cwd: string; json?: boolean },
+  options: { cwd: string; display?: "default" | "json" | "toon" },
   cfg: Config,
   deps: Pick<ListDeps, "fs" | "hooks" | "icons" | "logger">
 ) => Promise<ResultType<null, string>>;
 
 export type ListFolderModeRunner = (
-  options: { cwd: string; json?: boolean },
+  options: { cwd: string; display?: "default" | "json" | "toon" },
   cfg: Config,
   strategy: FrameworkStrategy,
   deps: Pick<ListDeps, "fs" | "hooks" | "logger">

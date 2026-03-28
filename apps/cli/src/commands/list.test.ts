@@ -7,6 +7,7 @@ import {
   mock,
   spyOn,
 } from "bun:test";
+import { encode } from "@toon-format/toon";
 import { Err, Ok } from "~/utils/result";
 import {
   createListDeps,
@@ -50,11 +51,14 @@ describe("ListCommand", () => {
       expect(deps.logger.info).toHaveBeenCalledWith("  • Home (⚠️  Unknown)");
     });
 
-    it("outputs JSON when --json flag is set", async () => {
+    it("outputs JSON when --display json is set", async () => {
       const deps = createListDeps();
       const command = new ListCommand(deps);
 
-      const result = await command.run({ cwd: "/test/project", json: true });
+      const result = await command.run({
+        cwd: "/test/project",
+        display: "json",
+      });
 
       expect(result.isOk()).toBe(true);
       expect(consoleInfoSpy).toHaveBeenCalledTimes(1);
@@ -68,6 +72,29 @@ describe("ListCommand", () => {
           { name: "Home", source: null },
         ],
       });
+    });
+
+    it("outputs toon when --display toon is set", async () => {
+      const deps = createListDeps();
+      const command = new ListCommand(deps);
+
+      const result = await command.run({
+        cwd: "/test/project",
+        display: "toon",
+      });
+
+      expect(result.isOk()).toBe(true);
+      expect(consoleInfoSpy).toHaveBeenCalledTimes(1);
+
+      const expected = encode({
+        count: 2,
+        output: "./src/icons.tsx",
+        icons: [
+          { name: "Check", source: null },
+          { name: "Home", source: null },
+        ],
+      });
+      expect(consoleInfoSpy.mock.calls[0][0]).toBe(expected);
     });
 
     it("shows info message when no icons found", async () => {
@@ -87,7 +114,7 @@ describe("ListCommand", () => {
       expect(deps.logger.success).not.toHaveBeenCalled();
     });
 
-    it("outputs empty JSON when no icons found with --json", async () => {
+    it("outputs empty JSON when no icons found with --display json", async () => {
       const deps = createListDeps({
         fs: createMockFs({
           readFile: mock(() => Promise.resolve(new Ok(emptyIconsFileContent))),
@@ -95,7 +122,10 @@ describe("ListCommand", () => {
       });
       const command = new ListCommand(deps);
 
-      const result = await command.run({ cwd: "/test/project", json: true });
+      const result = await command.run({
+        cwd: "/test/project",
+        display: "json",
+      });
 
       expect(result.isOk()).toBe(true);
       const jsonOutput = JSON.parse(consoleInfoSpy.mock.calls[0][0]);
@@ -104,6 +134,28 @@ describe("ListCommand", () => {
         output: "./src/icons.tsx",
         icons: [],
       });
+    });
+
+    it("outputs empty toon when no icons found with --display toon", async () => {
+      const deps = createListDeps({
+        fs: createMockFs({
+          readFile: mock(() => Promise.resolve(new Ok(emptyIconsFileContent))),
+        }),
+      });
+      const command = new ListCommand(deps);
+
+      const result = await command.run({
+        cwd: "/test/project",
+        display: "toon",
+      });
+
+      expect(result.isOk()).toBe(true);
+      const expected = encode({
+        count: 0,
+        output: "./src/icons.tsx",
+        icons: [],
+      });
+      expect(consoleInfoSpy.mock.calls[0][0]).toBe(expected);
     });
 
     it("runs preList hooks before listing", async () => {
@@ -140,7 +192,21 @@ describe("ListCommand", () => {
       });
       const command = new ListCommand(deps);
 
-      await command.run({ cwd: "/test/project", json: true });
+      await command.run({ cwd: "/test/project", display: "json" });
+
+      expect(deps.hooks.runHooks).toHaveBeenCalledWith(
+        ["echo post"],
+        "/test/project"
+      );
+    });
+
+    it("runs postList hooks after toon output", async () => {
+      const deps = createListDeps({
+        config: withHooks({ postList: ["echo post"] }),
+      });
+      const command = new ListCommand(deps);
+
+      await command.run({ cwd: "/test/project", display: "toon" });
 
       expect(deps.hooks.runHooks).toHaveBeenCalledWith(
         ["echo post"],
@@ -228,7 +294,10 @@ describe("ListCommand", () => {
       });
       const command = new ListCommand(deps);
 
-      const result = await command.run({ cwd: "/test/project", json: true });
+      const result = await command.run({
+        cwd: "/test/project",
+        display: "json",
+      });
 
       expect(result.isOk()).toBe(true);
       const jsonOutput = JSON.parse(consoleInfoSpy.mock.calls[0][0]);
@@ -257,7 +326,10 @@ describe("ListCommand", () => {
       });
       const command = new ListCommand(deps);
 
-      const result = await command.run({ cwd: "/test/project", json: true });
+      const result = await command.run({
+        cwd: "/test/project",
+        display: "json",
+      });
 
       expect(result.isOk()).toBe(true);
       const jsonOutput = JSON.parse(consoleInfoSpy.mock.calls[0][0]);
@@ -266,6 +338,65 @@ describe("ListCommand", () => {
         output: "./src/icons.tsx",
         icons: ["Check", "Eye"],
       });
+    });
+
+    it("outputs source info in toon when trackSource is enabled", async () => {
+      const iconsWithSource = `export const Icons = {
+  Check: (props) => (<svg data-icon="lucide:check" {...props}></svg>),
+  Eye: (props) => (<svg data-icon="lucide:eye" {...props}></svg>),
+} as const;
+`;
+      const deps = createListDeps({
+        fs: createMockFs({
+          readFile: mock(() => Promise.resolve(new Ok(iconsWithSource))),
+        }),
+        config: withConfig({ trackSource: true }),
+      });
+      const command = new ListCommand(deps);
+
+      const result = await command.run({
+        cwd: "/test/project",
+        display: "toon",
+      });
+
+      expect(result.isOk()).toBe(true);
+      const expected = encode({
+        count: 2,
+        output: "./src/icons.tsx",
+        icons: [
+          { name: "Check", source: "lucide:check" },
+          { name: "Eye", source: "lucide:eye" },
+        ],
+      });
+      expect(consoleInfoSpy.mock.calls[0][0]).toBe(expected);
+    });
+
+    it("outputs icon names only in toon when trackSource is disabled", async () => {
+      const iconsWithSource = `export const Icons = {
+  Check: (props) => (<svg data-icon="lucide:check" {...props}></svg>),
+  Eye: (props) => (<svg data-icon="lucide:eye" {...props}></svg>),
+} as const;
+`;
+      const deps = createListDeps({
+        fs: createMockFs({
+          readFile: mock(() => Promise.resolve(new Ok(iconsWithSource))),
+        }),
+        config: withConfig({ trackSource: false }),
+      });
+      const command = new ListCommand(deps);
+
+      const result = await command.run({
+        cwd: "/test/project",
+        display: "toon",
+      });
+
+      expect(result.isOk()).toBe(true);
+      const expected = encode({
+        count: 2,
+        output: "./src/icons.tsx",
+        icons: ["Check", "Eye"],
+      });
+      expect(consoleInfoSpy.mock.calls[0][0]).toBe(expected);
     });
   });
 
@@ -389,7 +520,31 @@ describe("ListCommand", () => {
       });
       const command = new ListCommand(deps);
 
-      const result = await command.run({ cwd: "/test/project", json: true });
+      const result = await command.run({
+        cwd: "/test/project",
+        display: "json",
+      });
+
+      expect(result.isErr()).toBe(true);
+      if (result.isErr()) {
+        expect(result.error).toContain("Hook failed");
+      }
+    });
+
+    it("errors when postList hook fails with toon output", async () => {
+      const runHooksMock = mock<typeof deps.hooks.runHooks>()
+        .mockResolvedValueOnce(new Ok(null)) // preList
+        .mockResolvedValueOnce(new Err("Hook failed")); // postList
+      const deps = createListDeps({
+        config: withHooks({ postList: ["exit 1"] }),
+        hooks: createMockHooks({ runHooks: runHooksMock }),
+      });
+      const command = new ListCommand(deps);
+
+      const result = await command.run({
+        cwd: "/test/project",
+        display: "toon",
+      });
 
       expect(result.isErr()).toBe(true);
       if (result.isErr()) {
@@ -472,17 +627,42 @@ ${iconEntries},
       });
       const command = new ListCommand(deps);
 
-      await command.run({ cwd: "/test/project", json: true });
+      await command.run({ cwd: "/test/project", display: "json" });
 
       const jsonOutput = JSON.parse(consoleInfoSpy.mock.calls[0][0]);
       expect(jsonOutput.output).toBe("./custom/path/icons.tsx");
     });
 
-    it("does not log formatted output with --json", async () => {
+    it("includes config output in toon response", async () => {
+      const deps = createListDeps({
+        config: withConfig({
+          output: { type: "file", path: "./custom/path/icons.tsx" },
+        }),
+      });
+      const command = new ListCommand(deps);
+
+      await command.run({ cwd: "/test/project", display: "toon" });
+
+      const toonOutput = consoleInfoSpy.mock.calls[0][0];
+      expect(typeof toonOutput).toBe("string");
+      expect(toonOutput.length).toBeGreaterThan(0);
+    });
+
+    it("does not log formatted output with --display json", async () => {
       const deps = createListDeps();
       const command = new ListCommand(deps);
 
-      await command.run({ cwd: "/test/project", json: true });
+      await command.run({ cwd: "/test/project", display: "json" });
+
+      expect(deps.logger.success).not.toHaveBeenCalled();
+      expect(deps.logger.info).not.toHaveBeenCalled();
+    });
+
+    it("does not log formatted output with --display toon", async () => {
+      const deps = createListDeps();
+      const command = new ListCommand(deps);
+
+      await command.run({ cwd: "/test/project", display: "toon" });
 
       expect(deps.logger.success).not.toHaveBeenCalled();
       expect(deps.logger.info).not.toHaveBeenCalled();

@@ -4,10 +4,11 @@ import { listDefaults } from "~/services/defaults";
 import type { ListDeps } from "~/services/deps";
 import { handleError } from "~/utils/handle-error";
 import { resolveContext } from "~/utils/resolve-context";
+import type { DisplayMode } from "./modes/display-strategies";
 
 export interface ListOptions {
   cwd: string;
-  json?: boolean;
+  display?: DisplayMode;
 }
 
 export class ListCommand {
@@ -36,9 +37,13 @@ export const list = new Command()
     "The working directory. Defaults to the current directory.",
     process.cwd()
   )
-  .option("--json", "Output icons as JSON")
+  .option(
+    "--display <mode>",
+    'Output display mode: "default", "json", or "toon"',
+    "default"
+  )
   .action(async (options: ListOptions) => {
-    if (!options.json) {
+    if (options.display === "default" || options.display == null) {
       intro("denji list");
     }
 
@@ -49,7 +54,7 @@ export const list = new Command()
       handleError(result.error);
     }
 
-    if (!options.json) {
+    if (options.display === "default" || options.display == null) {
       outro("Done");
     }
   });
