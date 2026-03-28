@@ -1,10 +1,10 @@
 ---
 name: denji
-description: Manage SVG icons as framework components using Denji CLI. Use when the user needs to add, remove, list, or manage SVG icons in React, Preact, Solid, Qwik, Vue, or Svelte projects. Triggers include requests to "add an icon", "set up icons", "manage SVG icons", "remove an icon", "list icons", or any task involving Iconify icons as framework components.
+description: Manage SVG icons as framework components using Denji CLI. Use when the user needs to add, remove, list, export, import, or manage SVG icons in React, Preact, Solid, Qwik, Vue, or Svelte projects. Triggers include requests to "add an icon", "set up icons", "manage SVG icons", "remove an icon", "list icons", "export icons", "import icons", "dry-run icon add", or any task involving Iconify icons as framework components.
 allowed-tools: Bash(npx denji:*)
 metadata:
   author: fellipeutaka
-  version: "0.4.0"
+  version: "1.0.0"
 ---
 
 # Managing SVG Icons with Denji
@@ -66,17 +66,31 @@ npx denji add lucide:check
 npx denji add lucide:check mdi:home radix-icons:cross-2
 npx denji add lucide:star --name FavoriteStar
 npx denji add lucide:info --a11y img
+# Preview without writing files
+npx denji add lucide:check mdi:home --dry-run
 ```
 
 | Flag | Description |
 |------|-------------|
 | `--name <name>` | Custom component name (single icon only) |
 | `--a11y <strategy>` | Override a11y strategy for this icon |
+| `--dry-run` | Preview what would be generated without writing any files |
 | `-c, --cwd <path>` | Working directory |
 
 Icon naming: `lucide:arrow-right` becomes `ArrowRight` (PascalCase). Override with `--name`.
 
 Adding an existing icon updates it in place.
+
+`--dry-run` skips file writes and hooks but still validates icon names, `allowedLibraries`, and config. Useful for CI checks and PR previews.
+
+```
+◇ denji add
+│
+○ [dry-run] Would add Check → ./src/icons.tsx
+○ [dry-run] Would add Home → ./src/icons.tsx
+│
+◇ Dry run complete — 2 icon(s) previewed, no files written
+```
 
 ### `denji remove <icons...>`
 
@@ -97,17 +111,18 @@ List all icons in your project.
 
 ```bash
 npx denji list
-npx denji list --json
+npx denji list --display json
+npx denji list --display toon
 ```
 
 | Flag | Description |
 |------|-------------|
-| `--json` | Output as JSON (fields: `count`, `output`, `icons`) |
+| `--display <mode>` | Output mode: `default` (human-readable), `json`, or `toon` |
 | `-c, --cwd <path>` | Working directory |
 
 Shows component names and Iconify source (if `trackSource: true`).
 
-Human-readable output:
+Default output:
 ```
 Found 3 icon(s) in ./src/icons.tsx
 
@@ -117,7 +132,7 @@ Icons:
   • ArrowRight (lucide:arrow-right)
 ```
 
-JSON output (`--json`):
+JSON output (`--display json`):
 ```json
 {
   "count": 3,
@@ -129,6 +144,56 @@ JSON output (`--json`):
   ]
 }
 ```
+
+TOON output (`--display toon`) uses [TOON format](https://github.com/toon-format/toon) for machine-readable binary encoding.
+
+### `denji export`
+
+Export a JSON manifest of all tracked icons.
+
+```bash
+npx denji export                    # print to stdout
+npx denji export --output icons.json
+npx denji export --output           # writes to denji-export.json
+```
+
+| Flag | Description |
+|------|-------------|
+| `--output [path]` | Write to file (default: `denji-export.json` if no path given) |
+| `-c, --cwd <path>` | Working directory |
+
+Output format:
+```json
+{
+  "version": 1,
+  "framework": "react",
+  "output": "./src/icons.tsx",
+  "icons": [
+    { "name": "Home", "source": "mdi:home" },
+    { "name": "Check", "source": "lucide:check" }
+  ]
+}
+```
+
+`source` is included only when `trackSource: true` (the default).
+
+### `denji import`
+
+Bulk-add icons from a manifest JSON file, a plain text file, or stdin.
+
+```bash
+npx denji import icons.json         # from denji export manifest
+npx denji import icons.txt          # one prefix:name per line
+echo "mdi:home\nlucide:check" | npx denji import   # from stdin
+npx denji import icons.json --dry-run
+```
+
+| Flag | Description |
+|------|-------------|
+| `--dry-run` | Preview without writing files |
+| `-c, --cwd <path>` | Working directory |
+
+Icons without `prefix:name` format are skipped with a warning. JSON manifest entries without a `source` field are also skipped.
 
 ### `denji clear`
 
@@ -159,6 +224,7 @@ The `$schema` field depends on how Denji is installed:
   "typescript": true,
   "a11y": "hidden",
   "trackSource": true,
+  "allowedLibraries": ["lucide"],
   "react": {
     "forwardRef": true
   },
@@ -178,6 +244,7 @@ Key fields:
 | `typescript` | boolean | Default: `true` |
 | `a11y` | string or false | `hidden`, `img`, `title`, `presentation`, `false` |
 | `trackSource` | boolean | Default: `true`. Adds `data-icon` attr |
+| `allowedLibraries` | string[] | Restrict to specific Iconify prefixes. Empty/omitted = all allowed |
 | `hooks` | object | Lifecycle hooks (see below) |
 
 ### Output Modes
@@ -244,6 +311,19 @@ function DynamicIcon({ name, ...props }: { name: IconName } & IconProps) {
 <button aria-label="Close">
   <Icons.X aria-hidden="true" />
 </button>
+```
+
+### Restricting Icon Sources
+
+```json
+{
+  "allowedLibraries": ["lucide"]
+}
+```
+
+```bash
+npx denji add lucide:check   # ✓ allowed
+npx denji add mdi:home       # ✗ Error: Icon "mdi:home" is not allowed. Allowed libraries: lucide
 ```
 
 ### Formatting with Hooks

@@ -94,6 +94,19 @@ Can be overridden per-icon with `denji add --a11y`.
 
 Default: `true`. When enabled, adds `data-icon="prefix:name"` attribute to track the original Iconify source.
 
+### `allowedLibraries`
+
+```json
+{ "allowedLibraries": ["lucide", "mdi"] }
+```
+
+Optional. Restricts which Iconify prefixes can be added. When omitted or empty, all libraries are allowed.
+
+Any `denji add` call with a non-listed prefix will fail with:
+```
+Error: Icon "mdi:home" is not allowed. Allowed libraries: lucide
+```
+
 ### `hooks`
 
 Run shell commands at lifecycle points. Each hook is an array of commands.
@@ -114,6 +127,8 @@ Run shell commands at lifecycle points. Each hook is an array of commands.
 ```
 
 Common use: auto-format after icon changes.
+
+**Note:** Hooks are **not** executed when `--dry-run` is passed to `denji add` or `denji import`.
 
 ## Framework-Specific Options
 
@@ -206,6 +221,7 @@ No additional options. Uses Svelte 5 `$props()` runes. Folder mode only.
   "typescript": true,
   "a11y": "hidden",
   "trackSource": true,
+  "allowedLibraries": ["lucide"],
   "react": {
     "forwardRef": true
   },
