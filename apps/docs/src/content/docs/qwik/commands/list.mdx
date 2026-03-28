@@ -13,14 +13,15 @@ denji list [options]
 
 ## Options
 
-### --json
+### --display
 
-**Type:** `boolean`
+**Type:** `"default" | "json" | "toon"`
+**Default:** `"default"`
 
-Output as JSON format.
+Output format for the icon list.
 
 ```bash
-denji list --json
+denji list --display json
 ```
 
 ## Examples
@@ -42,7 +43,7 @@ Icons:
 
 List as JSON:
 ```bash
-denji list --json
+denji list --display json
 ```
 
 Output:
@@ -65,6 +66,11 @@ Output:
     }
   ]
 }
+```
+
+List as [TOON format](https://github.com/toon-format/toon):
+```bash
+denji list --display toon
 ```
 
 ## Use Cases
