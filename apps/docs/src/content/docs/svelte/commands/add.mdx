@@ -58,6 +58,16 @@ Override default accessibility strategy for this icon.
 denji add lucide:check --a11y img
 ```
 
+### --dry-run
+
+Preview what would be generated without writing any files to disk.
+
+```bash
+denji add lucide:check mdi:home --dry-run
+```
+
+Useful for CI checks or verifying icon names before committing. All validations still run — only the file writes and hooks are skipped.
+
 ## Examples
 
 Add single icon:
@@ -78,6 +88,11 @@ denji add lucide:star --name FavoriteStar
 With accessibility:
 ```bash
 denji add lucide:info --a11y img
+```
+
+Dry run (preview only):
+```bash
+denji add lucide:check lucide:x --dry-run
 ```
 
 ## Icon Naming

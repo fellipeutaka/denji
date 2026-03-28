@@ -11,6 +11,7 @@ import { Err } from "~/utils/result";
 export interface AddOptions {
   a11y?: string | boolean;
   cwd: string;
+  dryRun?: boolean;
   name?: string;
 }
 
@@ -65,13 +66,15 @@ export class AddCommand {
       }
     }
 
-    // 6. Run preAdd hooks
-    const preAddResult = await hooks.runHooks(
-      cfg.hooks?.preAdd ?? [],
-      options.cwd
-    );
-    if (preAddResult.isErr()) {
-      return preAddResult;
+    // 6. Run preAdd hooks (skipped in dry-run)
+    if (!options.dryRun) {
+      const preAddResult = await hooks.runHooks(
+        cfg.hooks?.preAdd ?? [],
+        options.cwd
+      );
+      if (preAddResult.isErr()) {
+        return preAddResult;
+      }
     }
 
     // Get framework-specific options
@@ -103,6 +106,7 @@ export const add = new Command()
   .argument("<icons...>", "Icon names (e.g., mdi:home lucide:check)")
   .option("--name <name>", "Custom component name (single icon only)")
   .option("--a11y <strategy>", "Accessibility strategy (overrides config)")
+  .option("--dry-run", "Preview what would be generated without writing files")
   .option(
     "-c, --cwd <cwd>",
     "The working directory. Defaults to the current directory.",
@@ -118,5 +122,9 @@ export const add = new Command()
       handleError(result.error);
     }
 
-    outro(`Added ${icons.length} icon(s)`);
+    outro(
+      options.dryRun
+        ? `Dry run complete — ${icons.length} icon(s) previewed, no files written`
+        : `Added ${icons.length} icon(s)`
+    );
   });

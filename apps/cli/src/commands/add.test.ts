@@ -478,6 +478,118 @@ describe("AddCommand", () => {
     });
   });
 
+  describe("dry-run", () => {
+    it("does not write files when --dry-run is set", async () => {
+      const deps = createAddDeps({
+        fs: createMockFs({
+          readFile: mock(() => Promise.resolve(new Ok(emptyIconsFileContent))),
+        }),
+      });
+      const command = new AddCommand(deps);
+
+      const result = await command.run(["lucide:check"], {
+        cwd: "/test/project",
+        dryRun: true,
+      });
+
+      expect(result.isOk()).toBe(true);
+      expect(deps.fs.writeFile).not.toHaveBeenCalled();
+    });
+
+    it("does not run preAdd hooks when --dry-run is set", async () => {
+      const runHooksMock = mock(() => Promise.resolve(new Ok(null)));
+      const deps = createAddDeps({
+        fs: createMockFs({
+          readFile: mock(() => Promise.resolve(new Ok(emptyIconsFileContent))),
+        }),
+        config: withHooks({ preAdd: ["echo pre"] }),
+        hooks: createMockHooks({ runHooks: runHooksMock }),
+      });
+      const command = new AddCommand(deps);
+
+      await command.run(["lucide:check"], {
+        cwd: "/test/project",
+        dryRun: true,
+      });
+
+      expect(runHooksMock).not.toHaveBeenCalled();
+    });
+
+    it("does not run postAdd hooks when --dry-run is set", async () => {
+      const runHooksMock = mock(() => Promise.resolve(new Ok(null)));
+      const deps = createAddDeps({
+        fs: createMockFs({
+          readFile: mock(() => Promise.resolve(new Ok(emptyIconsFileContent))),
+        }),
+        config: withHooks({ postAdd: ["echo post"] }),
+        hooks: createMockHooks({ runHooks: runHooksMock }),
+      });
+      const command = new AddCommand(deps);
+
+      await command.run(["lucide:check"], {
+        cwd: "/test/project",
+        dryRun: true,
+      });
+
+      expect(runHooksMock).not.toHaveBeenCalled();
+    });
+
+    it("logs preview info for each icon when --dry-run is set", async () => {
+      const deps = createAddDeps({
+        fs: createMockFs({
+          readFile: mock(() => Promise.resolve(new Ok(emptyIconsFileContent))),
+        }),
+      });
+      const command = new AddCommand(deps);
+
+      await command.run(["lucide:check", "lucide:home"], {
+        cwd: "/test/project",
+        dryRun: true,
+      });
+
+      expect(deps.logger.info).toHaveBeenCalledWith(
+        expect.stringContaining("[dry-run]")
+      );
+      expect(deps.logger.info).toHaveBeenCalledTimes(2);
+    });
+
+    it("indicates replace action in dry-run when icon already exists", async () => {
+      const deps = createAddDeps({
+        fs: createMockFs({
+          readFile: mock(() => Promise.resolve(new Ok(sampleIconsFileContent))),
+        }),
+      });
+      const command = new AddCommand(deps);
+
+      await command.run(["lucide:check"], {
+        cwd: "/test/project",
+        dryRun: true,
+      });
+
+      expect(deps.logger.info).toHaveBeenCalledWith(
+        expect.stringContaining("replace")
+      );
+    });
+
+    it("indicates add action in dry-run for new icons", async () => {
+      const deps = createAddDeps({
+        fs: createMockFs({
+          readFile: mock(() => Promise.resolve(new Ok(emptyIconsFileContent))),
+        }),
+      });
+      const command = new AddCommand(deps);
+
+      await command.run(["lucide:check"], {
+        cwd: "/test/project",
+        dryRun: true,
+      });
+
+      expect(deps.logger.info).toHaveBeenCalledWith(
+        expect.stringContaining("add")
+      );
+    });
+  });
+
   describe("allowedLibraries", () => {
     it("allows icon from permitted library", async () => {
       const deps = createAddDeps({

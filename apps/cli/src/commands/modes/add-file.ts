@@ -29,6 +29,15 @@ export async function addFileMode(ctx: AddModeContext, deps: Deps) {
   for (const icon of icons) {
     const componentName = options.name ?? iconUtils.toComponentName(icon);
 
+    if (options.dryRun) {
+      const status = existingIcons.includes(componentName) ? "replace" : "add";
+      logger.info(
+        `[dry-run] Would ${status} ${componentName} → ${cfg.output.path}`
+      );
+      addedCount++;
+      continue;
+    }
+
     if (existingIcons.includes(componentName)) {
       const overwrite = await prompts.confirm({
         message: `Icon "${componentName}" already exists. Overwrite?`,
@@ -87,7 +96,7 @@ export async function addFileMode(ctx: AddModeContext, deps: Deps) {
     addedCount++;
   }
 
-  if (addedCount > 0) {
+  if (addedCount > 0 && !options.dryRun) {
     const writeResult = await fs.writeFile(iconsPath, iconsContent);
     if (writeResult.isErr()) {
       return new Err(`Failed to write icons file: ${cfg.output.path}`);

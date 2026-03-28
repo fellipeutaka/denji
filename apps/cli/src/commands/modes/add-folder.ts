@@ -31,6 +31,19 @@ export async function addFolderMode(ctx: AddModeContext, deps: Deps) {
   for (const icon of icons) {
     const componentName = options.name ?? iconUtils.toComponentName(icon);
 
+    if (options.dryRun) {
+      const status = existingIcons.includes(componentName) ? "replace" : "add";
+      const componentPath = path.join(
+        cfg.output.path,
+        `${componentName}${ext}`
+      );
+      logger.info(
+        `[dry-run] Would ${status} ${componentName} → ${componentPath}`
+      );
+      addedCount++;
+      continue;
+    }
+
     if (existingIcons.includes(componentName)) {
       const overwrite = await prompts.confirm({
         message: `Icon "${componentName}" already exists. Overwrite?`,
@@ -79,7 +92,7 @@ export async function addFolderMode(ctx: AddModeContext, deps: Deps) {
     addedCount++;
   }
 
-  if (addedCount > 0) {
+  if (addedCount > 0 && !options.dryRun) {
     // Regenerate barrel
     const barrelExt = cfg.typescript ? ".ts" : ".js";
     const barrelPath = path.join(outputDir, `index${barrelExt}`);

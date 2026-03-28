@@ -86,7 +86,7 @@ export interface AddModeContext {
   cfg: Config;
   frameworkOptions: FrameworkOptions;
   icons: string[];
-  options: { cwd: string; name?: string };
+  options: { cwd: string; name?: string; dryRun?: boolean };
   strategy: FrameworkStrategy;
 }
 
