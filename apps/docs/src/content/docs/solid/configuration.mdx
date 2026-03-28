@@ -149,9 +149,32 @@ When enabled, icons include the source attribute:
 <svg data-icon="lucide:check">...</svg>
 ```
 
+### allowedLibraries
+
+**Type:** `string[]`
+**Default:** `undefined`
+
+Restrict icon additions to specific Iconify prefixes. When set, any `denji add` call with a prefix not in the list will fail immediately.
+
+```json
+{
+  "allowedLibraries": ["lucide"]
+}
+```
+
+```bash
+# Allowed
+denji add lucide:check
+
+# Rejected — error: Icon "mdi:home" is not allowed. Allowed libraries: lucide
+denji add mdi:home
+```
+
+Omit the field (or set it to an empty array) to allow all libraries.
+
 ### hooks
 
-**Type:** `object`  
+**Type:** `object`
 **Default:** `{}`
 
 Lifecycle hooks to run shell commands at specific points:

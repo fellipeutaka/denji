@@ -63,6 +63,13 @@
           ],
           "description": "Accessibility strategy for SVG icons (hidden: aria-hidden, img: role=img with aria-label, title: <title> element, presentation: role=presentation, false: no a11y attrs)"
         },
+        "allowedLibraries": {
+          "description": "Restrict icons to specific Iconify prefixes (e.g., ['lucide', 'mdi']). If set, adding icons from other prefixes will fail.",
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
         "trackSource": {
           "default": true,
           "description": "Add data-icon attribute with Iconify source name (enables update command, debugging, and identifying icon collections)",
