@@ -1,0 +1,82 @@
+---
+title: denji export
+description: Export a JSON manifest of all tracked icons
+---
+
+import { Callout } from "fumadocs-ui/components/callout";
+
+Export a JSON manifest of all icons currently in your project. Useful for audits, migrations, and sharing icon inventories between projects.
+
+## Usage
+
+```bash
+denji export [options]
+```
+
+## Options
+
+### --output
+
+**Type:** `string` (optional value)
+
+Write the manifest to a file instead of printing to stdout.
+
+```bash
+# Write to a specific path
+denji export --output icons.json
+
+# Write to the default filename (denji-export.json)
+denji export --output
+```
+
+When omitted, the manifest is printed to stdout.
+
+## Examples
+
+Print manifest to stdout:
+```bash
+denji export
+```
+
+Write to a file:
+```bash
+denji export --output denji-export.json
+```
+
+Pipe into another tool:
+```bash
+denji export | jq '.icons[].source'
+```
+
+## Output Format
+
+```json
+{
+  "version": 1,
+  "framework": "react",
+  "output": "./src/icons.tsx",
+  "icons": [
+    { "name": "Check", "source": "lucide:check" },
+    { "name": "Home", "source": "mdi:home" }
+  ]
+}
+```
+
+| Field | Description |
+|-------|-------------|
+| `version` | Manifest schema version |
+| `framework` | Framework from your `denji.json` config |
+| `output` | Output path from your `denji.json` config |
+| `icons[].name` | Component name |
+| `icons[].source` | Iconify identifier (`prefix:name`) |
+
+<Callout type="info">
+The `source` field is only present when `trackSource: true` (the default). Icons added before enabling `trackSource` will appear without a `source` field.
+</Callout>
+
+## Use Cases
+
+- Audit which icons are in use
+- Share icon sets between projects via `denji import`
+- Generate documentation or reports
+- CI/CD checks on icon inventory

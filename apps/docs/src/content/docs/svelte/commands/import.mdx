@@ -1,0 +1,99 @@
+---
+title: denji import
+description: Bulk-add icons from a file or stdin
+---
+
+import { Callout } from "fumadocs-ui/components/callout";
+
+Bulk-add multiple icons at once from a JSON manifest, a plain text file, or stdin. Complements `denji export` for migrating icon sets between projects.
+
+## Usage
+
+```bash
+denji import [file] [options]
+```
+
+## Arguments
+
+### file
+
+Path to a `.json` manifest (from `denji export`) or a `.txt` file with one `prefix:name` per line.
+
+When omitted, icons are read from stdin.
+
+## Options
+
+### --dry-run
+
+Preview which icons would be added without writing any files.
+
+```bash
+denji import icons.json --dry-run
+```
+
+## Input Formats
+
+### JSON Manifest
+
+A manifest file produced by `denji export`:
+
+```bash
+denji import denji-export.json
+```
+
+Icons without a `source` field are skipped automatically.
+
+### Text File
+
+One Iconify identifier per line:
+
+```txt
+mdi:home
+lucide:check
+lucide:arrow-right
+```
+
+```bash
+denji import icons.txt
+```
+
+### Stdin
+
+```bash
+echo "mdi:home\nlucide:check" | denji import
+
+# Or pipe from denji export
+denji export | denji import --dry-run
+```
+
+## Examples
+
+Migrate icons from another project:
+```bash
+# In the source project
+denji export --output icons.json
+
+# In the target project
+denji import icons.json
+```
+
+Bulk-add from a curated list:
+```bash
+denji import icons.txt
+```
+
+Preview before importing:
+```bash
+denji import icons.json --dry-run
+```
+
+## Behavior
+
+- Invalid icon identifiers (missing `prefix:name` format) are skipped with a warning
+- All the same validations from `denji add` apply (including `allowedLibraries` restrictions)
+- Hooks (`preAdd`, `postAdd`) run as normal unless `--dry-run` is set
+- Duplicate icons are updated in place (same behavior as `denji add`)
+
+<Callout type="info">
+`denji import` uses the same logic as `denji add` internally. All config options, framework settings, and hooks behave identically.
+</Callout>

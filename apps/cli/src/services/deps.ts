@@ -44,7 +44,7 @@ export interface IconService {
     component: string
   ): string;
   parseIconsFile(content: string): {
-    icons: { name: string; start: number; end: number }[];
+    icons: { name: string; start: number; end: number; source?: string }[];
     objectStart: number;
     objectEnd: number;
   };
@@ -131,6 +131,26 @@ export type InitFolderModeRunner = (
   deps: Pick<InitDeps, "fs" | "logger">
 ) => Promise<ResultType<null, string>>;
 
+export interface ExportManifest {
+  framework: string;
+  icons: Array<{ name: string; source?: string }>;
+  output: string;
+  version: 1;
+}
+
+export type ExportFileModeRunner = (
+  options: { cwd: string; output?: string | boolean },
+  cfg: Config,
+  deps: Pick<ExportDeps, "fs" | "icons" | "logger">
+) => Promise<ResultType<null, string>>;
+
+export type ExportFolderModeRunner = (
+  options: { cwd: string; output?: string | boolean },
+  cfg: Config,
+  strategy: FrameworkStrategy,
+  deps: Pick<ExportDeps, "fs" | "logger">
+) => Promise<ResultType<null, string>>;
+
 // ============================================================================
 // Per-Command Dependency Types
 // ============================================================================
@@ -182,6 +202,36 @@ export interface InitDeps {
   initFolderMode: InitFolderModeRunner;
   logger: Logger;
   prompts: Prompter;
+}
+
+export interface ExportDeps {
+  config: ConfigLoader;
+  frameworks: FrameworkFactory;
+  fs: Pick<FileSystem, "access" | "readFile" | "readdir" | "writeFile">;
+  icons: Pick<IconService, "parseIconsFile">;
+  logger: Logger;
+  runFileMode: ExportFileModeRunner;
+  runFolderMode: ExportFolderModeRunner;
+}
+
+export interface ImportDeps {
+  config: ConfigLoader;
+  frameworks: FrameworkFactory;
+  fs: Pick<FileSystem, "access" | "readFile" | "writeFile" | "readdir">;
+  hooks: HooksRunner;
+  icons: Pick<
+    IconService,
+    | "fetchIcon"
+    | "validateIconName"
+    | "toComponentName"
+    | "getExistingIconNames"
+    | "insertIconAlphabetically"
+    | "replaceIcon"
+  >;
+  logger: Logger;
+  prompts: Pick<Prompter, "confirm">;
+  runAddFileMode: AddModeRunner;
+  runAddFolderMode: AddModeRunner;
 }
 
 export interface AddDeps {

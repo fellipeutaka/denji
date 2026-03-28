@@ -1,6 +1,7 @@
 import { mock } from "bun:test";
 import { addFileMode } from "~/commands/modes/add-file";
 import { clearFileMode } from "~/commands/modes/clear-file";
+import { exportFileMode } from "~/commands/modes/export-file";
 import { listFileMode } from "~/commands/modes/list-file";
 import { removeFileMode } from "~/commands/modes/remove-file";
 import type { Config } from "~/schemas/config";
@@ -8,10 +9,12 @@ import type {
   AddDeps,
   ClearDeps,
   ConfigLoader,
+  ExportDeps,
   FileSystem,
   FrameworkFactory,
   HooksRunner,
   IconService,
+  ImportDeps,
   InitDeps,
   ListDeps,
   Logger,
@@ -224,6 +227,39 @@ export function createInitDeps(overrides: Partial<InitDeps> = {}): InitDeps {
     frameworks: createMockFrameworks(overrides.frameworks),
     initFolderMode:
       overrides.initFolderMode ?? mock(() => Promise.resolve(new Ok(null))),
+  };
+}
+
+export function createExportDeps(
+  overrides: Partial<ExportDeps> = {}
+): ExportDeps {
+  return {
+    fs: createMockFs(overrides.fs),
+    config: createMockConfig(overrides.config),
+    icons: createMockIcons(overrides.icons),
+    logger: createMockLogger(overrides.logger),
+    frameworks: createMockFrameworks(overrides.frameworks),
+    runFileMode: overrides.runFileMode ?? exportFileMode,
+    runFolderMode:
+      overrides.runFolderMode ?? mock(() => Promise.resolve(new Ok(null))),
+  };
+}
+
+export function createImportDeps(
+  overrides: Partial<ImportDeps> = {}
+): ImportDeps {
+  return {
+    fs: createMockFs(overrides.fs),
+    config: createMockConfig(overrides.config),
+    hooks: createMockHooks(overrides.hooks),
+    icons: createMockIcons(overrides.icons),
+    prompts: createMockPrompter(overrides.prompts),
+    logger: createMockLogger(overrides.logger),
+    frameworks: createMockFrameworks(overrides.frameworks),
+    runAddFileMode:
+      overrides.runAddFileMode ?? mock(() => Promise.resolve(new Ok(null))),
+    runAddFolderMode:
+      overrides.runAddFolderMode ?? mock(() => Promise.resolve(new Ok(null))),
   };
 }
 

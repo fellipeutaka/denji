@@ -30,10 +30,12 @@ import type {
   AddDeps,
   ClearDeps,
   ConfigLoader,
+  ExportDeps,
   FileSystem,
   FrameworkFactory,
   HooksRunner,
   IconService,
+  ImportDeps,
   InitDeps,
   ListDeps,
   Logger,
@@ -151,6 +153,40 @@ export const initDefaults: InitDeps = {
   initFolderMode: async (...args) => {
     const { initFolderMode } = await import("~/commands/modes/init-folder");
     return initFolderMode(...args);
+  },
+};
+
+export const exportDefaults: ExportDeps = {
+  fs: defaultFs,
+  config: defaultConfig,
+  icons: defaultIcons,
+  logger: defaultLogger,
+  frameworks: defaultFrameworks,
+  runFileMode: async (...args) => {
+    const { exportFileMode } = await import("~/commands/modes/export-file");
+    return exportFileMode(...args);
+  },
+  runFolderMode: async (...args) => {
+    const { exportFolderMode } = await import("~/commands/modes/export-folder");
+    return exportFolderMode(...args);
+  },
+};
+
+export const importDefaults: ImportDeps = {
+  fs: defaultFs,
+  config: defaultConfig,
+  hooks: defaultHooks,
+  icons: defaultIcons,
+  prompts: defaultPrompts,
+  logger: defaultLogger,
+  frameworks: defaultFrameworks,
+  runAddFileMode: async (...args) => {
+    const { addFileMode } = await import("~/commands/modes/add-file");
+    return addFileMode(...args);
+  },
+  runAddFolderMode: async (...args) => {
+    const { addFolderMode } = await import("~/commands/modes/add-folder");
+    return addFolderMode(...args);
   },
 };
 

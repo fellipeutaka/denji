@@ -1,1 +1,1 @@
-{ "pages": ["init", "add", "remove", "list", "clear"] }
+{ "pages": ["init", "add", "remove", "list", "clear", "export", "import"] }
