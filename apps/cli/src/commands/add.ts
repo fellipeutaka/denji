@@ -53,7 +53,19 @@ export class AddCommand {
     }
     const { cfg, strategy } = ctxResult.value;
 
-    // 5. Run preAdd hooks
+    // 5. Validate icons against allowedLibraries
+    if (cfg.allowedLibraries && cfg.allowedLibraries.length > 0) {
+      for (const icon of icons) {
+        const prefix = icon.split(":")[0] as string;
+        if (!cfg.allowedLibraries.includes(prefix)) {
+          return new Err(
+            `Icon "${icon}" is not allowed. Allowed libraries: ${cfg.allowedLibraries.join(", ")}`
+          );
+        }
+      }
+    }
+
+    // 6. Run preAdd hooks
     const preAddResult = await hooks.runHooks(
       cfg.hooks?.preAdd ?? [],
       options.cwd

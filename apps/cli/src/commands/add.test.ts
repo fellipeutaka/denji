@@ -478,6 +478,89 @@ describe("AddCommand", () => {
     });
   });
 
+  describe("allowedLibraries", () => {
+    it("allows icon from permitted library", async () => {
+      const deps = createAddDeps({
+        fs: createMockFs({
+          readFile: mock(() => Promise.resolve(new Ok(emptyIconsFileContent))),
+        }),
+        config: withConfig({ allowedLibraries: ["lucide"] }),
+      });
+      const command = new AddCommand(deps);
+
+      const result = await command.run(["lucide:check"], {
+        cwd: "/test/project",
+      });
+
+      expect(result.isOk()).toBe(true);
+    });
+
+    it("rejects icon from non-permitted library", async () => {
+      const deps = createAddDeps({
+        config: withConfig({ allowedLibraries: ["lucide"] }),
+      });
+      const command = new AddCommand(deps);
+
+      const result = await command.run(["mdi:home"], {
+        cwd: "/test/project",
+      });
+
+      expect(result.isErr()).toBe(true);
+      if (result.isErr()) {
+        expect(result.error).toContain('"mdi:home" is not allowed');
+        expect(result.error).toContain("lucide");
+      }
+    });
+
+    it("rejects first disallowed icon when mixing allowed and disallowed", async () => {
+      const deps = createAddDeps({
+        config: withConfig({ allowedLibraries: ["lucide"] }),
+      });
+      const command = new AddCommand(deps);
+
+      const result = await command.run(["lucide:check", "mdi:home"], {
+        cwd: "/test/project",
+      });
+
+      expect(result.isErr()).toBe(true);
+      if (result.isErr()) {
+        expect(result.error).toContain('"mdi:home" is not allowed');
+      }
+    });
+
+    it("allows all icons when allowedLibraries is empty", async () => {
+      const deps = createAddDeps({
+        fs: createMockFs({
+          readFile: mock(() => Promise.resolve(new Ok(emptyIconsFileContent))),
+        }),
+        config: withConfig({ allowedLibraries: [] }),
+      });
+      const command = new AddCommand(deps);
+
+      const result = await command.run(["mdi:home"], {
+        cwd: "/test/project",
+      });
+
+      expect(result.isOk()).toBe(true);
+    });
+
+    it("allows all icons when allowedLibraries is not set", async () => {
+      const deps = createAddDeps({
+        fs: createMockFs({
+          readFile: mock(() => Promise.resolve(new Ok(emptyIconsFileContent))),
+        }),
+        config: withConfig({ allowedLibraries: undefined }),
+      });
+      const command = new AddCommand(deps);
+
+      const result = await command.run(["mdi:home"], {
+        cwd: "/test/project",
+      });
+
+      expect(result.isOk()).toBe(true);
+    });
+  });
+
   describe("config options", () => {
     it("uses a11y from config when not overridden", async () => {
       const deps = createAddDeps({

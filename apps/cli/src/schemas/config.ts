@@ -65,6 +65,13 @@ export interface OutputConfig {
   type: OutputType;
 }
 
+// Allowed libraries config
+export const allowedLibrariesSchema = optional(array(string())).check(
+  describe(
+    "Restrict icons to specific Iconify prefixes (e.g., ['lucide', 'mdi']). If set, adding icons from other prefixes will fail."
+  )
+);
+
 // Base config (shared across all frameworks)
 const baseConfigSchema = object({
   $schema: _default(
@@ -80,6 +87,7 @@ const baseConfigSchema = object({
     describe("Whether to generate TypeScript code")
   ),
   a11y: optional(a11ySchema),
+  allowedLibraries: allowedLibrariesSchema,
   trackSource: _default(boolean(), true).check(
     describe(
       "Add data-icon attribute with Iconify source name (enables update command, debugging, and identifying icon collections)"
