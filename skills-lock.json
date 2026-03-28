@@ -6,6 +6,11 @@
       "sourceType": "github",
       "computedHash": "9b6001b2041dff114b4e99d0b15f4800709d31144bd27d414616ba158d76670e"
     },
+    "ai-repo-setup": {
+      "source": "fellipeutaka/leon",
+      "sourceType": "github",
+      "computedHash": "a56b8d99f6e6eb6a253206631866f840affa87727f9f3aeb09871add627ee7e9"
+    },
     "bun": {
       "source": "fellipeutaka/leon",
       "sourceType": "github",
@@ -110,6 +115,11 @@
       "source": "fellipeutaka/leon",
       "sourceType": "github",
       "computedHash": "a6a44d5498f7e8f68289902f3dedfc6f38ae0cee1e96527c80724cf27f727c2a"
+    },
+    "zod": {
+      "source": "fellipeutaka/leon",
+      "sourceType": "github",
+      "computedHash": "355160ccffc185df41c4e3dca88dd51f50b22931c889e06048546fff4e637bf5"
     }
   }
 }

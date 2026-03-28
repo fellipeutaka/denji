@@ -10,3 +10,5 @@ pre-commit:
     type-check:
       glob: "*.{ts,d.cts,d.mts,tsx}"
       run: bun run type-check
+    test:
+      run: CLAUDECODE=1 bun test --bail
