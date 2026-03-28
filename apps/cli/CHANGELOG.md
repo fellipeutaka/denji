@@ -1,5 +1,161 @@
 # denji
 
+## 1.0.0
+
+### Major Changes
+
+- 32785d1: BREAKING: Replace `--json` flag with `--display` option on `list` command
+
+  The `--json` flag has been removed in favor of a new `--display <mode>` option that supports three output modes: `default`, `json`, and `toon`.
+
+  **Migration Guide:**
+
+  **Before:**
+
+  ```sh
+  denji list --json
+  ```
+
+  **After:**
+
+  ```sh
+  denji list --display json
+  ```
+
+  **New `--display` modes:**
+
+  - `default` — Human-readable formatted output (unchanged behavior, this is the default)
+  - `json` — Structured JSON output (replaces `--json`)
+  - `toon` — [TOON format](https://github.com/toon-format/toon) output for machine-readable binary encoding
+
+  **Example — TOON output:**
+
+  ```sh
+  denji list --display toon
+  ```
+
+  **Breaking Changes:**
+
+  - `--json` flag removed; use `--display json` instead
+
+### Minor Changes
+
+- 61de0e9: Add `allowedLibraries` option to restrict icon sources
+
+  This release introduces a new `allowedLibraries` configuration option that locks your project to specific Iconify prefixes. Any attempt to add an icon from an unlisted library will fail with a clear error.
+
+  **New Configuration:**
+
+  - `allowedLibraries` - Array of allowed Iconify prefixes (e.g., `["lucide"]`). When omitted or empty, all libraries are allowed.
+
+  **Example:**
+
+  ```json
+  {
+    "framework": "react",
+    "output": "./src/icons.tsx",
+    "allowedLibraries": ["lucide"]
+  }
+  ```
+
+  **Usage:**
+
+  ```sh
+  # Allowed
+  denji add lucide:check
+
+  # Rejected
+  denji add mdi:home
+  # Error: Icon "mdi:home" is not allowed. Allowed libraries: lucide
+  ```
+
+- 11d7118: Add `--dry-run` flag to `denji add` command
+
+  Preview what would be generated without writing any files to disk. Useful for CI checks, pull request previews, or verifying icon names before committing changes.
+
+  **Usage:**
+
+  ```sh
+  denji add lucide:check mdi:home --dry-run
+  ```
+
+  **Example output:**
+
+  ```
+  ◇ denji add
+  │
+  ○ [dry-run] Would add Check → ./src/icons.tsx
+  ○ [dry-run] Would add Home → ./src/icons.tsx
+  │
+  ◇ Dry run complete — 2 icon(s) previewed, no files written
+  ```
+
+  **Behavior:**
+
+  - No files are created or modified
+  - Pre/post hooks are not executed
+  - All other validations still run (icon name format, `allowedLibraries`, config loading)
+  - Indicates whether each icon would be **added** (new) or **replaced** (already exists)
+
+- 7360242: Add `denji export` and `denji import` commands for snapshot and bulk add
+
+  This release introduces two new commands for auditing and migrating icons across projects.
+
+  ## `denji export`
+
+  Exports a JSON manifest of all icons currently tracked in your project.
+
+  **Usage:**
+
+  ```sh
+  # Print to stdout
+  denji export
+
+  # Write to a file
+  denji export --output icons.json
+
+  # Write to default file (denji-export.json)
+  denji export --output
+  ```
+
+  **Output format:**
+
+  ```json
+  {
+    "version": 1,
+    "framework": "react",
+    "output": "./src/icons.tsx",
+    "icons": [
+      { "name": "Home", "source": "mdi:home" },
+      { "name": "Check", "source": "lucide:check" }
+    ]
+  }
+  ```
+
+  The `source` field is included only when `trackSource: true` (the default) and the icon was added via `denji add`.
+
+  ## `denji import`
+
+  Bulk-adds icons from a manifest JSON file, a plain text file (one `prefix:name` per line), or stdin.
+
+  **Usage:**
+
+  ```sh
+  # From a JSON manifest (e.g. produced by denji export)
+  denji import icons.json
+
+  # From a plain text file
+  denji import icons.txt
+
+  # From stdin
+  echo "mdi:home\nlucide:check" | denji import
+
+  # Dry run (preview without writing)
+  denji import icons.json --dry-run
+  ```
+
+  Icons without a valid `prefix:name` format are skipped with a warning. JSON manifest entries without a `source` field are also skipped.
+
 ## 0.4.0
 
 ### Minor Changes
