@@ -1,7 +1,7 @@
 ---
 name: denji
 description: Manage SVG icons as framework components using Denji CLI. Use when the user needs to add, remove, list, export, import, or manage SVG icons in React, Preact, Solid, Qwik, Vue, or Svelte projects. Triggers include requests to "add an icon", "set up icons", "manage SVG icons", "remove an icon", "list icons", "export icons", "import icons", "dry-run icon add", or any task involving Iconify icons as framework components.
-allowed-tools: Bash(npx denji:*)
+allowed-tools: Bash(npx denji:*), Bash(pnpm dlx denji:*), Bash(pnpx denji:*), Bash(bun x denji:*), Bash(bunx denji:*), Bash(yarn dlx denji:*)
 metadata:
   author: fellipeutaka
   version: "1.0.0"
